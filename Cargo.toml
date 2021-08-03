@@ -1,0 +1,13 @@
+[package]
+name = "miette"
+version = "0.0.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+description = "you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!"
+categories = ["rust-patterns"]
+repository = "https://github.com/zkat/miette"
+documentation = "https://docs.rs/miette"
+license = "Apache-2.0"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]

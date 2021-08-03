@@ -1,0 +1,5 @@
+[clog]
+repository = "https://github.com/zkat/big-brain"
+subtitle = ""
+changelog = "CHANGELOG.md"
+from-latest-tag = true
