@@ -11,7 +11,7 @@ pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
     /// the toplevel crate's documentation for easy searching. Rust path
     /// format (`foo::bar::baz`) is recommended, but more classic codes like
     /// `E0123` or Enums will work just fine.
-    fn code(&self) -> Box<dyn Display>;
+    fn code(&self) -> &(dyn Display + 'static);
 
     /// Diagnostic severity. This may be used by [Reporter]s to change the
     /// display format of this diagnostic.
@@ -19,7 +19,7 @@ pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
 
     /// Additional help text related to this Diagnostic. Do you have any
     /// advice for the poor soul who's just run into this issue?
-    fn help(&self) -> Option<Vec<Box<dyn Display>>> {
+    fn help(&self) -> Option<&[&str]> {
         None
     }
 
