@@ -64,11 +64,7 @@ fn fancy() -> io::Result<()> {
                     column: 0,
                     offset: 0,
                 },
-                end: SourceLocation {
-                    line: 0,
-                    column: 4,
-                    offset: 4,
-                },
+                end: None,
             },
         }],
     };

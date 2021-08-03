@@ -102,8 +102,8 @@ pub struct SourceSpan {
     pub label: String,
     /// The start of the span.
     pub start: SourceLocation,
-    /// The end of the span.
-    pub end: SourceLocation,
+    /// The end of the span. Optional
+    pub end: Option<SourceLocation>,
 }
 
 /**
