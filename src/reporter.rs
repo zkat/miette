@@ -9,6 +9,39 @@ use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity
 
 pub struct Reporter;
 
+impl Reporter {
+    fn render_detail(
+        &self,
+        f: &mut core::fmt::Formatter<'_>,
+        detail: &DiagnosticDetail,
+    ) -> core::fmt::Result {
+        use core::fmt::Write as _;
+        write!(f, "\n[{}]", detail.source_name)?;
+        if let Some(msg) = &detail.message {
+            write!(f, " {}:", msg)?;
+        }
+        writeln!(
+            indented(f),
+            "\n\n({}) @ line {}, col {} ",
+            detail.span.label,
+            detail.span.start.line + 1,
+            detail.span.start.column + 1
+        )?;
+        if let Some(other_spans) = &detail.other_spans {
+            for span in other_spans {
+                writeln!(
+                    indented(f),
+                    "\n{} @ line {}, col {} ",
+                    span.label,
+                    span.start.line + 1,
+                    span.start.column + 1
+                )?;
+            }
+        }
+        Ok(())
+    }
+}
+
 impl DiagnosticReporter for Reporter {
     fn debug(
         &self,
@@ -44,36 +77,8 @@ impl DiagnosticReporter for Reporter {
 
         if let Some(details) = diagnostic.details() {
             writeln!(f)?;
-            for DiagnosticDetail {
-                source_name,
-                message,
-                span,
-                other_spans,
-                ..
-            } in details
-            {
-                write!(f, "\n[{}]", source_name)?;
-                if let Some(msg) = message {
-                    write!(f, " {}:", msg)?;
-                }
-                writeln!(
-                    indented(f),
-                    "\n\n({}) @ line {}, col {} ",
-                    span.label,
-                    span.start.line + 1,
-                    span.start.column + 1
-                )?;
-                if let Some(other_spans) = other_spans {
-                    for span in other_spans {
-                        writeln!(
-                            indented(f),
-                            "\n{} @ line {}, col {} ",
-                            span.label,
-                            span.start.line + 1,
-                            span.start.column + 1
-                        )?;
-                    }
-                }
+            for detail in details {
+                self.render_detail(f, detail)?;
             }
         }
 
