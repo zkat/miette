@@ -87,3 +87,43 @@ impl DiagnosticReporter for Reporter {
         Ok(())
     }
 }
+
+pub struct JokeReporter;
+
+impl DiagnosticReporter for JokeReporter {
+    fn debug(
+        &self,
+        diagnostic: &(dyn Diagnostic),
+        f: &mut core::fmt::Formatter<'_>,
+    ) -> core::fmt::Result {
+        if f.alternate() {
+            return core::fmt::Debug::fmt(diagnostic, f);
+        }
+
+        let sev = match diagnostic.severity() {
+            Severity::Error => "error",
+            Severity::Warning => "warning",
+            Severity::Advice => "advice",
+        };
+        writeln!(
+            f,
+            "me, with {} {}: {}",
+            sev,
+            diagnostic,
+            diagnostic
+                .help()
+                .unwrap_or_else(|| &["have you tried not failing?"])
+                .join(" ")
+        )?;
+        writeln!(
+            f,
+            "miette, her eyes enormous: you {} miette? you {}? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!",
+            diagnostic.code(),
+            diagnostic.details().map(|details| {
+                details.iter().map(|detail| detail.message.clone()).collect::<Option<Vec<String>>>()
+            }).flatten().map(|x| x.join(", ")).unwrap_or_else(||"try and cause miette to panic".into())
+        )?;
+
+        Ok(())
+    }
+}
