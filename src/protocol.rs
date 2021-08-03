@@ -71,7 +71,7 @@ pub enum Severity {
 /**
 Represents a readable source of some sort: a source file, a String, etc.
 */
-pub trait Source {
+pub trait Source: std::fmt::Debug + Send + Sync + 'static {
     /// Get a `Read`er from a given [Source].
     fn open(&self) -> io::Result<Box<dyn Read>>;
 }
@@ -79,6 +79,7 @@ pub trait Source {
 /**
 Details and additional context to be displayed.
  */
+#[derive(Debug)]
 pub struct DiagnosticDetail {
     /// Explanation of this specific diagnostic detail.
     pub message: Option<String>,
@@ -95,6 +96,7 @@ pub struct DiagnosticDetail {
 /**
 Span within a [Source] with an associated message.
 */
+#[derive(Debug)]
 pub struct SourceSpan {
     /// A name for the thing this SourceSpan is actually pointing to.
     pub label: String,
@@ -107,6 +109,7 @@ pub struct SourceSpan {
 /**
 Specific location in a [SourceSpan]
 */
+#[derive(Debug)]
 pub struct SourceLocation {
     /// 0-indexed column of location.
     pub column: usize,
