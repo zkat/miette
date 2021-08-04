@@ -5,7 +5,7 @@ use std::fs::File;
 use std::io::{Cursor, Read, Result};
 use std::path::{Path, PathBuf};
 
-use crate::{Source};
+use crate::Source;
 
 impl Source for String {
     fn open(&self) -> Result<Box<dyn Read>> {
