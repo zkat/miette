@@ -7,7 +7,7 @@ use std::fmt;
 use indenter::indented;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity};
+use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity, SourceSpan};
 
 pub struct Reporter;
 
@@ -20,13 +20,37 @@ impl Reporter {
         }
         writeln!(f)?;
         writeln!(f)?;
-        let span_data = detail
+        let context_data = detail
             .source
             .read_span(&detail.context)
             .map_err(|_| fmt::Error)?;
-        let span_text = std::str::from_utf8(&span_data).expect("Bad utf8 detected");
-        for (line_num, line) in span_text.lines().enumerate() {
+        let context= std::str::from_utf8(&context_data).expect("Bad utf8 detected");
+        let mut highlights = Vec::new();
+        if let Some(highs) = &detail.highlights {
+            for (label, SourceSpan { start, end }) in highs {
+                // TODO: should be able to grab all these locations in a single pass, no?
+                let start = detail.source.find_location(*start).map_err(|_| fmt::Error)?;
+                let end = detail.source.find_location(*end).map_err(|_| fmt::Error)?;
+                highlights.push((
+                    label,
+                    (start, end)
+                ));
+            }
+        }
+        for (line_num, line) in context.lines().enumerate() {
             writeln!(indented(f), "{: <2} | {}", line_num + 1, line)?;
+            for (label, (start, end)) in &highlights {
+                if start.line == line_num {
+                    if start.line == end.line {
+                        write!(indented(f), "{: <2} | ", "⫶")?;
+                        write!(f, "{}{} ", " ".repeat(start.column), "^".repeat(end.column - start.column + 1))?;
+                        write!(f, "{}", label)?;
+                        writeln!(f)?;
+                    } else {
+                        todo!()
+                    }
+                }
+            }
         }
         Ok(())
     }

@@ -6,7 +6,7 @@ you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail f
 
 Here's an example of using something like `thisdiagnostic` to define Diagnostics declaratively.
 
-```rust
+```ignore
 use thiserror::Error;
 use thisdiagnostic::Diagnostic;
 

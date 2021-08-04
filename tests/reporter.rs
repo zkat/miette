@@ -56,7 +56,12 @@ fn fancy() -> Result<(), MietteError> {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
             source: Box::new(src.clone()),
-            highlights: None,
+            highlights: Some(vec![
+                ("this bit here".into(), SourceSpan {
+                    start: 9.into(),
+                    end: 12.into(),
+                })
+            ]),
             context: SourceSpan {
                 start: 0.into(),
                 end: (src.len() - 1).into(),
@@ -64,7 +69,7 @@ fn fancy() -> Result<(), MietteError> {
         }],
     };
     let out = format!("{:?}", err);
-    println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n       |   ^\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    // println!("{}", out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n    ⫶  |   ^^^^ this bit here\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
