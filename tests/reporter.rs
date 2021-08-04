@@ -1,8 +1,8 @@
-use std::{fmt, io};
+use std::fmt;
 
 use miette::{
-    Diagnostic, DiagnosticDetail, DiagnosticReporter, Reporter, Severity, SourceLocation,
-    SourceSpan,
+    Diagnostic, DiagnosticDetail, DiagnosticReporter, MietteError, Reporter, Severity, Source,
+    SourceLocation, SourceSpan,
 };
 use thiserror::Error;
 
@@ -37,7 +37,7 @@ impl Diagnostic for MyBad {
 }
 
 #[test]
-fn basic() -> io::Result<()> {
+fn basic() -> Result<(), MietteError> {
     let err = MyBad {
         details: Vec::new(),
     };
@@ -50,26 +50,23 @@ fn basic() -> io::Result<()> {
 }
 
 #[test]
-fn fancy() -> io::Result<()> {
+fn fancy() -> Result<(), MietteError> {
+    let src = "source\n  text\n    here".to_string();
     let err = MyBad {
         details: vec![DiagnosticDetail {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
-            source: Box::new("source_text".to_string()),
+            source: Box::new(src.clone()),
             other_spans: None,
             span: SourceSpan {
                 label: "this thing here is bad".into(),
-                start: SourceLocation {
-                    line: 0,
-                    column: 0,
-                    offset: 0,
-                },
-                end: None,
+                start: src.find_offset(&SourceLocation { line: 1, column: 0 })?,
+                end: src.find_offset(&SourceLocation { line: 2, column: 3 })?,
             },
         }],
     };
     let out = format!("{:?}", err);
     // println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    (this thing here is bad) @ line 1, col 1 \n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n       |   ^\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }

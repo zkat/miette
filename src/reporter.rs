@@ -2,40 +2,75 @@
 Basic reporter for Diagnostics. Probably good enough for most use-cases,
 but largely meant to be an example.
 */
+use std::cmp;
+use std::fmt;
+
 use indenter::indented;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity};
+use crate::protocol::{
+    Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity, SourceLocation, SourceSpan,
+};
 
 pub struct Reporter;
 
 impl Reporter {
+    fn render_span(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        detail: &DiagnosticDetail,
+        span: &SourceSpan,
+    ) -> fmt::Result {
+        // TODO: This literally reads `detail.source` *five times*. There's gotta be a better way???
+        use fmt::Write as _;
+        let src = &detail.source;
+        let start = src.find_location(span.start).expect("Failed to find location");
+        let end = src.find_location(span.end).expect("Failed to find location");
+        let context_start = start.line - cmp::min(start.line, 2);
+        let context_end = end.line + 2;
+        let context_span = SourceSpan::new(
+            span.label.clone(),
+            src.find_offset(&
+            SourceLocation {
+                line: context_start,
+                column: 0,
+            }).expect("Failed to find starting context offset"),
+            src.find_offset(&SourceLocation {
+                line: context_end,
+                column: 0,
+            }).expect("Failed to find ending context offset"),
+        );
+        let window = detail
+            .source
+            .read_span(&context_span)
+            .expect("Failed to read span window");
+        let window = std::str::from_utf8(&window).expect("Failed to convert span window to utf8");
+        for (line_num, line) in (context_start..context_end).zip(window.lines()) {
+            writeln!(indented(f), "{: <2} | {}", line_num + 1, line)?;
+            if line_num == start.line {
+                writeln!(indented(f), "{: <2} | {:width$}^", "", "", width=start.column + 2)?;
+            }
+        }
+        Ok(())
+    }
+
     fn render_detail(
         &self,
-        f: &mut core::fmt::Formatter<'_>,
+        f: &mut fmt::Formatter<'_>,
         detail: &DiagnosticDetail,
-    ) -> core::fmt::Result {
-        use core::fmt::Write as _;
+    ) -> fmt::Result {
+        use fmt::Write as _;
         write!(f, "\n[{}]", detail.source_name)?;
         if let Some(msg) = &detail.message {
             write!(f, " {}:", msg)?;
         }
-        writeln!(
-            indented(f),
-            "\n\n({}) @ line {}, col {} ",
-            detail.span.label,
-            detail.span.start.line + 1,
-            detail.span.start.column + 1
-        )?;
+        writeln!(f)?;
+        writeln!(f)?;
+        self.render_span(f, detail, &detail.span)?;
         if let Some(other_spans) = &detail.other_spans {
             for span in other_spans {
-                writeln!(
-                    indented(f),
-                    "\n{} @ line {}, col {} ",
-                    span.label,
-                    span.start.line + 1,
-                    span.start.column + 1
-                )?;
+                writeln!(indented(f), "----")?;
+                self.render_span(f, detail, span)?;
             }
         }
         Ok(())
@@ -46,12 +81,12 @@ impl DiagnosticReporter for Reporter {
     fn debug(
         &self,
         diagnostic: &(dyn Diagnostic),
-        f: &mut core::fmt::Formatter<'_>,
-    ) -> core::fmt::Result {
-        use core::fmt::Write as _;
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
+        use fmt::Write as _;
 
         if f.alternate() {
-            return core::fmt::Debug::fmt(diagnostic, f);
+            return fmt::Debug::fmt(diagnostic, f);
         }
 
         let sev = match diagnostic.severity() {
@@ -99,10 +134,10 @@ impl DiagnosticReporter for JokeReporter {
     fn debug(
         &self,
         diagnostic: &(dyn Diagnostic),
-        f: &mut core::fmt::Formatter<'_>,
-    ) -> core::fmt::Result {
+        f: &mut fmt::Formatter<'_>,
+    ) -> fmt::Result {
         if f.alternate() {
-            return core::fmt::Debug::fmt(diagnostic, f);
+            return fmt::Debug::fmt(diagnostic, f);
         }
 
         let sev = match diagnostic.severity() {

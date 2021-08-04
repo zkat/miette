@@ -1,5 +1,6 @@
 use std::fmt::Display;
-use std::io::{self, Read};
+
+use crate::MietteError;
 
 /**
 Adds rich metadata to your Error that can be used by [DiagnosticReporter] to print
@@ -72,8 +73,12 @@ pub enum Severity {
 Represents a readable source of some sort: a source file, a String, etc.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
-    /// Get a `Read`er from a given [Source].
-    fn open(&self) -> io::Result<Box<dyn Read>>;
+    /// Read a specific line from this source.
+    fn read_span(&self, span: &SourceSpan) -> Result<Vec<u8>, MietteError>;
+    /// SourceLocation (line/column) for a given offset.
+    fn find_location(&self, offset: SourceOffset) -> Result<SourceLocation, MietteError>;
+    /// Make a SourceOffset based on a given line/column location.
+    fn find_offset(&self, location: &SourceLocation) -> Result<SourceOffset, MietteError>;
 }
 
 /**
@@ -96,25 +101,49 @@ pub struct DiagnosticDetail {
 /**
 Span within a [Source] with an associated message.
 */
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SourceSpan {
-    /// A name for the thing this SourceSpan is actually pointing to.
+    /// Identifier for this span.
     pub label: String,
     /// The start of the span.
-    pub start: SourceLocation,
-    /// The end of the span. Optional
-    pub end: Option<SourceLocation>,
+    pub start: SourceOffset,
+    /// The end of the span.
+    pub end: SourceOffset,
+}
+
+impl SourceSpan {
+    pub fn new(label: String, start: SourceOffset, end: SourceOffset) -> Self {
+        assert!(start.bytes() <= end.bytes(), "Starting offset must come before the end offset.");
+        Self { label, start, end }
+    }
 }
 
 /**
-Specific location in a [SourceSpan]
+Convenience type for representing an offset in terms of lines and columns
 */
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SourceLocation {
     /// 0-indexed column of location.
     pub column: usize,
     /// 0-indexed line of location.
     pub line: usize,
-    /// 0-indexed _character_ offset of location.
-    pub offset: usize,
+}
+
+pub type ByteOffset = usize;
+
+/**
+*/
+#[derive(Clone, Copy, Debug)]
+pub struct SourceOffset(ByteOffset);
+
+impl SourceOffset {
+    pub fn bytes(&self) -> ByteOffset {
+        self.0
+    }
+}
+
+impl From<ByteOffset> for SourceOffset {
+    fn from(bytes: ByteOffset) -> Self {
+        SourceOffset(bytes)
+    }
 }
