@@ -47,16 +47,16 @@ pub enum MyDiagnostic {
         bad_type: Type,
         bad_var: Var,
 
-        #[span_source(src)]
-        #[label("This is a {bad_type}")]
+        #[context(src, "This region is where things went wrong.")]
+        ctx: SourceSpan,
+
+        #[highlight(ctx, "This is a {bad_type}")]
         bad_var_span: SourceSpan,
 
-        #[span_source(src)]
-        #[label("This is a {good_type}")]
+        #[highlight(ctx, "This is a {good_type}")]
         good_var_span: Option<SourceSpan>,
 
-        #[span(other_src)]
-        #[label("{bad_var} is defined here")]
+        #[highlight(ctx, "{bad_var} is defined here")]
         bad_var_definition_span: SourceSpan, // multiline span
     },
 

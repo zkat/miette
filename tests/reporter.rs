@@ -1,8 +1,7 @@
 use std::fmt;
 
 use miette::{
-    Diagnostic, DiagnosticDetail, DiagnosticReporter, MietteError, Reporter, Severity, Source,
-    SourceLocation, SourceSpan,
+    Diagnostic, DiagnosticDetail, DiagnosticReporter, MietteError, Reporter, Severity, SourceSpan,
 };
 use thiserror::Error;
 
@@ -57,16 +56,15 @@ fn fancy() -> Result<(), MietteError> {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
             source: Box::new(src.clone()),
-            other_spans: None,
-            span: SourceSpan {
-                label: "this thing here is bad".into(),
-                start: src.find_offset(&SourceLocation { line: 1, column: 0 })?,
-                end: src.find_offset(&SourceLocation { line: 2, column: 3 })?,
+            highlights: None,
+            context: SourceSpan {
+                start: 0.into(),
+                end: (src.len() - 1).into(),
             },
         }],
     };
     let out = format!("{:?}", err);
-    // println!("{}", out);
+    println!("{}", out);
     assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n       |   ^\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }

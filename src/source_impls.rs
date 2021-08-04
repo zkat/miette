@@ -15,7 +15,7 @@ impl Source for String {
             .as_bytes()
             .iter()
             .skip(span.start.bytes())
-            .take(span.end.bytes() - span.start.bytes())
+            .take(span.end.bytes() + 1 - span.start.bytes())
             .copied()
             .collect())
     }
@@ -47,7 +47,7 @@ impl Source for String {
                 }
             }
         }
-        Ok(SourceLocation { line, column })
+        Err(MietteError::OutOfBounds)
     }
 
     fn find_offset(&self, location: &SourceLocation) -> Result<SourceOffset, MietteError> {
@@ -77,7 +77,7 @@ impl Source for String {
                 }
             }
         }
-        Ok(SourceOffset::from(offset))
+        Err(MietteError::OutOfBounds)
     }
 }
 
@@ -87,7 +87,7 @@ impl Source for PathBuf {
         Ok(file
             .bytes()
             .skip(span.start.bytes())
-            .take(span.end.bytes() - span.start.bytes())
+            .take(span.end.bytes() + 1 - span.start.bytes())
             .collect::<Result<Vec<u8>, io::Error>>()?)
     }
 
@@ -120,7 +120,7 @@ impl Source for PathBuf {
                 }
             }
         }
-        Ok(SourceLocation { line, column })
+        Err(MietteError::OutOfBounds)
     }
 
     fn find_offset(&self, location: &SourceLocation) -> Result<SourceOffset, MietteError> {
@@ -152,26 +152,24 @@ impl Source for PathBuf {
                 }
             }
         }
-        Ok(SourceOffset::from(offset))
+        Err(MietteError::OutOfBounds)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SourceLocation;
 
     #[test]
     fn basic() -> Result<(), MietteError> {
         let src = String::from("foo\n");
-        let span = SourceSpan {
-            label: "idk".into(),
-            start: src.find_offset(&SourceLocation { line: 0, column: 0 })?,
-            end: src.find_offset(&SourceLocation { line: 1, column: 0 })?,
-        };
+        let span = src.read_span(&SourceSpan {
+            start: 0.into(),
+            end: 3.into(),
+        })?;
         assert_eq!(
             "foo\n",
-            std::str::from_utf8(&src.read_span(&span)?).unwrap()
+            std::str::from_utf8(&span).unwrap()
         );
         Ok(())
     }
@@ -179,14 +177,13 @@ mod tests {
     #[test]
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let span = SourceSpan {
-            label: "idk".into(),
-            start: src.find_offset(&SourceLocation { line: 1, column: 0 })?,
-            end: src.find_offset(&SourceLocation { line: 2, column: 0 })?,
-        };
+        let span = src.read_span(&SourceSpan {
+            start: 4.into(),
+            end: 7.into(),
+        })?;
         assert_eq!(
             "bar\n",
-            std::str::from_utf8(&src.read_span(&span)?).unwrap()
+            std::str::from_utf8(&span).unwrap()
         );
         Ok(())
     }
@@ -194,14 +191,13 @@ mod tests {
     #[test]
     fn with_crlf() -> Result<(), MietteError> {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
-        let span = SourceSpan {
-            label: "idk".into(),
-            start: src.find_offset(&SourceLocation { line: 1, column: 0 })?,
-            end: src.find_offset(&SourceLocation { line: 2, column: 0 })?,
-        };
+        let span = src.read_span(&SourceSpan {
+            start: 5.into(),
+            end: 9.into(),
+        })?;
         assert_eq!(
             "bar\r\n",
-            std::str::from_utf8(&src.read_span(&span)?).unwrap()
+            std::str::from_utf8(&span).unwrap()
         );
         Ok(())
     }

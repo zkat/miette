@@ -2,63 +2,17 @@
 Basic reporter for Diagnostics. Probably good enough for most use-cases,
 but largely meant to be an example.
 */
-use std::cmp;
 use std::fmt;
 
 use indenter::indented;
 
 use crate::chain::Chain;
-use crate::protocol::{
-    Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity, SourceLocation, SourceSpan,
-};
+use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity};
 
 pub struct Reporter;
 
 impl Reporter {
-    fn render_span(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-        detail: &DiagnosticDetail,
-        span: &SourceSpan,
-    ) -> fmt::Result {
-        // TODO: This literally reads `detail.source` *five times*. There's gotta be a better way???
-        use fmt::Write as _;
-        let src = &detail.source;
-        let start = src.find_location(span.start).expect("Failed to find location");
-        let end = src.find_location(span.end).expect("Failed to find location");
-        let context_start = start.line - cmp::min(start.line, 2);
-        let context_end = end.line + 2;
-        let context_span = SourceSpan::new(
-            span.label.clone(),
-            src.find_offset(&
-            SourceLocation {
-                line: context_start,
-                column: 0,
-            }).expect("Failed to find starting context offset"),
-            src.find_offset(&SourceLocation {
-                line: context_end,
-                column: 0,
-            }).expect("Failed to find ending context offset"),
-        );
-        let window = detail
-            .source
-            .read_span(&context_span)
-            .expect("Failed to read span window");
-        let window = std::str::from_utf8(&window).expect("Failed to convert span window to utf8");
-        for (line_num, line) in (context_start..context_end).zip(window.lines()) {
-            writeln!(indented(f), "{: <2} | {}", line_num + 1, line)?;
-            if line_num == start.line {
-                writeln!(indented(f), "{: <2} | {:width$}^", "", "", width=start.column + 2)?;
-            }
-        }
-        Ok(())
-    }
-
-    fn render_detail(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-        detail: &DiagnosticDetail,
-    ) -> fmt::Result {
+    fn render_detail(&self, f: &mut fmt::Formatter<'_>, detail: &DiagnosticDetail) -> fmt::Result {
         use fmt::Write as _;
         write!(f, "\n[{}]", detail.source_name)?;
         if let Some(msg) = &detail.message {
@@ -66,23 +20,20 @@ impl Reporter {
         }
         writeln!(f)?;
         writeln!(f)?;
-        self.render_span(f, detail, &detail.span)?;
-        if let Some(other_spans) = &detail.other_spans {
-            for span in other_spans {
-                writeln!(indented(f), "----")?;
-                self.render_span(f, detail, span)?;
-            }
+        let span_data = detail
+            .source
+            .read_span(&detail.context)
+            .map_err(|_| fmt::Error)?;
+        let span_text = std::str::from_utf8(&span_data).expect("Bad utf8 detected");
+        for (line_num, line) in span_text.lines().enumerate() {
+            writeln!(indented(f), "{: <2} | {}", line_num + 1, line)?;
         }
         Ok(())
     }
 }
 
 impl DiagnosticReporter for Reporter {
-    fn debug(
-        &self,
-        diagnostic: &(dyn Diagnostic),
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use fmt::Write as _;
 
         if f.alternate() {
@@ -131,11 +82,7 @@ impl DiagnosticReporter for Reporter {
 pub struct JokeReporter;
 
 impl DiagnosticReporter for JokeReporter {
-    fn debug(
-        &self,
-        diagnostic: &(dyn Diagnostic),
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }

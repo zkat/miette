@@ -93,9 +93,11 @@ pub struct DiagnosticDetail {
     /// A [Source] that can be used to read the actual text of a source.
     pub source: Box<dyn Source>,
     /// The primary [SourceSpan] where this diagnostic is located.
-    pub span: SourceSpan,
-    /// Additional [SourceSpan]s that can add secondary context.
-    pub other_spans: Option<Vec<SourceSpan>>,
+    pub context: SourceSpan,
+    /// Additional [SourceSpan]s that mark specific sections of the span, for
+    /// example, to underline specific text within the larger span. They're
+    /// paired with labels that should be applied to those sections.
+    pub highlights: Option<Vec<(String, SourceSpan)>>,
 }
 
 /**
@@ -103,8 +105,6 @@ Span within a [Source] with an associated message.
 */
 #[derive(Clone, Debug)]
 pub struct SourceSpan {
-    /// Identifier for this span.
-    pub label: String,
     /// The start of the span.
     pub start: SourceOffset,
     /// The end of the span.
@@ -112,9 +112,9 @@ pub struct SourceSpan {
 }
 
 impl SourceSpan {
-    pub fn new(label: String, start: SourceOffset, end: SourceOffset) -> Self {
+    pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
         assert!(start.bytes() <= end.bytes(), "Starting offset must come before the end offset.");
-        Self { label, start, end }
+        Self { start, end }
     }
 }
 
@@ -129,14 +129,19 @@ pub struct SourceLocation {
     pub line: usize,
 }
 
+/**
+"Raw" type for the byte offset from the beginning of a [Source].
+*/
 pub type ByteOffset = usize;
 
 /**
+Newtype that represents the [ByteOffset] from the beginning of a [Source]
 */
 #[derive(Clone, Copy, Debug)]
 pub struct SourceOffset(ByteOffset);
 
 impl SourceOffset {
+    /// Actual byte offset.
     pub fn bytes(&self) -> ByteOffset {
         self.0
     }
