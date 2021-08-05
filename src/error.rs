@@ -1,6 +1,6 @@
-pub use std::io;
+use std::io;
 
-pub use thiserror::Error;
+use thiserror::Error;
 
 /**
 Error enum for miette. Used by certain operations in the protocol.
