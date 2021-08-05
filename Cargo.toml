@@ -2,7 +2,7 @@
 name = "miette"
 version = "0.0.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
-description = "you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!"
+description = "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers."
 categories = ["rust-patterns"]
 repository = "https://github.com/zkat/miette"
 documentation = "https://docs.rs/miette"
