@@ -1,5 +1,5 @@
 [clog]
-repository = "https://github.com/zkat/big-brain"
+repository = "https://github.com/zkat/miette"
 subtitle = ""
 changelog = "CHANGELOG.md"
 from-latest-tag = true
