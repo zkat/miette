@@ -12,7 +12,7 @@ use crate::MietteError;
 Adds rich metadata to your Error that can be used by [DiagnosticReporter] to print
 really nice and human-friendly error messages.
 */
-pub trait Diagnostic: std::error::Error + Send + Sync {
+pub trait Diagnostic: std::error::Error {
     /// Unique diagnostic code that can be used to look up more information
     /// about this Diagnostic. Ideally also globally unique, and documented in
     /// the toplevel crate's documentation for easy searching. Rust path
@@ -34,6 +34,14 @@ pub trait Diagnostic: std::error::Error + Send + Sync {
     /// marked-up source file output the way compilers often do.
     fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
         None
+    }
+}
+
+impl std::error::Error for Box<dyn Diagnostic> {}
+
+impl<T: Diagnostic + 'static> From<T> for Box<dyn Diagnostic> {
+    fn from(diag: T) -> Self {
+        Box::new(diag)
     }
 }
 
