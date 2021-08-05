@@ -89,32 +89,59 @@ impl MietteReporter {
         Ok(())
     }
 
-    fn render_snippet(
+    fn render_snippet_header(
         &self,
         f: &mut fmt::Formatter<'_>,
         snippet: &DiagnosticSnippet,
     ) -> fmt::Result {
-        use fmt::Write as _;
         write!(f, "\n[{}]", snippet.source_name)?;
         if let Some(msg) = &snippet.message {
             write!(f, " {}:", msg)?;
         }
         writeln!(f)?;
         writeln!(f)?;
-        let context_data = snippet
+        Ok(())
+    }
+    fn render_snippet(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        snippet: &DiagnosticSnippet,
+    ) -> fmt::Result {
+        use fmt::Write as _;
+
+        self.render_snippet_header(f, snippet)?;
+
+        // The "context" is the code/etc snippet itself, without all the markup.
+        // We have to fetch the data itself from its Source before we do anything else.
+        let context_contents = snippet
             .source
             .read_span(&snippet.context)
             .map_err(|_| fmt::Error)?;
-        let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
-        let mut line = context_data.line();
-        let mut column = context_data.column();
+        let context = std::str::from_utf8(context_contents.data()).expect("Bad utf8 detected");
+
+        // The line where the context stars.
+        let mut line = context_contents.line();
+        // The column in that line where the context starts.
+        let mut column = context_contents.column();
+        // The byte offset of the _beginning_ of the context, vs the entirety of the associated Source.
         let mut offset = snippet.context.start.offset();
-        let mut line_offset = offset;
-        let mut iter = context.chars().peekable();
-        let mut line_str = String::new();
+        // The byte offset of the beginning of the current line.
+        let mut line_start_offset = offset;
+        // "Highlights" are the bits that label certain sections of the snippet context.
         let highlights = snippet.highlights.as_ref();
+        // String buffer for the current line.
+        let mut line_str = String::new();
+
+        // Weird loop format because we need to be able to peek the iterator
+        // (to check if we're about to be done, and for handling CRLF line
+        // endings)
+        let mut iter = context.chars().peekable();
         while let Some(char) = iter.next() {
+            // offsets are byte-based, so...
             offset += char.len_utf8();
+            // This section does two things:
+            // 1. It maintains the line/column/offset counts, including handling CRLF
+            // 2. it shoves characters in the line buffer, minus the line endings.
             match char {
                 '\r' => {
                     if iter.next_if_eq(&'\n').is_some() {
@@ -135,35 +162,49 @@ impl MietteReporter {
                     column += 1;
                 }
             }
-            if iter.peek().is_none() {
+
+            // We have to check for eof and update the line count, in case the
+            // snippet context doesn't end in a new line.
+            let eof = iter.peek().is_none();
+            if eof {
                 line += 1;
             }
 
-            if column == 0 || iter.peek().is_none() {
+            // Ok, we're at a brand new line! Time to render it~
+            if column == 0 || eof {
+                // Write out line number, separator, and actual line contents.
                 writeln!(indented(f), "{: <2} | {}", line, line_str)?;
+                // We don't need the line contents anymore. So truncate it.
                 line_str.clear();
+
+                // Now comes the fun part: rendering highlights!
                 if let Some(highlights) = highlights {
                     for (label, span) in highlights {
-                        if span.start.offset() >= line_offset && span.end.offset() < offset {
+                        if span.start.offset() >= line_start_offset && span.end.offset() < offset {
                             // Highlight only covers one line.
                             write!(indented(f), "{: <2} | ", "⫶")?;
                             write!(
                                 f,
                                 "{}{} ",
-                                " ".repeat(span.start.offset() - line_offset),
+                                " ".repeat(span.start.offset() - line_start_offset),
                                 "^".repeat(span.len())
                             )?;
                             writeln!(f, "{}", label)?;
                         } else if span.start.offset() < offset
-                            && span.start.offset() >= line_offset
+                            && span.start.offset() >= line_start_offset
                             && span.end.offset() >= offset
                         {
+                            // I have no idea how to do this yet?...
+
                             // Multiline highlight.
                             todo!("Multiline highlights.");
                         }
                     }
                 }
-                line_offset = offset;
+
+                // Once we're fully done processing the line, we set the line
+                // offset to the current total offset.
+                line_start_offset = offset;
             }
         }
         Ok(())
@@ -200,7 +241,7 @@ impl DiagnosticReporter for JokeReporter {
             "miette, her eyes enormous: you {} miette? you {}? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!",
             diagnostic.code(),
             diagnostic.snippets().map(|snippets| {
-                snippets.iter().map(|snippet| snippet.message.clone()).collect::<Option<Vec<String>>>()
+                snippets.iter().map(|snippet| snippet.message.as_ref().map(|m| &m[..])).collect::<Option<Vec<&str>>>()
             }).flatten().map(|x| x.join(", ")).unwrap_or_else(||"try and cause miette to panic".into())
         )?;
 
