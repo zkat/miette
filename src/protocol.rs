@@ -12,13 +12,13 @@ use crate::MietteError;
 Adds rich metadata to your Error that can be used by [DiagnosticReporter] to print
 really nice and human-friendly error messages.
 */
-pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
+pub trait Diagnostic: std::error::Error + Send + Sync {
     /// Unique diagnostic code that can be used to look up more information
     /// about this Diagnostic. Ideally also globally unique, and documented in
     /// the toplevel crate's documentation for easy searching. Rust path
     /// format (`foo::bar::baz`) is recommended, but more classic codes like
     /// `E0123` or Enums will work just fine.
-    fn code(&self) -> &(dyn Display + 'static);
+    fn code(&self) -> &(dyn Display);
 
     /// Diagnostic severity. This may be used by [DiagnosticReporter]s to change the
     /// display format of this diagnostic.
@@ -26,7 +26,7 @@ pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
 
     /// Additional help text related to this Diagnostic. Do you have any
     /// advice for the poor soul who's just run into this issue?
-    fn help(&self) -> Option<&[&str]> {
+    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
         None
     }
 
@@ -89,7 +89,7 @@ support Sources which are gigabytes or larger in size.
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
     /// Read the bytes for a specific span from this Source.
     fn read_span<'a>(&'a self, span: &SourceSpan)
-        -> Result<Box<dyn SpanContents<'a> + '_>, MietteError>;
+        -> Result<Box<dyn SpanContents + 'a>, MietteError>;
 }
 
 /**
@@ -97,7 +97,7 @@ Contents of a [Source] covered by [SourceSpan].
 
 Includes line and column information to optimize highlight calculations.
 */
-pub trait SpanContents<'a> {
+pub trait SpanContents {
     /// Reference to the data inside the associated span, in bytes.
     fn data(&self) -> &[u8];
     /// The 0-indexed line in the associated [Source] where the data begins.
@@ -127,7 +127,7 @@ impl<'a> MietteSpanContents<'a> {
     }
 }
 
-impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
+impl<'a> SpanContents for MietteSpanContents<'a> {
     fn data(&self) -> &[u8] {
         self.data
     }

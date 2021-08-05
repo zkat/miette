@@ -162,7 +162,8 @@ impl DiagnosticReporter for JokeReporter {
             diagnostic,
             diagnostic
                 .help()
-                .unwrap_or_else(|| &["have you tried not failing?"])
+                .unwrap_or_else(|| Box::new(vec!["have you tried not failing?"].into_iter()))
+                .collect::<Vec<&str>>()
                 .join(" ")
         )?;
         writeln!(

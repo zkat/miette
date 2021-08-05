@@ -18,7 +18,7 @@ impl fmt::Debug for MyBad {
 }
 
 impl Diagnostic for MyBad {
-    fn code(&self) -> &(dyn std::fmt::Display + 'static) {
+    fn code(&self) -> &(dyn std::fmt::Display) {
         &"oops::my::bad"
     }
 
@@ -26,8 +26,8 @@ impl Diagnostic for MyBad {
         Severity::Error
     }
 
-    fn help(&self) -> Option<&[&str]> {
-        Some(&["try doing it better next time?"])
+    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
+        Some(Box::new(vec!["try doing it better next time?"].into_iter()))
     }
 
     fn snippets(&self) -> Option<&[DiagnosticSnippet]> {

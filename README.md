@@ -74,8 +74,8 @@ impl Diagnostic for MyBad {
         Severity::Error
     }
 
-    fn help(&self) -> Option<&[&str]> {
-        Some(&["try doing it better next time?"])
+    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
+        Some(Box::new(vec!["try doing it better next time?"].into_iter()))
     }
 
     fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
