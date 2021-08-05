@@ -7,7 +7,7 @@ use std::fmt;
 use indenter::indented;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity, SourceSpan};
+use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity};
 
 pub struct Reporter;
 
@@ -24,32 +24,65 @@ impl Reporter {
             .source
             .read_span(&detail.context)
             .map_err(|_| fmt::Error)?;
-        let context= std::str::from_utf8(&context_data).expect("Bad utf8 detected");
-        let mut highlights = Vec::new();
-        if let Some(highs) = &detail.highlights {
-            for (label, SourceSpan { start, end }) in highs {
-                // TODO: should be able to grab all these locations in a single pass, no?
-                let start = detail.source.find_location(*start).map_err(|_| fmt::Error)?;
-                let end = detail.source.find_location(*end).map_err(|_| fmt::Error)?;
-                highlights.push((
-                    label,
-                    (start, end)
-                ));
-            }
-        }
-        for (line_num, line) in context.lines().enumerate() {
-            writeln!(indented(f), "{: <2} | {}", line_num + 1, line)?;
-            for (label, (start, end)) in &highlights {
-                if start.line == line_num {
-                    if start.line == end.line {
-                        write!(indented(f), "{: <2} | ", "⫶")?;
-                        write!(f, "{}{} ", " ".repeat(start.column), "^".repeat(end.column - start.column + 1))?;
-                        write!(f, "{}", label)?;
-                        writeln!(f)?;
+        let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
+        let mut line = context_data.start().line;
+        let mut column = context_data.start().column;
+        let mut offset = detail.context.start.bytes();
+        let mut line_offset = offset;
+        let mut iter = context.chars().peekable();
+        let mut line_str = String::new();
+        let highlights = detail.highlights.as_ref();
+        while let Some(char) = iter.next() {
+            offset += char.len_utf8();
+            match char {
+                '\r' => {
+                    if iter.next_if_eq(&'\n').is_some() {
+                        offset += 1;
+                        line += 1;
+                        column = 0;
                     } else {
-                        todo!()
+                        line_str.push(char);
+                        column += 1;
                     }
                 }
+                '\n' => {
+                    line += 1;
+                    column = 0;
+                }
+                _ => {
+                    line_str.push(char);
+                    column += 1;
+                }
+            }
+            if iter.peek().is_none() {
+                line += 1;
+            }
+
+            if column == 0 || iter.peek().is_none() {
+                writeln!(indented(f), "{: <2} | {}", line, line_str)?;
+                line_str.clear();
+                if let Some(highlights) = highlights {
+                    for (label, span) in highlights {
+                        if span.start.bytes() >= line_offset && span.end.bytes() < offset {
+                            // Highlight only covers one line.
+                            write!(indented(f), "{: <2} | ", "⫶")?;
+                            write!(
+                                f,
+                                "{}{} ",
+                                " ".repeat(span.start.bytes() - line_offset),
+                                "^".repeat(span.len())
+                            )?;
+                            writeln!(f, "{}", label)?;
+                        } else if span.start.bytes() < offset
+                            && span.start.bytes() >= line_offset
+                            && span.end.bytes() >= offset
+                        {
+                            // Multiline highlight.
+                            todo!()
+                        }
+                    }
+                }
+                line_offset = offset;
             }
         }
         Ok(())

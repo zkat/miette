@@ -74,11 +74,7 @@ Represents a readable source of some sort: a source file, a String, etc.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
     /// Read a specific line from this source.
-    fn read_span(&self, span: &SourceSpan) -> Result<Vec<u8>, MietteError>;
-    /// SourceLocation (line/column) for a given offset.
-    fn find_location(&self, offset: SourceOffset) -> Result<SourceLocation, MietteError>;
-    /// Make a SourceOffset based on a given line/column location.
-    fn find_offset(&self, location: &SourceLocation) -> Result<SourceOffset, MietteError>;
+    fn read_span(&self, span: &SourceSpan) -> Result<SpanContents, MietteError>;
 }
 
 /**
@@ -107,7 +103,7 @@ Span within a [Source] with an associated message.
 pub struct SourceSpan {
     /// The start of the span.
     pub start: SourceOffset,
-    /// The end of the span.
+    /// The (exclusive) end of the span.
     pub end: SourceOffset,
 }
 
@@ -115,6 +111,39 @@ impl SourceSpan {
     pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
         assert!(start.bytes() <= end.bytes(), "Starting offset must come before the end offset.");
         Self { start, end }
+    }
+
+    pub fn len(&self) -> usize {
+        self.end.bytes() - self.start.bytes() + 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.start.bytes() == self.end.bytes()
+    }
+}
+
+/**
+Contents of a [Source] covered by [SourceSpan]. Includes line and column information to optimize highlight calculations.
+ */
+ #[derive(Clone, Debug)]
+ pub struct SpanContents {
+    /// Data from a [Source], in bytes.
+     data: Vec<u8>,
+     /// If available, the location where a [SourceSpan] started.
+     start: SourceLocation,
+ }
+
+impl SpanContents {
+    pub fn new(data: Vec<u8>, start: SourceLocation) -> Self {
+        Self { data, start }
+    }
+
+    pub fn data(&self) -> &[u8] {
+        &self.data
+    }
+
+    pub fn start(&self) -> &SourceLocation {
+        &self.start
     }
 }
 
