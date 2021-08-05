@@ -6,7 +6,7 @@ you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail f
 
 Here's an example of using something like `thisdiagnostic` to define Diagnostics declaratively.
 
-```rust
+```ignore
 use thiserror::Error;
 use thisdiagnostic::Diagnostic;
 
@@ -40,24 +40,27 @@ pub enum MyDiagnostic {
     )]
     #[error("Tried to add a {bad_type} to a {good_type}")]
     BadArithmetic {
-        src: PathBuf,
-        other_src: PathBuf,
-
+        // Regular error metadata for programmatic use.
         good_type: Type,
         bad_type: Type,
         bad_var: Var,
 
-        #[span_source(src)]
-        #[label("This is a {bad_type}")]
-        bad_var_span: SourceSpan,
+        // Anything implementing the Source trait can be used as a source.
+        src: PathBuf,
+        other_src: String,
 
-        #[span_source(src)]
-        #[label("This is a {good_type}")]
+        // The context is the span of code that will be rendered.
+        // There can be multiple contexts in a Diagnostic.
+        #[context(src, "This region is where things went wrong.")]
+        ctx: SourceSpan,
+
+        // Highlights underline and label specific subsections of the context.
+        #[highlight(ctx, "This is a {bad_type}")]
+        bad_var_span: SourceSpan, // These can span multiple lines!
+
+        // They can be optional!
+        #[highlight(ctx, "This is a {good_type}")]
         good_var_span: Option<SourceSpan>,
-
-        #[span(other_src)]
-        #[label("{bad_var} is defined here")]
-        bad_var_definition_span: SourceSpan, // multiline span
     },
 
     #[error(transparent)]

@@ -1,5 +1,12 @@
+/*!
+This module defines the core of the miette protocol: a series of types and traits
+that you can implement to get access to miette's (and related library's) full
+reporting and such features.
+*/
+
 use std::fmt::Display;
-use std::io::{self, Read};
+
+use crate::MietteError;
 
 /**
 Adds rich metadata to your Error that can be used by [DiagnosticReporter] to print
@@ -13,7 +20,7 @@ pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
     /// `E0123` or Enums will work just fine.
     fn code(&self) -> &(dyn Display + 'static);
 
-    /// Diagnostic severity. This may be used by [Reporter]s to change the
+    /// Diagnostic severity. This may be used by [DiagnosticReporter]s to change the
     /// display format of this diagnostic.
     fn severity(&self) -> Severity;
 
@@ -23,9 +30,9 @@ pub trait Diagnostic: std::error::Error + Send + Sync + 'static {
         None
     }
 
-    /// Additional contextual details. This is typically used for adding
+    /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
-    fn details(&self) -> Option<&[DiagnosticDetail]> {
+    fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
         None
     }
 }
@@ -69,52 +76,137 @@ pub enum Severity {
 }
 
 /**
-Represents a readable source of some sort: a source file, a String, etc.
+Represents a readable source of some sort.
+
+This trait is able to support simple Source types like [String]s, as well
+as more involved types like indexes into centralized `SourceMap`-like types,
+file handles, and even network streams.
+
+If you can read it, you can source it,
+and it's not necessary to read the whole thing--meaning you should be able to
+support Sources which are gigabytes or larger in size.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
-    /// Get a `Read`er from a given [Source].
-    fn open(&self) -> io::Result<Box<dyn Read>>;
+    /// Read the bytes for a specific span from this Source.
+    fn read_span<'a>(&'a self, span: &SourceSpan)
+        -> Result<Box<dyn SpanContents<'a> + '_>, MietteError>;
 }
 
 /**
-Details and additional context to be displayed.
+Contents of a [Source] covered by [SourceSpan].
+
+Includes line and column information to optimize highlight calculations.
+*/
+pub trait SpanContents<'a> {
+    /// Reference to the data inside the associated span, in bytes.
+    fn data(&self) -> &[u8];
+    /// The 0-indexed line in the associated [Source] where the data begins.
+    fn line(&self) -> usize;
+    /// The 0-indexed column in the associated [Source] where the data begins,
+    /// relative to `line`.
+    fn column(&self) -> usize;
+}
+
+/**
+Basic implementation of the [SpanContents] trait, for convenience.
+*/
+#[derive(Clone, Debug)]
+pub struct MietteSpanContents<'a> {
+    /// Data from a [Source], in bytes.
+    data: &'a [u8],
+    // The 0-indexed line where the associated [SourceSpan] _starts_.
+    line: usize,
+    // The 0-indexed column where the associated [SourceSpan] _starts_.
+    column: usize,
+}
+
+impl<'a> MietteSpanContents<'a> {
+    /// Make a new [MietteSpanContents] object.
+    pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
+        MietteSpanContents { data, line, column }
+    }
+}
+
+impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
+    fn data(&self) -> &[u8] {
+        self.data
+    }
+    fn line(&self) -> usize {
+        self.line
+    }
+    fn column(&self) -> usize {
+        self.column
+    }
+}
+
+/**
+A snippet from a [Source] to be displayed with a message and possibly some highlights.
  */
 #[derive(Debug)]
-pub struct DiagnosticDetail {
-    /// Explanation of this specific diagnostic detail.
+pub struct DiagnosticSnippet {
+    /// Explanation of this specific diagnostic snippet.
     pub message: Option<String>,
-    /// The "filename" for this diagnostic.
+    /// The "filename" for this snippet.
     pub source_name: String,
     /// A [Source] that can be used to read the actual text of a source.
     pub source: Box<dyn Source>,
     /// The primary [SourceSpan] where this diagnostic is located.
-    pub span: SourceSpan,
-    /// Additional [SourceSpan]s that can add secondary context.
-    pub other_spans: Option<Vec<SourceSpan>>,
+    pub context: SourceSpan,
+    /// Additional [SourceSpan]s that mark specific sections of the span, for
+    /// example, to underline specific text within the larger span. They're
+    /// paired with labels that should be applied to those sections.
+    pub highlights: Option<Vec<(String, SourceSpan)>>,
 }
 
 /**
 Span within a [Source] with an associated message.
 */
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct SourceSpan {
-    /// A name for the thing this SourceSpan is actually pointing to.
-    pub label: String,
     /// The start of the span.
-    pub start: SourceLocation,
-    /// The end of the span. Optional
-    pub end: Option<SourceLocation>,
+    pub start: SourceOffset,
+    /// The (exclusive) end of the span.
+    pub end: SourceOffset,
+}
+
+impl SourceSpan {
+    pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
+        assert!(
+            start.offset() <= end.offset(),
+            "Starting offset must come before the end offset."
+        );
+        Self { start, end }
+    }
+
+    pub fn len(&self) -> usize {
+        self.end.offset() - self.start.offset() + 1
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.start.offset() == self.end.offset()
+    }
 }
 
 /**
-Specific location in a [SourceSpan]
+"Raw" type for the byte offset from the beginning of a [Source].
 */
-#[derive(Debug)]
-pub struct SourceLocation {
-    /// 0-indexed column of location.
-    pub column: usize,
-    /// 0-indexed line of location.
-    pub line: usize,
-    /// 0-indexed _character_ offset of location.
-    pub offset: usize,
+pub type ByteOffset = usize;
+
+/**
+Newtype that represents the [ByteOffset] from the beginning of a [Source]
+*/
+#[derive(Clone, Copy, Debug)]
+pub struct SourceOffset(ByteOffset);
+
+impl SourceOffset {
+    /// Actual byte offset.
+    pub fn offset(&self) -> ByteOffset {
+        self.0
+    }
+}
+
+impl From<ByteOffset> for SourceOffset {
+    fn from(bytes: ByteOffset) -> Self {
+        SourceOffset(bytes)
+    }
 }
