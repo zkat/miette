@@ -9,9 +9,14 @@ use indenter::indented;
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticDetail, DiagnosticReporter, Severity};
 
-pub struct Reporter;
+/**
+Reference implementation of the [DiagnosticReporter] trait. This is generally
+good enough for simple use-cases, but you might want to implement your own if
+you want custom reporting for your tool or app.
+*/
+pub struct MietteReporter;
 
-impl Reporter {
+impl MietteReporter {
     fn render_detail(&self, f: &mut fmt::Formatter<'_>, detail: &DiagnosticDetail) -> fmt::Result {
         use fmt::Write as _;
         write!(f, "\n[{}]", detail.source_name)?;
@@ -89,7 +94,7 @@ impl Reporter {
     }
 }
 
-impl DiagnosticReporter for Reporter {
+impl DiagnosticReporter for MietteReporter {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use fmt::Write as _;
 
@@ -136,6 +141,7 @@ impl DiagnosticReporter for Reporter {
     }
 }
 
+/// Literally what it says on the tin.
 pub struct JokeReporter;
 
 impl DiagnosticReporter for JokeReporter {

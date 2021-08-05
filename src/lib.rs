@@ -1,6 +1,5 @@
 #![doc = include_str!("../README.md")]
 
-pub use chain::*;
 pub use error::*;
 pub use protocol::*;
 pub use reporter::*;

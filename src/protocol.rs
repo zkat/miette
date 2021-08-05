@@ -1,3 +1,9 @@
+/*!
+This module defines the core of the miette protocol: a series of types and traits
+that you can implement to get access to miette's (and related library's) full
+reporting and such features.
+*/
+
 use std::fmt::Display;
 
 use crate::MietteError;
@@ -70,10 +76,18 @@ pub enum Severity {
 }
 
 /**
-Represents a readable source of some sort: a source file, a String, etc.
+Represents a readable source of some sort.
+
+This trait is able to support simple Source types like [String]s, as well
+as more involved types like indexes into centralized `SourceMap`-like types,
+file handles, and even network streams.
+
+If you can read it, you can source it,
+and it's not necessary to read the whole thing--meaning you should be able to
+support Sources which are gigabytes or larger in size.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
-    /// Read a specific line from this source.
+    /// Read the bytes for a specific span from this Source.
     fn read_span<'a>(&'a self, span: &SourceSpan)
         -> Result<Box<dyn SpanContents<'a> + '_>, MietteError>;
 }
@@ -84,11 +98,18 @@ Contents of a [Source] covered by [SourceSpan].
 Includes line and column information to optimize highlight calculations.
 */
 pub trait SpanContents<'a> {
+    /// Reference to the data inside the associated span, in bytes.
     fn data(&self) -> &[u8];
+    /// The 0-indexed line in the associated [Source] where the data begins.
     fn line(&self) -> usize;
+    /// The 0-indexed column in the associated [Source] where the data begins,
+    /// relative to `line`.
     fn column(&self) -> usize;
 }
 
+/**
+Basic implementation of the [SpanContents] trait, for convenience.
+*/
 #[derive(Clone, Debug)]
 pub struct MietteSpanContents<'a> {
     /// Data from a [Source], in bytes.
@@ -100,6 +121,7 @@ pub struct MietteSpanContents<'a> {
 }
 
 impl<'a> MietteSpanContents<'a> {
+    /// Make a new [MietteSpanContents] object.
     pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
         MietteSpanContents { data, line, column }
     }

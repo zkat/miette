@@ -1,7 +1,7 @@
 use std::fmt;
 
 use miette::{
-    Diagnostic, DiagnosticDetail, DiagnosticReporter, MietteError, Reporter, Severity, SourceSpan,
+    Diagnostic, DiagnosticDetail, DiagnosticReporter, MietteError, MietteReporter, Severity, SourceSpan,
 };
 use thiserror::Error;
 
@@ -13,7 +13,7 @@ struct MyBad {
 
 impl fmt::Debug for MyBad {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        Reporter.debug(self, f)
+        MietteReporter.debug(self, f)
     }
 }
 
