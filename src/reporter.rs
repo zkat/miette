@@ -27,7 +27,7 @@ impl Reporter {
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
-        let mut offset = detail.context.start.bytes();
+        let mut offset = detail.context.start.offset();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
         let mut line_str = String::new();
@@ -63,19 +63,19 @@ impl Reporter {
                 line_str.clear();
                 if let Some(highlights) = highlights {
                     for (label, span) in highlights {
-                        if span.start.bytes() >= line_offset && span.end.bytes() < offset {
+                        if span.start.offset() >= line_offset && span.end.offset() < offset {
                             // Highlight only covers one line.
                             write!(indented(f), "{: <2} | ", "⫶")?;
                             write!(
                                 f,
                                 "{}{} ",
-                                " ".repeat(span.start.bytes() - line_offset),
+                                " ".repeat(span.start.offset() - line_offset),
                                 "^".repeat(span.len())
                             )?;
                             writeln!(f, "{}", label)?;
-                        } else if span.start.bytes() < offset
-                            && span.start.bytes() >= line_offset
-                            && span.end.bytes() >= offset
+                        } else if span.start.offset() < offset
+                            && span.start.offset() >= line_offset
+                            && span.end.offset() >= offset
                         {
                             // Multiline highlight.
                             todo!("Multiline highlights.");

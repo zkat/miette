@@ -10,7 +10,7 @@ impl Source for String {
         let mut start_column = 0usize;
         let mut iter = self.chars().peekable();
         while let Some(char) = iter.next() {
-            if offset < span.start.bytes() {
+            if offset < span.start.offset() {
                 match char {
                     '\r' => {
                         if iter.next_if_eq(&'\n').is_some() {
@@ -29,9 +29,9 @@ impl Source for String {
                 }
             }
 
-            if offset >= span.end.bytes() {
+            if offset >= span.end.offset() {
                 return Ok(Box::new(MietteSpanContents::new(
-                    &self.as_bytes()[span.start.bytes()..=span.end.bytes()],
+                    &self.as_bytes()[span.start.offset()..=span.end.offset()],
                     start_line,
                     start_column,
                 )));

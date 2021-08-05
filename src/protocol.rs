@@ -150,18 +150,18 @@ pub struct SourceSpan {
 impl SourceSpan {
     pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
         assert!(
-            start.bytes() <= end.bytes(),
+            start.offset() <= end.offset(),
             "Starting offset must come before the end offset."
         );
         Self { start, end }
     }
 
     pub fn len(&self) -> usize {
-        self.end.bytes() - self.start.bytes() + 1
+        self.end.offset() - self.start.offset() + 1
     }
 
     pub fn is_empty(&self) -> bool {
-        self.start.bytes() == self.end.bytes()
+        self.start.offset() == self.end.offset()
     }
 }
 
@@ -178,7 +178,7 @@ pub struct SourceOffset(ByteOffset);
 
 impl SourceOffset {
     /// Actual byte offset.
-    pub fn bytes(&self) -> ByteOffset {
+    pub fn offset(&self) -> ByteOffset {
         self.0
     }
 }
