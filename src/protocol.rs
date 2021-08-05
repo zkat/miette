@@ -74,7 +74,47 @@ Represents a readable source of some sort: a source file, a String, etc.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
     /// Read a specific line from this source.
-    fn read_span(&self, span: &SourceSpan) -> Result<SpanContents, MietteError>;
+    fn read_span<'a>(&'a self, span: &SourceSpan)
+        -> Result<Box<dyn SpanContents<'a> + '_>, MietteError>;
+}
+
+/**
+Contents of a [Source] covered by [SourceSpan].
+
+Includes line and column information to optimize highlight calculations.
+*/
+pub trait SpanContents<'a> {
+    fn data(&self) -> &[u8];
+    fn line(&self) -> usize;
+    fn column(&self) -> usize;
+}
+
+#[derive(Clone, Debug)]
+pub struct MietteSpanContents<'a> {
+    /// Data from a [Source], in bytes.
+    data: &'a [u8],
+    // The 0-indexed line where the associated [SourceSpan] _starts_.
+    line: usize,
+    // The 0-indexed column where the associated [SourceSpan] _starts_.
+    column: usize,
+}
+
+impl<'a> MietteSpanContents<'a> {
+    pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
+        MietteSpanContents { data, line, column }
+    }
+}
+
+impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
+    fn data(&self) -> &[u8] {
+        self.data
+    }
+    fn line(&self) -> usize {
+        self.line
+    }
+    fn column(&self) -> usize {
+        self.column
+    }
 }
 
 /**
@@ -109,7 +149,10 @@ pub struct SourceSpan {
 
 impl SourceSpan {
     pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
-        assert!(start.bytes() <= end.bytes(), "Starting offset must come before the end offset.");
+        assert!(
+            start.bytes() <= end.bytes(),
+            "Starting offset must come before the end offset."
+        );
         Self { start, end }
     }
 
@@ -120,42 +163,6 @@ impl SourceSpan {
     pub fn is_empty(&self) -> bool {
         self.start.bytes() == self.end.bytes()
     }
-}
-
-/**
-Contents of a [Source] covered by [SourceSpan]. Includes line and column information to optimize highlight calculations.
- */
- #[derive(Clone, Debug)]
- pub struct SpanContents {
-    /// Data from a [Source], in bytes.
-     data: Vec<u8>,
-     /// If available, the location where a [SourceSpan] started.
-     start: SourceLocation,
- }
-
-impl SpanContents {
-    pub fn new(data: Vec<u8>, start: SourceLocation) -> Self {
-        Self { data, start }
-    }
-
-    pub fn data(&self) -> &[u8] {
-        &self.data
-    }
-
-    pub fn start(&self) -> &SourceLocation {
-        &self.start
-    }
-}
-
-/**
-Convenience type for representing an offset in terms of lines and columns
-*/
-#[derive(Clone, Debug)]
-pub struct SourceLocation {
-    /// 0-indexed column of location.
-    pub column: usize,
-    /// 0-indexed line of location.
-    pub line: usize,
 }
 
 /**

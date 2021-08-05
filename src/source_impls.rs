@@ -1,22 +1,14 @@
 /*!
 Default trait implementations for [Source].
 */
-use std::fs::File;
-use std::io::BufReader;
-use std::path::PathBuf;
-
-use utf8_chars::BufReadCharsExt;
-
-use crate::{MietteError, Source, SourceLocation, SourceSpan, SpanContents};
+use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
 
 impl Source for String {
-    fn read_span(&self, span: &SourceSpan) -> Result<SpanContents, MietteError> {
+    fn read_span(&self, span: &SourceSpan) -> Result<Box<dyn SpanContents + '_>, MietteError> {
         let mut offset = 0usize;
         let mut start_line = 0usize;
         let mut start_column = 0usize;
         let mut iter = self.chars().peekable();
-        let mut data = Vec::new();
-        let mut charbuf = [0; 4];
         while let Some(char) = iter.next() {
             if offset < span.start.bytes() {
                 match char {
@@ -35,72 +27,14 @@ impl Source for String {
                         start_column += 1;
                     }
                 }
-            } else {
-                let len = char.encode_utf8(&mut charbuf).len();
-                for byte in &charbuf[0..len] {
-                    data.push(*byte);
-                }
             }
 
             if offset >= span.end.bytes() {
-                return Ok(SpanContents::new(
-                    data,
-                    SourceLocation {
-                        line: start_line,
-                        column: start_column,
-                    },
-                ));
-            }
-
-            offset += char.len_utf8();
-        }
-        Err(MietteError::OutOfBounds)
-    }
-}
-
-impl Source for PathBuf {
-    fn read_span(&self, span: &SourceSpan) -> Result<SpanContents, MietteError> {
-        let mut buf = BufReader::new(File::open(&self)?);
-        let mut offset = 0usize;
-        let mut start_line = 0usize;
-        let mut start_column = 0usize;
-        let mut iter = buf.chars().peekable();
-        let mut data = Vec::new();
-        let mut charbuf = [0; 4];
-        while let Some(char) = iter.next() {
-            let char = char?;
-            if offset < span.start.bytes() {
-                match char {
-                    '\r' => {
-                        if iter.next_if(|c| matches!(c, Ok('\n'))).is_some() {
-                            offset += 1;
-                        }
-                        start_line += 1;
-                        start_column = 0;
-                    }
-                    '\n' => {
-                        start_line += 1;
-                        start_column = 0;
-                    }
-                    _ => {
-                        start_column += 1;
-                    }
-                }
-            } else {
-                let len = char.encode_utf8(&mut charbuf).len();
-                for byte in &charbuf[0..len] {
-                    data.push(*byte);
-                }
-            }
-
-            if offset >= span.end.bytes() {
-                return Ok(SpanContents::new(
-                    data,
-                    SourceLocation {
-                        line: start_line,
-                        column: start_column,
-                    },
-                ));
+                return Ok(Box::new(MietteSpanContents::new(
+                    &self.as_bytes()[span.start.bytes()..=span.end.bytes()],
+                    start_line,
+                    start_column,
+                )));
             }
 
             offset += char.len_utf8();

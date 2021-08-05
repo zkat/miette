@@ -13,7 +13,6 @@ edition = "2018"
 [dependencies]
 indenter = "0.3.3"
 thiserror = "1.0.26"
-utf8-chars = "1.0.2"
 
 [dev-dependencies]
 thiserror = "1.0.26"

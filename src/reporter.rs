@@ -25,8 +25,8 @@ impl Reporter {
             .read_span(&detail.context)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
-        let mut line = context_data.start().line;
-        let mut column = context_data.start().column;
+        let mut line = context_data.line();
+        let mut column = context_data.column();
         let mut offset = detail.context.start.bytes();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
