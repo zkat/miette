@@ -8,7 +8,7 @@ use thiserror::Error;
 #[derive(Error)]
 #[error("oops!")]
 struct MyBad {
-    details: Vec<DiagnosticSnippet>,
+    snippets: Vec<DiagnosticSnippet>,
 }
 
 impl fmt::Debug for MyBad {
@@ -31,14 +31,14 @@ impl Diagnostic for MyBad {
     }
 
     fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
-        Some(&self.details)
+        Some(&self.snippets)
     }
 }
 
 #[test]
 fn basic() -> Result<(), MietteError> {
     let err = MyBad {
-        details: Vec::new(),
+        snippets: Vec::new(),
     };
     let out = format!("{:?}", err);
     assert_eq!(
@@ -52,7 +52,7 @@ fn basic() -> Result<(), MietteError> {
 fn fancy() -> Result<(), MietteError> {
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        details: vec![DiagnosticSnippet {
+        snippets: vec![DiagnosticSnippet {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
             source: Box::new(src.clone()),

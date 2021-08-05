@@ -1,73 +1,166 @@
-you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!
+# miette
+
+you FAIL miette? you fail her compiler like the unsafe C program? oh! oh! jail
+for mother! jail for mother for One Thousand Years!!!!
 
 (I'm sorry, I'll come up with a better pun later.)
 
-## Examples
+## About
 
-Here's an example of using something like `thisdiagnostic` to define Diagnostics declaratively.
+`miette` is a diagnostic definition library for Rust. It includes a series of
+protocols that allow you to hook into its error reporting facilities, and even
+write your own error reports! It lets you define error types that can print out
+like this (or in any format you like!):
 
-```ignore
+```sh
+Error: Error[oops::my::bad]: oops it broke!
+
+[bad_file.rs] This is the part that broke:
+
+    1  | source
+    2  |   text
+    ⫶  |   ^^^^ this bit here
+    3  |     here
+
+﹦try doing it better next time?
+```
+
+The [Diagnostic] trait in `miette` is an extension of `std::error::Error` that
+adds various facilities like [Severity], error codes that could be looked up
+by users, and snippet display with support for multiline reports, arbitrary
+[Source]s, and pretty printing.
+
+While the `miette` crate bundles some baseline implementations for [Source]
+and [DiagnosticReporter], it's intended to define a protocol that other crates
+can build on top of to provide rich error reporting, and encourage an
+ecosystem that leans on this extra metadata to provide it for others in a way
+that's compatible with [std::error::Error]
+
+## Installing
+
+Using [`cargo-edit`](https://crates.io/crates/cargo-edit):
+
+```sh
+$ cargo add miette
+```
+
+## Example and Guide
+
+```rust
+/*
+First, you implement a regular `std::error::Error` type.
+
+`thiserror` is a great way to do so, and plays extremely nicely with `miette`!
+*/
+
 use thiserror::Error;
-use thisdiagnostic::Diagnostic;
 
-#[derive(Error, Diagnostic)]
-pub enum MyDiagnostic {
-    /// Generally happens because you did some specific thing wrong. The
-    /// reason is actually something like <...>
-    #[diagnostic(
-        code = fatal::error, // Translates to `mycrate::fatal::error` and creates
-                             // a crate-wide alias so you can just search for that
-                             // exact full string in rustdoc.
-        help = "Please consider doing things differently next time.",
-        backtrace = true, // Enable showing a backtrace when this is printed.
-    )]
-    #[error("Oopsie poopsie it all exploded.")]
-    FatalError,
+#[derive(Error)]
+#[error("oops it broke!")]
+struct MyBad {
+    snippets: Vec<DiagnosticSnippet>,
+}
 
-    /// This one usually resolves on its own, don't worry about it.
-    #[diagnostic(
-        code = nice::warning,
-        help = "This is mostly to help you!",
-        severity = warning
-    )]
-    #[error("This might break in the future.")]
-    NiceWarning,
+/*
+Next, we have to implement the `Diagnostic` trait for it:
+*/
 
-    /// This diagnostic includes code spans!
-    #[diagnostic(
-        code = math::bad_arithmetic,
-        help = "Convert {bad_var} into a {good_type} and try again."
-    )]
-    #[error("Tried to add a {bad_type} to a {good_type}")]
-    BadArithmetic {
-        // Regular error metadata for programmatic use.
-        good_type: Type,
-        bad_type: Type,
-        bad_var: Var,
+use miette::{Diagnostic, Severity, DiagnosticSnippet};
 
-        // Anything implementing the Source trait can be used as a source.
-        src: PathBuf,
-        other_src: String,
+impl Diagnostic for MyBad {
+    fn code(&self) -> &(dyn std::fmt::Display + 'static) {
+        &"oops::my::bad"
+    }
 
-        // The context is the span of code that will be rendered.
-        // There can be multiple contexts in a Diagnostic.
-        #[context(src, "This region is where things went wrong.")]
-        ctx: SourceSpan,
+    fn severity(&self) -> Severity {
+        Severity::Error
+    }
 
-        // Highlights underline and label specific subsections of the context.
-        #[highlight(ctx, "This is a {bad_type}")]
-        bad_var_span: SourceSpan, // These can span multiple lines!
+    fn help(&self) -> Option<&[&str]> {
+        Some(&["try doing it better next time?"])
+    }
 
-        // They can be optional!
-        #[highlight(ctx, "This is a {good_type}")]
-        good_var_span: Option<SourceSpan>,
-    },
+    fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
+        Some(&self.snippets)
+    }
+}
 
-    #[error(transparent)]
-    #[diagnostic(transparent)]
-    // renders as "some_library::<code_subpath>". No docs needed.
-    // You must re-export `SomeLibraryError` from your crate if you want
-    // users to be able to find its error codes on your own rustdoc search box.
-    SomeLibraryError(#[from] some_library::SomeLibraryError)
+/*
+Then, we implement `std::fmt::Debug` using the included `MietteReporter`,
+which is able to pretty print diagnostics reasonably well.
+
+You can use any reporter you want here, or no reporter at all,
+but `Debug` is required by `std::error::Error`, so you need to at
+least derive it.
+
+Make sure you pull in the `miette::DiagnosticReporter` trait!.
+*/
+use std::fmt;
+
+use miette::{DiagnosticReporter, MietteReporter};
+
+impl fmt::Debug for MyBad {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        MietteReporter.debug(self, f)
+    }
+}
+
+/*
+Now we can use `miette`~
+*/
+use miette::{MietteError, SourceSpan};
+
+fn make_my_error() -> MyBad {
+    // You can use plain strings as a `Source`, bu the protocol is fully extensible!
+    let src = "source\n  text\n    here".to_string();
+
+    // The Rust runtime will use `{:?}` (Debug) to print any error you return
+    // from `main`!
+    MyBad {
+        // Snippets are **fully optional**, but in some use cases can provide
+        // additional contextual detail for users!
+        //
+        // This is all you need to write to get `rustc`-style, rich error reports!
+        //
+        // See the docs for `DiagnosticSnippet` to learn more about how to
+        // construct these objects!
+        snippets: vec![DiagnosticSnippet {
+            message: Some("This is the part that broke".into()),
+            source_name: "bad_file.rs".into(),
+            source: Box::new(src.clone()),
+            context: SourceSpan {
+                start: 0.into(),
+                end: (src.len() - 1).into(),
+            },
+            highlights: Some(vec![
+                ("this bit here".into(), SourceSpan {
+                    start: 9.into(),
+                    end: 12.into(),
+                })
+            ]),
+        }],
+    }
 }
 ```
+
+And this is the output you'll get if you run this program:
+
+```sh
+Error: Error[oops::my::bad]: oops it broke!
+
+[bad_file.rs] This is the part that broke:
+
+    1  | source
+    2  |   text
+    ⫶  |   ^^^^ this bit here
+    3  |     here
+
+﹦try doing it better next time?
+```
+
+## License
+
+`miette` is released to the Rust community under the [MIT license](./LICENSE).
+
+It also includes some code taken from [`eyre`](https://github.com/yaahc/eyre),
+also [under the MIT license](https://github.com/yaahc/eyre#license).
