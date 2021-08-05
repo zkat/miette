@@ -78,7 +78,7 @@ impl Reporter {
                             && span.end.bytes() >= offset
                         {
                             // Multiline highlight.
-                            todo!()
+                            todo!("Multiline highlights.");
                         }
                     }
                 }
