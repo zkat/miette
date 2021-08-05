@@ -1,3 +1,12 @@
+<a name=""></a>
+##  0.2.1 (2021-08-05)
+
+I think this is the right thing to do re: From!
+
+#### Bug Fixes
+
+* **protocol:**  fix the default From<:T Diagnostic> implementation to cover more cases. ([781a51f0](https://github.com/zkat/miette/commit/781a51f03765c7351a95b34e8391f6a0cf5fc37c))
+
 <a name="0.2.0"></a>
 ## 0.2.0 (2021-08-05)
 
