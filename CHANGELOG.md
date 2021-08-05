@@ -1,3 +1,19 @@
+<a name="0.2.0"></a>
+## 0.2.0 (2021-08-05)
+
+Starting to get some good feedback on the protocol and APIs, so some improvements were made.
+
+#### Breaking changes
+
+You might need to add `+ Send + Sync + 'static` to your `Box<dyn Diagnostic>`
+usages now, since `Diagnostic` no longer constrains on any of them.
+
+Additionally, `Diagnostic::help()`, `Diagnostic::code()`, and `SpanContents`
+have had signature changes that you'll need to adapt to.
+
+* **protocol:**  protocol improvements after getting feedback ([e955321c](https://github.com/zkat/miette/commit/e955321cbd67372dfebb71a829ddb89baf9b169a))
+* **protocol:**  Make use of ? and return types with Diagnostics more ergonomic ([50238d75](https://github.com/zkat/miette/commit/50238d75a2db2dccbe2ae2cba78d0dd6eac4ef2a))
+
 <a name="0.1.0"></a>
 ## 0.1.0 (2021-08-05)
 
