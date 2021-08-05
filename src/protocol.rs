@@ -39,9 +39,21 @@ pub trait Diagnostic: std::error::Error {
 
 impl std::error::Error for Box<dyn Diagnostic> {}
 
-impl<T: Diagnostic + 'static> From<T> for Box<dyn Diagnostic> {
+impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + Send + Sync + 'static> {
     fn from(diag: T) -> Self {
         Box::new(diag)
+    }
+}
+
+impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + Send + 'static> {
+    fn from(diag: T) -> Self {
+        Box::<dyn Diagnostic + Send + Sync>::from(diag)
+    }
+}
+
+impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + 'static> {
+    fn from(diag: T) -> Self {
+        Box::<dyn Diagnostic + Send + Sync>::from(diag)
     }
 }
 
