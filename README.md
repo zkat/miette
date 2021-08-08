@@ -10,7 +10,7 @@ protocols that allow you to hook into its error reporting facilities, and even
 write your own error reports! It lets you define error types that can print out
 like this (or in any format you like!):
 
-```sh
+```console
 Error: Error[oops::my::bad]: oops it broke!
 
 [bad_file.rs] This is the part that broke:
@@ -70,16 +70,12 @@ impl Diagnostic for MyBad {
         &"oops::my::bad"
     }
 
-    fn severity(&self) -> Severity {
-        Severity::Error
+    fn help(&self) -> Option<&(dyn std::fmt::Display)> {
+        Some(&"try doing it better next time?")
     }
 
-    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
-        Some(Box::new(vec!["try doing it better next time?"].into_iter()))
-    }
-
-    fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
-        Some(&self.snippets)
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
+        Some(Box::new(self.snippets.clone().into_iter()))
     }
 }
 
@@ -106,11 +102,13 @@ impl fmt::Debug for MyBad {
 /*
 Now we can use `miette`~
 */
+use std::sync::Arc;
 use miette::{MietteError, SourceSpan};
 
 fn make_my_error() -> MyBad {
     // You can use plain strings as a `Source`, bu the protocol is fully extensible!
     let src = "source\n  text\n    here".to_string();
+    let len = src.len();
 
     // The Rust runtime will use `{:?}` (Debug) to print any error you return
     // from `main`!
@@ -125,10 +123,10 @@ fn make_my_error() -> MyBad {
         snippets: vec![DiagnosticSnippet {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
-            source: Box::new(src.clone()),
+            source: Arc::new(src),
             context: SourceSpan {
                 start: 0.into(),
-                end: (src.len() - 1).into(),
+                end: (len - 1).into(),
             },
             highlights: Some(vec![
                 ("this bit here".into(), SourceSpan {

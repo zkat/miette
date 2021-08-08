@@ -39,7 +39,7 @@ fn basic() -> Result<(), MietteError> {
     };
     let out = format!("{:?}", err);
     assert_eq!(
-        "Error[oops::my::bad]: oops!\n\n﹦try doing it better next time?\n".to_string(),
+        "Error[oops::my::bad]: oops!\n﹦try doing it better next time?\n".to_string(),
         out
     );
     Ok(())
@@ -69,6 +69,6 @@ fn fancy() -> Result<(), MietteError> {
     };
     let out = format!("{:?}", err);
     // println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n    ⫶  |   ^^^^ this bit here\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n    ⫶  |   ^^^^ this bit here\n    3  |     here\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
