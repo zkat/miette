@@ -103,9 +103,9 @@ impl DiagnosticReporter for MietteReporter {
         }
 
         let sev = match diagnostic.severity() {
-            Severity::Error => "Error",
-            Severity::Warning => "Warning",
-            Severity::Advice => "Advice",
+            Some(Severity::Error) | None => "Error",
+            Some(Severity::Warning) => "Warning",
+            Some(Severity::Advice) => "Advice",
         };
         write!(f, "{}[{}]: {}", sev, diagnostic.code(), diagnostic)?;
 
@@ -151,9 +151,9 @@ impl DiagnosticReporter for JokeReporter {
         }
 
         let sev = match diagnostic.severity() {
-            Severity::Error => "error",
-            Severity::Warning => "warning",
-            Severity::Advice => "advice",
+            Some(Severity::Error) | None => "error",
+            Some(Severity::Warning) => "warning",
+            Some(Severity::Advice) => "advice",
         };
         writeln!(
             f,

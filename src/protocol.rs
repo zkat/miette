@@ -22,7 +22,11 @@ pub trait Diagnostic: std::error::Error {
 
     /// Diagnostic severity. This may be used by [DiagnosticReporter]s to change the
     /// display format of this diagnostic.
-    fn severity(&self) -> Severity;
+    ///
+    /// If `None`, reporters should treat this as [Severity::Error]
+    fn severity(&self) -> Option<Severity> {
+        None
+    }
 
     /// Additional help text related to this Diagnostic. Do you have any
     /// advice for the poor soul who's just run into this issue?

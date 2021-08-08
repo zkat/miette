@@ -1,7 +1,8 @@
-use std::fmt;
+use std::{fmt, sync::Arc};
 
 use miette::{
-    Diagnostic, DiagnosticSnippet, DiagnosticReporter, MietteError, MietteReporter, Severity, SourceSpan,
+    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter,
+    SourceSpan,
 };
 use thiserror::Error;
 
@@ -22,8 +23,6 @@ impl Diagnostic for MyBad {
         &"oops::my::bad"
     }
 
-    fn severity(&self) -> Severity {
-        Severity::Error
     }
 
     fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
