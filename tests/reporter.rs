@@ -23,10 +23,8 @@ impl Diagnostic for MyBad {
         &"oops::my::bad"
     }
 
-    }
-
-    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
-        Some(Box::new(vec!["try doing it better next time?"].into_iter()))
+    fn help(&self) -> Option<&(dyn std::fmt::Display)> {
+        Some(&"try doing it better next time?")
     }
 
     fn snippets(&self) -> Option<&[DiagnosticSnippet]> {

@@ -30,7 +30,7 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional help text related to this Diagnostic. Do you have any
     /// advice for the poor soul who's just run into this issue?
-    fn help(&self) -> Option<Box<dyn '_ + Iterator<Item = &'_ str>>> {
+    fn help(&self) -> Option<&(dyn Display)> {
         None
     }
 

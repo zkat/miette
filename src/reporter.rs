@@ -131,10 +131,7 @@ impl DiagnosticReporter for MietteReporter {
         }
 
         if let Some(help) = diagnostic.help() {
-            writeln!(f)?;
-            for msg in help {
-                writeln!(f, "﹦{}", msg)?;
-            }
+            writeln!(f,  "﹦{}", help)?;
         }
 
         Ok(())
@@ -162,9 +159,7 @@ impl DiagnosticReporter for JokeReporter {
             diagnostic,
             diagnostic
                 .help()
-                .unwrap_or_else(|| Box::new(vec!["have you tried not failing?"].into_iter()))
-                .collect::<Vec<&str>>()
-                .join(" ")
+                .unwrap_or(&"have you tried not failing?")
         )?;
         writeln!(
             f,
