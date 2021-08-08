@@ -7,7 +7,7 @@ use std::fmt;
 use indenter::indented;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticSnippet, DiagnosticReporter, Severity};
+use crate::protocol::{Diagnostic, DiagnosticReporter, DiagnosticSnippet, Severity};
 
 /**
 Reference implementation of the [DiagnosticReporter] trait. This is generally
@@ -17,7 +17,11 @@ you want custom reporting for your tool or app.
 pub struct MietteReporter;
 
 impl MietteReporter {
-    fn render_snippet(&self, f: &mut fmt::Formatter<'_>, snippet: &DiagnosticSnippet) -> fmt::Result {
+    fn render_snippet(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        snippet: &DiagnosticSnippet,
+    ) -> fmt::Result {
         use fmt::Write as _;
         write!(f, "\n[{}]", snippet.source_name)?;
         if let Some(msg) = &snippet.message {
@@ -126,7 +130,7 @@ impl DiagnosticReporter for MietteReporter {
         if let Some(snippets) = diagnostic.snippets() {
             writeln!(f)?;
             for snippet in snippets {
-                self.render_snippet(f, snippet)?;
+                self.render_snippet(f, &snippet)?;
             }
         }
 
@@ -166,7 +170,7 @@ impl DiagnosticReporter for JokeReporter {
             "miette, her eyes enormous: you {} miette? you {}? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!",
             diagnostic.code(),
             diagnostic.snippets().map(|snippets| {
-                snippets.iter().map(|snippet| snippet.message.clone()).collect::<Option<Vec<String>>>()
+                snippets.map(|snippet| snippet.message).collect::<Option<Vec<String>>>()
             }).flatten().map(|x| x.join(", ")).unwrap_or_else(||"try and cause miette to panic".into())
         )?;
 

@@ -27,8 +27,8 @@ impl Diagnostic for MyBad {
         Some(&"try doing it better next time?")
     }
 
-    fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
-        Some(&self.snippets)
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
+        Some(Box::new(self.snippets.clone().into_iter()))
     }
 }
 
@@ -48,20 +48,22 @@ fn basic() -> Result<(), MietteError> {
 #[test]
 fn fancy() -> Result<(), MietteError> {
     let src = "source\n  text\n    here".to_string();
+    let len = src.len();
     let err = MyBad {
         snippets: vec![DiagnosticSnippet {
             message: Some("This is the part that broke".into()),
             source_name: "bad_file.rs".into(),
-            source: Box::new(src.clone()),
-            highlights: Some(vec![
-                ("this bit here".into(), SourceSpan {
+            source: Arc::new(src),
+            highlights: Some(vec![(
+                "this bit here".into(),
+                SourceSpan {
                     start: 9.into(),
                     end: 12.into(),
-                })
-            ]),
+                },
+            )]),
             context: SourceSpan {
                 start: 0.into(),
-                end: (src.len() - 1).into(),
+                end: (len - 1).into(),
             },
         }],
     };

@@ -4,7 +4,7 @@ that you can implement to get access to miette's (and related library's) full
 reporting and such features.
 */
 
-use std::fmt::Display;
+use std::{fmt::Display, sync::Arc};
 
 use crate::MietteError;
 
@@ -36,14 +36,16 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
-    fn snippets(&self) -> Option<&[DiagnosticSnippet]> {
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
         None
     }
 }
 
 impl std::error::Error for Box<dyn Diagnostic> {}
 
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + Send + Sync + 'static> {
+impl<T: Diagnostic + Send + Sync + 'static> From<T>
+    for Box<dyn Diagnostic + Send + Sync + 'static>
+{
     fn from(diag: T) -> Self {
         Box::new(diag)
     }
@@ -112,8 +114,10 @@ support Sources which are gigabytes or larger in size.
 */
 pub trait Source: std::fmt::Debug + Send + Sync + 'static {
     /// Read the bytes for a specific span from this Source.
-    fn read_span<'a>(&'a self, span: &SourceSpan)
-        -> Result<Box<dyn SpanContents + 'a>, MietteError>;
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
 }
 
 /**
@@ -166,14 +170,14 @@ impl<'a> SpanContents for MietteSpanContents<'a> {
 /**
 A snippet from a [Source] to be displayed with a message and possibly some highlights.
  */
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DiagnosticSnippet {
     /// Explanation of this specific diagnostic snippet.
     pub message: Option<String>,
     /// The "filename" for this snippet.
     pub source_name: String,
     /// A [Source] that can be used to read the actual text of a source.
-    pub source: Box<dyn Source>,
+    pub source: Arc<dyn Source>,
     /// The primary [SourceSpan] where this diagnostic is located.
     pub context: SourceSpan,
     /// Additional [SourceSpan]s that mark specific sections of the span, for
