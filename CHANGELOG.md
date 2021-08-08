@@ -1,5 +1,23 @@
-<a name=""></a>
-##  0.2.1 (2021-08-05)
+<a name="0.3.0"></a>
+## 0.3.0 (2021-08-08)
+
+This version is the result of a lot of experimentation with getting the
+`Diagnostic` API right, particularly `Diagnostic::snippets()`, which is
+something that should be writable in several different ways. As such, it
+includes some breaking changes, but they shouldn't be too hard to figure out.
+
+#### Breaking Changes
+
+* **protocol:**
+  *  improvements to snippets API ([3584dc60](https://github.com/zkat/miette/commit/3584dc600c2b8b0f84a2a0c59856da9a9dc7fbab))
+  *  help is a single Display ref now. ([80e7dabb](https://github.com/zkat/miette/commit/80e7dabbe450d4a78ed18174e2a383a6a1ed0557))
+
+#### Bug Fixes
+
+* **tests:**  updating tests ([60bdf47e](https://github.com/zkat/miette/commit/60bdf47e297999b48345b39ba1a3aacbbf79e6fc))
+
+<a name="0.2.1"></a>
+## 0.2.1 (2021-08-05)
 
 I think this is the right thing to do re: From!
 
