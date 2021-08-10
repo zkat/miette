@@ -6,6 +6,6 @@ pub use reporter::*;
 
 mod chain;
 mod error;
-mod source_impls;
 mod protocol;
 mod reporter;
+mod source_impls;

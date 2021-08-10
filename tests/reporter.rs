@@ -1,8 +1,7 @@
 use std::{fmt, sync::Arc};
 
 use miette::{
-    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter,
-    SourceSpan,
+    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter, SourceSpan,
 };
 use thiserror::Error;
 

@@ -10,5 +10,5 @@ pub enum MietteError {
     #[error(transparent)]
     IoError(#[from] io::Error),
     #[error("The given offset is outside the bounds of its Source")]
-    OutOfBounds
+    OutOfBounds,
 }

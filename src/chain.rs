@@ -14,7 +14,6 @@ pub struct Chain<'a> {
     state: crate::chain::ChainState<'a>,
 }
 
-
 #[derive(Clone)]
 pub(crate) enum ChainState<'a> {
     Linked {
