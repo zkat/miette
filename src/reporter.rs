@@ -135,7 +135,9 @@ impl DiagnosticReporter for MietteReporter {
         }
 
         if let Some(help) = diagnostic.help() {
-            writeln!(f,  "﹦{}", help)?;
+            writeln!(f)?;
+            writeln!(f)?;
+            write!(f, "﹦{}", help)?;
         }
 
         Ok(())
