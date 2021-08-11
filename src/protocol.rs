@@ -18,7 +18,7 @@ pub trait Diagnostic: std::error::Error {
     /// the toplevel crate's documentation for easy searching. Rust path
     /// format (`foo::bar::baz`) is recommended, but more classic codes like
     /// `E0123` or Enums will work just fine.
-    fn code(&self) -> &(dyn Display);
+    fn code<'a>(&'a self) -> Box<dyn Display + 'a>;
 
     /// Diagnostic severity. This may be used by [DiagnosticReporter]s to change the
     /// display format of this diagnostic.
@@ -30,7 +30,7 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional help text related to this Diagnostic. Do you have any
     /// advice for the poor soul who's just run into this issue?
-    fn help(&self) -> Option<&(dyn Display)> {
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         None
     }
 

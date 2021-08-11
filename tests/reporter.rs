@@ -18,12 +18,12 @@ impl fmt::Debug for MyBad {
 }
 
 impl Diagnostic for MyBad {
-    fn code(&self) -> &(dyn std::fmt::Display) {
-        &"oops::my::bad"
+    fn code(&self) -> Box<dyn std::fmt::Display> {
+        Box::new(&"oops::my::bad")
     }
 
-    fn help(&self) -> Option<&(dyn std::fmt::Display)> {
-        Some(&"try doing it better next time?")
+    fn help(&self) -> Option<Box<dyn std::fmt::Display>> {
+        Some(Box::new(&"try doing it better next time?"))
     }
 
     fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {

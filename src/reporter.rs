@@ -163,7 +163,9 @@ impl DiagnosticReporter for JokeReporter {
             "me, with {} {}: {}",
             sev,
             diagnostic,
-            diagnostic.help().unwrap_or(&"have you tried not failing?")
+            diagnostic
+                .help()
+                .unwrap_or_else(|| Box::new(&"have you tried not failing?"))
         )?;
         writeln!(
             f,
