@@ -1,3 +1,24 @@
+<a name="0.4.0"></a>
+## 0.4.0 (2021-08-11)
+
+Time for another (still experimental!) change to `Diagnostic`. It will
+probably continue to change as miette gets experimented with, until 1.0.0
+stabilizes it. But for now, expect semi-regular breaking changes of this kind.
+
+Oh and I tracked down a rogue `\n` that was messing with the default reporter
+and managed to get out of it with at least some of my sanity.
+
+#### Breaking Changes
+
+* **protocol:**  Simplify protocol return values further ([02dd1f84](https://github.com/zkat/miette/commit/02dd1f84d45c01fb4de2d31c158a7b6e08455f72), breaks [#](https://github.com/zkat/miette/issues/))
+
+#### Bug Fixes
+
+* **reporter:**
+  *  fix reporter and tests... again ([d201dde4](https://github.com/zkat/miette/commit/d201dde4b559a2baa4259a0845582a5d14453c5a))
+  *  fix extra newline after header ([0d2e3312](https://github.com/zkat/miette/commit/0d2e3312a4a262e99a131bc893097d295e59e8ca))
+
+
 <a name="0.3.1"></a>
 ## 0.3.1 (2021-08-11)
 
