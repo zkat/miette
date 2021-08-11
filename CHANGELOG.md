@@ -1,3 +1,14 @@
+<a name="0.3.1"></a>
+## 0.3.1 (2021-08-11)
+
+This is a tiny release to fix a reporter rendering bug.
+
+#### Bug Fixes
+
+* **reporter:**  fix missing newline before help text ([9d430b6f](https://github.com/zkat/miette/commit/9d430b6f477fd8991ce217dffdbce8fbd28dcd7e))
+
+
+
 <a name="0.3.0"></a>
 ## 0.3.0 (2021-08-08)
 
