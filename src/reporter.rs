@@ -28,7 +28,6 @@ impl MietteReporter {
             write!(f, " {}:", msg)?;
         }
         writeln!(f)?;
-        writeln!(f)?;
         let context_data = snippet
             .source
             .read_span(&snippet.context)
@@ -111,7 +110,7 @@ impl DiagnosticReporter for MietteReporter {
             Some(Severity::Warning) => "Warning",
             Some(Severity::Advice) => "Advice",
         };
-        write!(f, "{}[{}]: {}", sev, diagnostic.code(), diagnostic)?;
+        writeln!(f, "{}[{}]: {}", sev, diagnostic.code(), diagnostic)?;
 
         if let Some(cause) = diagnostic.source() {
             write!(f, "\n\nCaused by:")?;
@@ -135,7 +134,6 @@ impl DiagnosticReporter for MietteReporter {
         }
 
         if let Some(help) = diagnostic.help() {
-            writeln!(f)?;
             writeln!(f)?;
             write!(f, "﹦{}", help)?;
         }
