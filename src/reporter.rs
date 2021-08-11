@@ -23,10 +23,11 @@ impl MietteReporter {
         snippet: &DiagnosticSnippet,
     ) -> fmt::Result {
         use fmt::Write as _;
-        write!(f, "\n[{}]", snippet.source_name)?;
+        write!(f, "[{}]", snippet.source_name)?;
         if let Some(msg) = &snippet.message {
             write!(f, " {}:", msg)?;
         }
+        writeln!(f)?;
         writeln!(f)?;
         let context_data = snippet
             .source
@@ -113,7 +114,8 @@ impl DiagnosticReporter for MietteReporter {
         writeln!(f, "{}[{}]: {}", sev, diagnostic.code(), diagnostic)?;
 
         if let Some(cause) = diagnostic.source() {
-            write!(f, "\n\nCaused by:")?;
+            writeln!(f)?;
+            write!(f, "Caused by:")?;
             let multiple = cause.source().is_some();
 
             for (n, error) in Chain::new(cause).enumerate() {
@@ -127,15 +129,19 @@ impl DiagnosticReporter for MietteReporter {
         }
 
         if let Some(snippets) = diagnostic.snippets() {
-            writeln!(f)?;
+            let mut pre = false;
             for snippet in snippets {
+                if !pre {
+                    writeln!(f)?;
+                    pre = true;
+                }
                 self.render_snippet(f, &snippet)?;
             }
         }
 
         if let Some(help) = diagnostic.help() {
             writeln!(f)?;
-            write!(f, "﹦{}", help)?;
+            writeln!(f, "﹦{}", help)?;
         }
 
         Ok(())
