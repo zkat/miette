@@ -1,3 +1,14 @@
+<a name="0.5.0"></a>
+## 0.5.0 (2021-08-14)
+
+I decided to yank some handy (optional) utilities from a project I'm using
+`miette` in. These should make using it more ergonomic.
+
+#### Features
+
+* **utils:**  various convenience utilities for creating and working with Diagnostics ([a9601368](https://github.com/zkat/miette/commit/a960136802834bd3741ef637d91f73287870b1ad))
+
+
 <a name="0.4.0"></a>
 ## 0.4.0 (2021-08-11)
 
