@@ -1,3 +1,13 @@
+<a name="0.6.0"></a>
+## 0.6.0 (2021-08-15)
+
+We haz a basic derive macro now!
+
+#### Features
+
+* **derive:**  added basic derive macro ([0e770270](https://github.com/zkat/miette/commit/0e7702700de8a4cd9022d660aaf363b735943d55))
+
+
 <a name="0.5.0"></a>
 ## 0.5.0 (2021-08-14)
 
