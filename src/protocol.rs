@@ -91,7 +91,7 @@ pub trait DiagnosticReporter: core::any::Any + Send + Sync {
 [Diagnostic] severity. Intended to be used by [DiagnosticReporter] to change the
 way different Diagnostics are displayed.
 */
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Severity {
     /// Critical failure. The program cannot continue.
     Error,

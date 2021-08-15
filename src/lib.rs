@@ -1,5 +1,7 @@
 #![doc = include_str!("../README.md")]
 
+pub use miette_derive::*;
+
 pub use error::*;
 pub use protocol::*;
 pub use reporter::*;

@@ -1,0 +1,17 @@
+[package]
+name = "miette-derive"
+version = "0.1.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Derive macros for miette. Like `thiserror` for Diagnostics."
+repository = "https://github.com/zkat/miette"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "1.0.45"
+darling = "0.13.0"

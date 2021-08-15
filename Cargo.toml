@@ -13,6 +13,10 @@ edition = "2018"
 [dependencies]
 indenter = "0.3.3"
 thiserror = "1.0.26"
+miette-derive = { version = "=0.1.0", path = "miette-derive" }
 
 [dev-dependencies]
 thiserror = "1.0.26"
+
+[workspace]
+members = ["miette-derive"]
