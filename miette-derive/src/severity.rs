@@ -31,10 +31,7 @@ impl Parse for Severity {
                 Ok(Severity(input.parse::<syn::LitStr>()?.parse()?))
             }
         } else {
-            Err(syn::Error::new(
-                ident.span(),
-                "not a severity level.",
-            ))
+            Err(syn::Error::new(ident.span(), "not a severity level."))
         }
     }
 }

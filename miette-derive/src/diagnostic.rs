@@ -50,9 +50,7 @@ impl Diagnostic {
                             DiagnosticArg::Severity(sev) => {
                                 severity = Some(sev);
                             }
-                            DiagnosticArg::Help(hl) => {
-                                help = Some(hl)
-                            }
+                            DiagnosticArg::Help(hl) => help = Some(hl),
                         }
                     }
                     let ident = input.ident.clone();

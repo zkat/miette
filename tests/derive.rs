@@ -150,15 +150,9 @@ fn fmt_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     enum FooEnum {
-        #[diagnostic(
-            code(foo::x),
-            help("{} {}", 1, "bar"),
-        )]
+        #[diagnostic(code(foo::x), help("{} {}", 1, "bar"))]
         X,
     }
 
-    assert_eq!(
-        "1 bar".to_string(),
-        FooEnum::X.help().unwrap().to_string()
-    );
+    assert_eq!("1 bar".to_string(), FooEnum::X.help().unwrap().to_string());
 }

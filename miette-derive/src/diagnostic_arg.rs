@@ -20,7 +20,10 @@ impl Parse for DiagnosticArg {
         } else if ident == "help" {
             Ok(DiagnosticArg::Help(input.parse()?))
         } else {
-            Err(syn::Error::new(ident.span(), "Unrecognized diagnostic option"))
+            Err(syn::Error::new(
+                ident.span(),
+                "Unrecognized diagnostic option",
+            ))
         }
     }
 }
