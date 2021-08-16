@@ -1,77 +1,147 @@
 use std::collections::HashMap;
 
-use proc_macro2::{Span, TokenStream};
-use syn::parse::{Parse, ParseStream};
+use proc_macro2::TokenStream;
+use syn::{
+    parenthesized,
+    parse::{Parse, ParseStream},
+    spanned::Spanned,
+    Token,
+};
 
 use crate::diagnostic::{Diagnostic, DiagnosticVariant};
 
 pub struct Snippets(Vec<Snippet>);
 
 struct Snippet {
-    message: String,
+    message: Option<String>,
     highlights: Vec<Highlight>,
     // TODO: These two should be special expressions a-la-thiserror. This won't work for enums either.
-    source_field: syn::Ident,
-    context_field: syn::Ident,
+    source: syn::Ident,
+    context: syn::Ident,
 }
 
 struct Highlight {
-    label: String,
-    // TODO: This should be a special expression a-la-thiserror.
-    highlight_field: syn::Ident,
+    highlight: syn::Ident,
+    label: Option<String>,
 }
 
 struct ContextAttr {
     source: syn::Ident,
-    message: String,
+    message: Option<String>,
 }
 
 impl Parse for ContextAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        todo!()
+        let punc = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated(&input)?;
+        let span = punc.span();
+        let mut iter = punc.into_iter();
+        let source = if let Some(syn::Expr::Path(syn::ExprPath { path, .. })) = iter.next() {
+            if let Some(ident) = path.get_ident() {
+                ident.clone()
+            } else {
+                return Err(syn::Error::new(
+                    span,
+                    "Source must be an identifier that refers to a Source for this snippet.",
+                ));
+            }
+        } else {
+            return Err(syn::Error::new(
+                span,
+                "Source must be an identifier that refers to a Source for this snippet.",
+            ));
+        };
+        let message = iter
+            .next()
+            .map(|m| {
+                if let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(str),
+                    ..
+                }) = m
+                {
+                    Ok(str.value())
+                } else {
+                    Err(syn::Error::new(
+                        m.span(),
+                        "Only literal strings are supported as snippet context messages.",
+                    ))
+                }
+            })
+            .transpose()?;
+        Ok(ContextAttr { source, message })
     }
 }
 
 struct HighlightAttr {
     context: syn::Ident,
-    label: String,
+    label: Option<String>,
 }
 
 impl Parse for HighlightAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        todo!()
+        let punc = syn::punctuated::Punctuated::<syn::Expr, Token![,]>::parse_terminated(&input)?;
+        let span = punc.span();
+        let mut iter = punc.into_iter();
+        let context = if let Some(syn::Expr::Path(syn::ExprPath { path, .. })) = iter.next() {
+            if let Some(ident) = path.get_ident() {
+                ident.clone()
+            } else {
+                return Err(syn::Error::new(
+                    span,
+                    "Context must be an identifier that refers to a .",
+                ));
+            }
+        } else {
+            return Err(syn::Error::new(
+                span,
+                "Context must be an identifier that refers to a Source for this snippet.",
+            ));
+        };
+        let label = iter
+            .next()
+            .map(|m| {
+                if let syn::Expr::Lit(syn::ExprLit {
+                    lit: syn::Lit::Str(str),
+                    ..
+                }) = m
+                {
+                    Ok(str.value())
+                } else {
+                    Err(syn::Error::new(
+                        m.span(),
+                        "Only literal strings are supported as snippet context messages.",
+                    ))
+                }
+            })
+            .transpose()?;
+        Ok(HighlightAttr { context, label })
     }
 }
 
 impl Snippets {
-    pub fn from_fields(fields: &syn::Fields) -> Option<Self> {
+    pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
         match fields {
             syn::Fields::Named(named) => Self::from_named_fields(named),
             syn::Fields::Unnamed(unnamed) => Self::from_unnamed_fields(unnamed),
-            syn::Fields::Unit => None,
+            syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_named_fields(fields: &syn::FieldsNamed) -> Option<Self> {
+    fn from_named_fields(fields: &syn::FieldsNamed) -> syn::Result<Option<Self>> {
         let mut snippets = HashMap::new();
         // First we collect all the contexts
         for field in &fields.named {
             for attr in &field.attrs {
-                if attr.path.is_ident("context") {
-                    // TODO: parse these two from attr
-                    let source = syn::Ident::new("foo", Span::call_site());
-                    let message = String::new();
+                if attr.path.is_ident("snippet") {
+                    let field_ident = field.ident.clone().expect("MIETTE BUG: named fields should have idents");
+                    let ContextAttr { source, message } = attr.parse_args::<ContextAttr>()?;
                     // TODO: useful error when source refers to a field that doesn't exist.
                     snippets.insert(
-                        source.clone(),
+                        field_ident.clone(),
                         Snippet {
                             message,
                             highlights: Vec::new(),
-                            source_field: source.clone(),
-                            context_field: field
-                                .ident
-                                .clone()
-                                .expect("MIETTE BUG: named fields should have idents?"),
+                            source,
+                            context: field_ident,
                         },
                     );
                 }
@@ -81,33 +151,30 @@ impl Snippets {
         for field in &fields.named {
             for attr in &field.attrs {
                 if attr.path.is_ident("highlight") {
-                    // TODO: parse these two from attr
-                    let context = syn::Ident::new("foo", Span::call_site());
-                    let label = String::new();
+                    let HighlightAttr { context, label } = attr.parse_args::<HighlightAttr>()?;
                     if let Some(snippet) = snippets.get_mut(&context) {
                         snippet.highlights.push(Highlight {
                             label,
-                            highlight_field: field
+                            highlight: field
                                 .ident
                                 .clone()
                                 .expect("MIETTE BUG: named fields should have idents?"),
                         });
                     } else {
-                        // TODO: useful error when context refers to a field that isn't a highlight.
-                        todo!()
+                        return Err(syn::Error::new(attr.span(), "Highlight must refer to an existing field with a #[context(...)] attribute."));
                     }
                 }
             }
         }
         if snippets.is_empty() {
-            None
+            Ok(None)
         } else {
-            Some(Snippets(snippets.into_values().collect()))
+            Ok(Some(Snippets(snippets.into_values().collect())))
         }
     }
 
-    fn from_unnamed_fields(_fields: &syn::FieldsUnnamed) -> Option<Self> {
-        None
+    fn from_unnamed_fields(_fields: &syn::FieldsUnnamed) -> syn::Result<Option<Self>> {
+        Ok(None)
     }
 
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {

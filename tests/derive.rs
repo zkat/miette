@@ -1,4 +1,4 @@
-use miette::{Diagnostic, Severity};
+use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
 #[test]
@@ -155,4 +155,20 @@ fn fmt_help() {
     }
 
     assert_eq!("1 bar".to_string(), FooEnum::X.help().unwrap().to_string());
+}
+
+#[test]
+fn test_snippet_named_struct() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
+    struct Foo {
+        src: String,
+        #[snippet(src, "hi")]
+        ctx: SourceSpan,
+        #[highlight(ctx, "var 1")]
+        var1: SourceSpan,
+        #[highlight(ctx, "var 2")]
+        var2: SourceSpan,
+    }
 }

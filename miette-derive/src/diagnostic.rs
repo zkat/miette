@@ -56,7 +56,7 @@ impl Diagnostic {
                             DiagnosticArg::Help(hl) => help = Some(hl),
                         }
                     }
-                    let snippets = Snippets::from_fields(&data_struct.fields);
+                    let snippets = Snippets::from_fields(&data_struct.fields)?;
                     let ident = input.ident.clone();
                     Diagnostic::Struct {
                         ident: input.ident,
@@ -100,7 +100,7 @@ impl Diagnostic {
                                 }
                             }
                         }
-                        let snippets = None;
+                        let snippets = Snippets::from_fields(&var.fields)?;
                         let ident = input.ident.clone();
                         vars.push(DiagnosticVariant {
                             ident: var.ident,
