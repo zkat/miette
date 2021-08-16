@@ -1,3 +1,23 @@
+<a name="0.7.0"></a>
+## 0.7.0 (2021-08-16)
+
+Welp. `0.6.0` was basically completely broken, so I tore out the
+`darling`-based derive macros and rewrote the whole thing using `syn`, and
+things are much better now!
+
+There's still a few bits and bobs to add, like snippets (oof. big.), and full
+help format string support (they don't quite work in enums right now), but
+otherwise, this is pretty usable~
+
+#### Features
+
+* **derive:**  improved derive support, including partial help format string support! ([9ef0dd26](https://github.com/zkat/miette/commit/9ef0dd261fa537b280f32ea6f149785a69e33938))
+
+#### Bug Fixes
+
+* **derive:**  move to plain syn to fix darling issues ([9a78a943](https://github.com/zkat/miette/commit/9a78a943950078c879a1eb06baf819348139e1de))
+
+
 <a name="0.6.0"></a>
 ## 0.6.0 (2021-08-15)
 
