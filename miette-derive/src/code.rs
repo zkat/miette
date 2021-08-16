@@ -1,39 +1,44 @@
-use std::fmt::Display;
-
-use darling::{ast::Fields, error::Error as DarlingError, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Lit, Meta, NestedMeta};
+use syn::{
+    parenthesized,
+    parse::{Parse, ParseStream},
+    Token,
+};
 
-use crate::{Diagnostic, DiagnosticField, DiagnosticVariant};
+use crate::diagnostic::{Diagnostic, DiagnosticVariant};
 
 #[derive(Debug)]
-pub struct Code(String);
+pub struct Code(pub String);
 
-impl Display for Code {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-impl FromMeta for Code {
-    fn from_string(arg: &str) -> Result<Self, DarlingError> {
-        Ok(Code(arg.into()))
-    }
-
-    fn from_list(items: &[NestedMeta]) -> Result<Self, DarlingError> {
-        match &items[0] {
-            NestedMeta::Meta(Meta::Path(p)) => Ok(Code(
-                p.segments
-                    .iter()
-                    .map(|s| s.ident.to_string())
-                    .collect::<Vec<_>>()
-                    .join("::"),
-            )),
-            NestedMeta::Lit(Lit::Str(code)) => Ok(Code(code.value())),
-            _ => Err(DarlingError::custom(
-                "invalid code format. Only path::style and string literals are accepted",
-            )),
+impl Parse for Code {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ident = input.parse::<syn::Ident>()?;
+        if ident == "code" {
+            let la = input.lookahead1();
+            if la.peek(syn::token::Paren) {
+                let content;
+                parenthesized!(content in input);
+                let la = content.lookahead1();
+                if la.peek(syn::LitStr) {
+                    let str = content.parse::<syn::LitStr>()?;
+                    Ok(Code(str.value()))
+                } else {
+                    let path = content.parse::<syn::Path>()?;
+                    Ok(Code(
+                        path.segments
+                            .iter()
+                            .map(|s| s.ident.to_string())
+                            .collect::<Vec<_>>()
+                            .join("::"),
+                    ))
+                }
+            } else {
+                input.parse::<Token![=]>()?;
+                Ok(Code(input.parse::<syn::LitStr>()?.value()))
+            }
+        } else {
+            Err(syn::Error::new(ident.span(), "diagnostic code is required. Use #[diagnostic(code = ...)] or #[diagnostic(code(...))] to define one."))
         }
     }
 }
@@ -41,16 +46,25 @@ impl FromMeta for Code {
 impl Code {
     pub(crate) fn gen_enum(
         _diag: &Diagnostic,
-        variants: &[&DiagnosticVariant],
+        variants: &[DiagnosticVariant],
     ) -> Option<TokenStream> {
         let code_pairs = variants.iter().map(
             |DiagnosticVariant {
                  ref ident,
                  ref code,
+                 ref fields,
                  ..
              }| {
-                let code = code.to_string();
-                quote! { Self::#ident => std::boxed::Box::new(#code), }
+                let code = &code.0;
+                match fields {
+                    syn::Fields::Named(_) => {
+                        quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
+                    }
+                    syn::Fields::Unnamed(_) => {
+                        quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                    }
+                    syn::Fields::Unit => quote! { Self::#ident => std::boxed::Box::new(#code), },
+                }
             },
         );
         Some(quote! {
@@ -62,15 +76,8 @@ impl Code {
         })
     }
 
-    pub(crate) fn gen_struct(
-        diag: &Diagnostic,
-        _fields: &Fields<&DiagnosticField>,
-    ) -> Option<TokenStream> {
-        let code = diag
-            .code
-            .as_ref()
-            .expect("`code` attribute is required for diagnostics.")
-            .to_string();
+    pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
+        let code = &self.0;
         Some(quote! {
             fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
                 std::boxed::Box::new(#code)

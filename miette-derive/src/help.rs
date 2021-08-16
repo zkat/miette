@@ -1,50 +1,47 @@
-use darling::{ast::Fields, error::Error as DarlingError, FromMeta};
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Lit, NestedMeta};
+use syn::{
+    parenthesized,
+    parse::{Parse, ParseStream},
+    Token,
+};
 
-use crate::{Diagnostic, DiagnosticField, DiagnosticVariant};
+use crate::diagnostic::{Diagnostic, DiagnosticVariant};
 
-#[derive(Debug)]
 pub struct Help {
     pub fmt: String,
-    pub args: Vec<NestedMeta>,
+    pub args: Vec<syn::Expr>,
 }
 
-impl FromMeta for Help {
-    fn from_string(arg: &str) -> Result<Help, DarlingError> {
-        Ok(Help {
-            fmt: arg.into(),
-            args: Vec::new(),
-        })
-    }
-
-    fn from_list(items: &[NestedMeta]) -> Result<Help, DarlingError> {
-        match &items.get(0) {
-            Some(NestedMeta::Lit(Lit::Str(fmt))) => Ok(Help {
-                fmt: fmt.value(),
-                args: items[1..]
-                    .iter()
-                    .map(|item| match item {
-                        NestedMeta::Meta(_) => Err(DarlingError::custom(
-                            "Only literals are supported for now. Sorry :("
-                        )),
-                        NestedMeta::Lit(_) => Ok(item.clone()),
-                    })
-                    .collect::<Result<Vec<_>, DarlingError>>()?,
-            }),
-            None => Err(DarlingError::custom("Help format string is required")),
-            _ => Err(DarlingError::custom(
-                "First argument must be a literal format string",
-            )),
+impl Parse for Help {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ident = input.parse::<syn::Ident>()?;
+        if ident == "help" {
+            let la = input.lookahead1();
+            if la.peek(syn::token::Paren) {
+                let content;
+                parenthesized!(content in input);
+                let str = content.parse::<syn::LitStr>()?;
+                Ok(Help {
+                    fmt: str.value(),
+                    args: Vec::new(),
+                })
+            } else {
+                input.parse::<Token![=]>()?;
+                Ok(Help {
+                    fmt: input.parse::<syn::LitStr>()?.value(),
+                    args: Vec::new(),
+                })
+            }
+        } else {
+            Err(syn::Error::new(ident.span(), "not a help"))
         }
     }
 }
-
 impl Help {
     pub(crate) fn gen_enum(
         _diag: &Diagnostic,
-        variants: &[&DiagnosticVariant],
+        variants: &[DiagnosticVariant],
     ) -> Option<TokenStream> {
         let help_pairs = variants
             .iter()
@@ -53,12 +50,22 @@ impl Help {
                 |DiagnosticVariant {
                      ref ident,
                      ref help,
+                     ref fields,
                      ..
                  }| {
                      let help = &help.as_ref().unwrap();
                      let fmt = &help.fmt;
                      let args = help.args.iter().map(|arg| quote! { #arg, });
-                     quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*))), }
+                    match fields {
+                        syn::Fields::Named(_) => {
+                            quote! { Self::#ident{..} => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*))), }
+                        }
+                        syn::Fields::Unnamed(_) => {
+                            quote! { Self::#ident(..) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*))), }
+                        }
+                        syn::Fields::Unit =>
+                            quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*))), },
+                    }
                  },
             )
             .collect::<Vec<_>>();
@@ -76,17 +83,12 @@ impl Help {
         }
     }
 
-    pub(crate) fn gen_struct(
-        diag: &Diagnostic,
-        _fields: &Fields<&DiagnosticField>,
-    ) -> Option<TokenStream> {
-        diag.help.as_ref().map(|h| {
-            let fmt = &h.fmt;
-            let args = &h.args;
-            quote! {
-                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                    std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*)))
-                }
+    pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
+        let fmt = &self.fmt;
+        let args = &self.args;
+        Some(quote! {
+            fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #(#args),*)))
             }
         })
     }

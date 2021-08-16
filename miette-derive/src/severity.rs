@@ -1,33 +1,47 @@
-use darling::{ast::Fields, error::Error as DarlingError, FromMeta};
-use proc_macro2::{Span, TokenStream};
+use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Lit, LitStr, Meta, NestedMeta, Path};
+use syn::{
+    parenthesized,
+    parse::{Parse, ParseStream},
+    Token,
+};
 
-use crate::{Diagnostic, DiagnosticField, DiagnosticVariant};
+use crate::diagnostic::{Diagnostic, DiagnosticVariant};
 
-#[derive(Debug)]
-pub struct Severity(pub Path);
+pub struct Severity(pub syn::Path);
 
-impl FromMeta for Severity {
-    fn from_string(arg: &str) -> Result<Self, DarlingError> {
-        Ok(Severity(LitStr::new(arg, Span::call_site()).parse()?))
-    }
-
-    fn from_list(items: &[NestedMeta]) -> Result<Self, DarlingError> {
-        match &items[0] {
-            NestedMeta::Meta(Meta::Path(p)) => Ok(Severity(p.clone())),
-            NestedMeta::Lit(Lit::Str(sev)) => Ok(Severity(sev.parse()?)),
-            _ => Err(DarlingError::custom(
-                "invalid severity format. Only literal names and string literals are accepted",
-            )),
+impl Parse for Severity {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let ident = input.parse::<syn::Ident>()?;
+        if ident == "severity" {
+            let la = input.lookahead1();
+            if la.peek(syn::token::Paren) {
+                let content;
+                parenthesized!(content in input);
+                let la = content.lookahead1();
+                if la.peek(syn::LitStr) {
+                    let str = content.parse::<syn::LitStr>()?;
+                    Ok(Severity(str.parse()?))
+                } else {
+                    let path = content.parse::<syn::Path>()?;
+                    Ok(Severity(path))
+                }
+            } else {
+                input.parse::<Token![=]>()?;
+                Ok(Severity(input.parse::<syn::LitStr>()?.parse()?))
+            }
+        } else {
+            Err(syn::Error::new(
+                ident.span(),
+                "not a severity level.",
+            ))
         }
     }
 }
-
 impl Severity {
     pub(crate) fn gen_enum(
         _diag: &Diagnostic,
-        variants: &[&DiagnosticVariant],
+        variants: &[DiagnosticVariant],
     ) -> Option<TokenStream> {
         let sev_pairs = variants
             .iter()
@@ -55,13 +69,11 @@ impl Severity {
         }
     }
 
-    pub(crate) fn gen_struct(diag: &Diagnostic, _fields: &Fields<&DiagnosticField>) -> Option<TokenStream> {
-        diag.severity.as_ref().map(|sev| {
-            let sev = &sev.0;
-            quote! {
-                fn severity(&self) -> std::option::Option<miette::Severity> {
-                    Some(miette::Severity::#sev)
-                }
+    pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
+        let sev = &self.0;
+        Some(quote! {
+            fn severity(&self) -> std::option::Option<miette::Severity> {
+                Some(miette::Severity::#sev)
             }
         })
     }

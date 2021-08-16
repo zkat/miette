@@ -24,7 +24,6 @@ fn basic_struct() {
 
 #[test]
 fn basic_enum() {
-
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     enum Foo {
@@ -35,14 +34,39 @@ fn basic_enum() {
         )]
         X,
         #[diagnostic(code = "foo::y")]
-        Y,
+        Y(usize),
+        #[diagnostic(code = "foo::z")]
+        Z { prop: String },
     }
 
     assert_eq!("foo::x".to_string(), Foo::X.code().to_string());
-    assert_eq!("foo::y".to_string(), Foo::Y.code().to_string());
+    assert_eq!("foo::y".to_string(), Foo::Y(1).code().to_string());
+    assert_eq!(
+        "foo::z".to_string(),
+        Foo::Z { prop: "bar".into() }.code().to_string()
+    );
 
     assert_eq!(Some(Severity::Warning), Foo::X.severity());
-    assert_eq!(None, Foo::Y.severity());
+    assert_eq!(None, Foo::Y(1).severity());
+}
+
+#[test]
+fn paren_code() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(code("foo::bar::baz"))]
+    struct FooStruct;
+
+    assert_eq!("foo::bar::baz".to_string(), FooStruct.code().to_string());
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    enum FooEnum {
+        #[diagnostic(code("foo::x"))]
+        X,
+    }
+
+    assert_eq!("foo::x".to_string(), FooEnum::X.code().to_string());
 }
 
 #[test]
@@ -68,10 +92,7 @@ fn path_code() {
 fn path_severity() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    #[diagnostic(
-        code(foo::bar::baz),
-        severity(Warning)
-    )]
+    #[diagnostic(code(foo::bar::baz), severity(Warning))]
     struct FooStruct;
 
     assert_eq!(Some(Severity::Warning), FooStruct.severity());
@@ -79,10 +100,7 @@ fn path_severity() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     enum FooEnum {
-        #[diagnostic(
-            code(foo::x),
-            severity(Warning),
-        )]
+        #[diagnostic(code(foo::x), severity(Warning))]
         X,
     }
 
@@ -93,10 +111,7 @@ fn path_severity() {
 fn list_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    #[diagnostic(
-        code(foo::bar::baz),
-        help("try doing it better"),
-    )]
+    #[diagnostic(code(foo::bar::baz), help("try doing it better"))]
     struct FooStruct;
 
     assert_eq!(
@@ -107,10 +122,7 @@ fn list_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     enum FooEnum {
-        #[diagnostic(
-            code(foo::x),
-            help("try doing it better"),
-        )]
+        #[diagnostic(code(foo::x), help("try doing it better"))]
         X,
     }
 
@@ -120,8 +132,6 @@ fn list_help() {
     );
 }
 
-// TODO: Darling doesn't support this, apparently:
-// https://github.com/TedDriggs/darling/issues/145
 /*
 #[test]
 fn fmt_help() {
@@ -129,9 +139,9 @@ fn fmt_help() {
     #[error("welp")]
     #[diagnostic(
         code(foo::bar::baz),
-        help("{} {}", 1, "bar"),
+        help("{} {}", 1, self.0),
     )]
-    struct FooStruct;
+    struct FooStruct(String);
 
     assert_eq!(
         "1 bar".to_string(),
