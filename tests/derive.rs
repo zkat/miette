@@ -132,7 +132,6 @@ fn list_help() {
     );
 }
 
-/*
 #[test]
 fn fmt_help() {
     #[derive(Debug, Diagnostic, Error)]
@@ -144,8 +143,8 @@ fn fmt_help() {
     struct FooStruct(String);
 
     assert_eq!(
-        "1 bar".to_string(),
-        FooStruct.help().unwrap().to_string()
+        "1 hello".to_string(),
+        FooStruct("hello".into()).help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
@@ -163,4 +162,3 @@ fn fmt_help() {
         FooEnum::X.help().unwrap().to_string()
     );
 }
-*/
