@@ -63,11 +63,10 @@ use thiserror::Error;
 )]
 struct MyBad {
     src: Arc<String>,
-    filename: String,
     // Snippets and highlights can be included in the diagnostic!
-    #[snippet(src, filename, "This is the part that broke")]
+    #[snippet(src, "This is the part that broke")]
     snip: SourceSpan,
-    #[highlight(snip, "this bit here")]
+    #[highlight(snip)]
     bad_bit: SourceSpan,
 }
 
@@ -103,9 +102,8 @@ fn pretend_this_is_main() -> Result<(), MyBad> {
 
     Err(MyBad {
         src: Arc::new(src),
-        filename: "bad_file.rs".into(),
-        snip: (0, len).into(),
-        bad_bit: (9, 3).into(),
+        snip: ("bad_file.rs", 0, len).into(),
+        bad_bit: ("this bit here", 9, 3).into(),
     })
 }
 ```
