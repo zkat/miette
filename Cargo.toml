@@ -1,6 +1,6 @@
 [package]
 name = "miette"
-version = "0.7.0"
+version = "0.8.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 description = "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers."
 categories = ["rust-patterns"]
@@ -13,7 +13,7 @@ edition = "2018"
 [dependencies]
 indenter = "0.3.3"
 thiserror = "1.0.26"
-miette-derive = { version = "=0.7.0", path = "miette-derive" }
+miette-derive = { version = "=0.8.0", path = "miette-derive" }
 
 [dev-dependencies]
 thiserror = "1.0.26"
