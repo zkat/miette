@@ -6,7 +6,7 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::{Diagnostic, DiagnosticVariant};
+use crate::diagnostic::DiagnosticVariant;
 
 #[derive(Debug)]
 pub struct Code(pub String);
@@ -44,10 +44,7 @@ impl Parse for Code {
 }
 
 impl Code {
-    pub(crate) fn gen_enum(
-        _diag: &Diagnostic,
-        variants: &[DiagnosticVariant],
-    ) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
         let code_pairs = variants.iter().map(
             |DiagnosticVariant {
                  ref ident,

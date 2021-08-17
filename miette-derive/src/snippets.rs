@@ -9,7 +9,7 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::{Diagnostic, DiagnosticVariant};
+use crate::diagnostic::DiagnosticVariant;
 
 pub struct Snippets(Vec<Snippet>);
 
@@ -269,10 +269,7 @@ impl Snippets {
         })
     }
 
-    pub(crate) fn gen_enum(
-        diag: &Diagnostic,
-        variants: &[DiagnosticVariant],
-    ) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
         let variant_arms = variants.iter().map(|variant| {
             variant.snippets.as_ref().map(|snippets| {
                 let variant_snippets = snippets.0.iter().map(|snippet| {
@@ -385,19 +382,15 @@ impl Snippets {
                         .cloned()
                         .unwrap_or_else(|| format_ident!("_{}", i))
                 });
-                let diag_ident = match diag {
-                    Diagnostic::Enum { ident, .. } => ident,
-                    Diagnostic::Struct { .. } => unreachable!(),
-                };
                 match &variant.fields {
                     syn::Fields::Unit => None,
                     syn::Fields::Named(_) => Some(quote! {
-                        #diag_ident::#variant_name { #(#members),* } => Some(Box::new(vec![
+                        Self::#variant_name { #(#members),* } => std::option::Option::Some(std::boxed::Box::new(vec![
                             #(#variant_snippets),*
                         ].into_iter())),
                     }),
                     syn::Fields::Unnamed(_) => Some(quote! {
-                        #diag_ident::#variant_name(#(#members),*) => Some(Box::new(vec![
+                        Self::#variant_name(#(#members),*) => std::option::Option::Some(Box::new(vec![
                             #(#variant_snippets),*
                         ].into_iter())),
                     }),
@@ -408,7 +401,7 @@ impl Snippets {
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
                 match self {
                     #(#variant_arms)*
-                    _ => None,
+                    _ => std::option::Option::None,
                 }
             }
         })

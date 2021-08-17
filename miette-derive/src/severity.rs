@@ -6,7 +6,7 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::{Diagnostic, DiagnosticVariant};
+use crate::diagnostic::DiagnosticVariant;
 
 pub struct Severity(pub syn::Path);
 
@@ -36,10 +36,7 @@ impl Parse for Severity {
     }
 }
 impl Severity {
-    pub(crate) fn gen_enum(
-        _diag: &Diagnostic,
-        variants: &[DiagnosticVariant],
-    ) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
         let sev_pairs = variants
             .iter()
             .filter(|v| v.severity.is_some())

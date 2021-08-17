@@ -166,10 +166,10 @@ impl Diagnostic {
                 variants,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
-                let code_body = Code::gen_enum(self, variants);
-                let help_body = Help::gen_enum(self, variants);
-                let sev_body = Severity::gen_enum(self, variants);
-                let snip_body = Snippets::gen_enum(self, variants);
+                let code_body = Code::gen_enum(variants);
+                let help_body = Help::gen_enum(variants);
+                let sev_body = Severity::gen_enum(variants);
+                let snip_body = Snippets::gen_enum(variants);
 
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
