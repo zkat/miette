@@ -6,6 +6,7 @@ use crate::code::Code;
 use crate::diagnostic_arg::DiagnosticArg;
 use crate::help::Help;
 use crate::severity::Severity;
+use crate::snippets::Snippets;
 
 pub enum Diagnostic {
     Struct {
@@ -14,6 +15,7 @@ pub enum Diagnostic {
         code: Code,
         severity: Option<Severity>,
         help: Option<Help>,
+        snippets: Option<Snippets>,
     },
     Enum {
         ident: syn::Ident,
@@ -28,12 +30,13 @@ pub struct DiagnosticVariant {
     pub code: Code,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
+    pub snippets: Option<Snippets>,
 }
 
 impl Diagnostic {
     pub fn from_derive_input(input: DeriveInput) -> Result<Self, syn::Error> {
         Ok(match input.data {
-            syn::Data::Struct(_) => {
+            syn::Data::Struct(data_struct) => {
                 if let Some(attr) = input.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
                     let args = attr.parse_args_with(
                         Punctuated::<DiagnosticArg, Token![,]>::parse_terminated,
@@ -53,6 +56,7 @@ impl Diagnostic {
                             DiagnosticArg::Help(hl) => help = Some(hl),
                         }
                     }
+                    let snippets = Snippets::from_fields(&data_struct.fields)?;
                     let ident = input.ident.clone();
                     Diagnostic::Struct {
                         ident: input.ident,
@@ -62,6 +66,7 @@ impl Diagnostic {
                         })?,
                         help,
                         severity,
+                        snippets,
                     }
                 } else {
                     // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -95,6 +100,7 @@ impl Diagnostic {
                                 }
                             }
                         }
+                        let snippets = Snippets::from_fields(&var.fields)?;
                         let ident = input.ident.clone();
                         vars.push(DiagnosticVariant {
                             ident: var.ident,
@@ -104,6 +110,7 @@ impl Diagnostic {
                             })?,
                             help,
                             severity,
+                            snippets,
                         });
                     } else {
                         // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -136,17 +143,20 @@ impl Diagnostic {
                 code,
                 severity,
                 help,
+                snippets,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 let code_body = code.gen_struct();
                 let help_body = help.as_ref().and_then(|x| x.gen_struct());
                 let sev_body = severity.as_ref().and_then(|x| x.gen_struct());
+                let snip_body = snippets.as_ref().and_then(|x| x.gen_struct());
 
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                         #code_body
                         #help_body
                         #sev_body
+                        #snip_body
                     }
                 }
             }
@@ -156,15 +166,17 @@ impl Diagnostic {
                 variants,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
-                let code_body = Code::gen_enum(self, variants);
-                let help_body = Help::gen_enum(self, variants);
-                let sev_body = Severity::gen_enum(self, variants);
+                let code_body = Code::gen_enum(variants);
+                let help_body = Help::gen_enum(variants);
+                let sev_body = Severity::gen_enum(variants);
+                let snip_body = Snippets::gen_enum(variants);
 
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                         #code_body
                         #help_body
                         #sev_body
+                        #snip_body
                     }
                 }
             }

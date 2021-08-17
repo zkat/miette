@@ -6,7 +6,7 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::{Diagnostic, DiagnosticVariant};
+use crate::diagnostic::DiagnosticVariant;
 
 pub struct Help {
     pub fmt: String,
@@ -65,10 +65,7 @@ impl Parse for Help {
     }
 }
 impl Help {
-    pub(crate) fn gen_enum(
-        _diag: &Diagnostic,
-        variants: &[DiagnosticVariant],
-    ) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
         let help_pairs = variants
             .iter()
             .filter(|v| v.help.is_some())
