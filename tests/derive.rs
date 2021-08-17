@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
@@ -163,12 +165,40 @@ fn test_snippet_named_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo {
-        src: String,
-        #[snippet(src, "hi")]
-        ctx: SourceSpan,
-        #[highlight(ctx, "var 1")]
+        // The actual "source code" our contexts will be using. This can be
+        // reused by multiple contexts!
+        //
+        // The `Arc` is so you don't have to clone the entire thing into this
+        // Diagnostic. We just need to be able to read it~
+        src: Arc<String>,
+
+        // The "snippet" span. This is the span that will be displayed to
+        // users. It should be a big enough slice of the Source to provide
+        // reasonable context, but still somewhat compact.
+        //
+        // You can have as many of these #[snippet] fields as you want, and
+        // even feed them from different sources!
+        //
+        // Example display:
+        //   / [my_snippet]: hi this is where the thing went wrong.
+        // 1 | hello
+        // 2 |     world
+        #[snippet(src, "my_snippet.rs", "hi this is where the thing went wrong")]
+        snip: SourceSpan,
+
+        // "Highlights" are the specific highlights _inside_ the snippet.
+        // These will be used to underline/point to specific sections of the
+        // #[snippet] they refer to. As such, these SourceSpans must be within
+        // the bounds of their referenced snippet.
+        //
+        // Example display:
+        // 1 | var1 + var2
+        //   | ^^^^   ^^^^ - var 2
+        //   | |
+        //   | var 1
+        #[highlight(snip, "var 1")]
         var1: SourceSpan,
-        #[highlight(ctx, "var 2")]
+        #[highlight(snip, "var 2")]
         var2: SourceSpan,
     }
 }
