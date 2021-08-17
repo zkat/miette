@@ -1,3 +1,13 @@
+<a name="0.8.0"></a>
+## 0.8.0 (2021-08-17)
+
+You can full-on use `#[derive(Diagnostic)]` to define snippets now. That's a
+big deal.
+
+#### Features
+
+* **derive:**  Support for deriving snippet method (#18) ([f6e6acf2](https://github.com/zkat/miette/commit/f6e6acf2d2c301fd411c7c9c4b63a2b19aa69242))
+
 <a name="0.7.0"></a>
 ## 0.7.0 (2021-08-16)
 
