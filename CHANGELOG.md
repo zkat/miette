@@ -1,3 +1,9 @@
+<a name="0.8.1"></a>
+## 0.8.1 (2021-08-17)
+
+Just a small bump to update the readme (and docs.rs in the process) with the
+new snippet derive stuff. No notable changes.
+
 <a name="0.8.0"></a>
 ## 0.8.0 (2021-08-17)
 
