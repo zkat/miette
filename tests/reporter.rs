@@ -1,12 +1,17 @@
-use std::{fmt, sync::Arc};
+use std::fmt;
 
-use miette::{Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter};
+use miette::{
+    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter, SourceSpan,
+};
 use thiserror::Error;
 
 #[derive(Error)]
 #[error("oops!")]
 struct MyBad {
-    snippets: Vec<DiagnosticSnippet>,
+    message: String,
+    src: String,
+    ctx: SourceSpan,
+    highlight: SourceSpan,
 }
 
 impl fmt::Debug for MyBad {
@@ -24,22 +29,17 @@ impl Diagnostic for MyBad {
         Some(Box::new(&"try doing it better next time?"))
     }
 
-    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
-        Some(Box::new(self.snippets.clone().into_iter()))
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet> + '_>> {
+        Some(Box::new(
+            vec![DiagnosticSnippet {
+                message: Some(self.message.as_ref()),
+                source: &self.src,
+                context: &self.ctx,
+                highlights: Some(vec![&self.highlight]),
+            }]
+            .into_iter(),
+        ))
     }
-}
-
-#[test]
-fn basic() -> Result<(), MietteError> {
-    let err = MyBad {
-        snippets: Vec::new(),
-    };
-    let out = format!("{:?}", err);
-    assert_eq!(
-        "Error[oops::my::bad]: oops!\n\n﹦try doing it better next time?\n".to_string(),
-        out
-    );
-    Ok(())
 }
 
 #[test]
@@ -47,12 +47,10 @@ fn fancy() -> Result<(), MietteError> {
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        snippets: vec![DiagnosticSnippet {
-            message: Some("This is the part that broke".into()),
-            source: Arc::new(src),
-            highlights: Some(vec![("this bit here", 9, 4).into()]),
-            context: ("bad_file.rs", 0, len).into(),
-        }],
+        message: "This is the part that broke".into(),
+        src,
+        ctx: ("bad_file.rs", 0, len).into(),
+        highlight: ("this bit here", 9, 4).into(),
     };
     let out = format!("{:?}", err);
     // println!("{}", out);

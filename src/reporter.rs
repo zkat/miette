@@ -33,7 +33,7 @@ impl MietteReporter {
         writeln!(f)?;
         let context_data = snippet
             .source
-            .read_span(&snippet.context)
+            .read_span(snippet.context)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
@@ -180,7 +180,8 @@ impl DiagnosticReporter for JokeReporter {
             "miette, her eyes enormous: you {} miette? you {}? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!",
             diagnostic.code(),
             diagnostic.snippets().map(|snippets| {
-                snippets.map(|snippet| snippet.message).collect::<Option<Vec<String>>>()
+                snippets.map(|snippet| snippet.message.map(|x| x.to_owned()))
+                .collect::<Option<Vec<String>>>()
             }).flatten().map(|x| x.join(", ")).unwrap_or_else(||"try and cause miette to panic".into())
         )?;
 

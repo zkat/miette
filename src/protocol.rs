@@ -4,7 +4,7 @@ that you can implement to get access to miette's (and related library's) full
 reporting and such features.
 */
 
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
 
 use crate::MietteError;
 
@@ -36,7 +36,7 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
-    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet> + '_>> {
         None
     }
 }
@@ -171,17 +171,17 @@ impl<'a> SpanContents for MietteSpanContents<'a> {
 A snippet from a [Source] to be displayed with a message and possibly some highlights.
  */
 #[derive(Clone, Debug)]
-pub struct DiagnosticSnippet {
+pub struct DiagnosticSnippet<'a> {
     /// Explanation of this specific diagnostic snippet.
-    pub message: Option<String>,
+    pub message: Option<&'a str>,
     /// A [Source] that can be used to read the actual text of a source.
-    pub source: Arc<dyn Source>,
+    pub source: &'a (dyn Source),
     /// The primary [SourceSpan] where this diagnostic is located.
-    pub context: SourceSpan,
+    pub context: &'a SourceSpan,
     /// Additional [SourceSpan]s that mark specific sections of the span, for
     /// example, to underline specific text within the larger span. They're
     /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<SourceSpan>>,
+    pub highlights: Option<Vec<&'a SourceSpan>>,
 }
 
 /**

@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
@@ -166,11 +164,9 @@ fn test_snippet_named_struct() {
     #[diagnostic(code(foo::bar::baz))]
     struct Foo {
         // The actual "source code" our contexts will be using. This can be
-        // reused by multiple contexts!
-        //
-        // The `Arc` is so you don't have to clone the entire thing into this
-        // Diagnostic. We just need to be able to read it~
-        src: Arc<String>,
+        // reused by multiple contexts, and just needs to implement
+        // miette::Source!
+        src: String,
 
         // The "snippet" span. This is the span that will be displayed to
         // users. It should be a big enough slice of the Source to provide
@@ -215,7 +211,7 @@ fn test_snippet_unnamed_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo(
-        Arc<String>,
+        String,
         #[snippet(0, "hi")] SourceSpan,
         #[highlight(1)] SourceSpan,
         #[highlight(1)] SourceSpan,
@@ -235,7 +231,7 @@ fn test_snippet_enum() {
     enum Foo {
         #[diagnostic(code(foo::a))]
         A {
-            src: Arc<String>,
+            src: String,
             #[snippet(src, "my_snippet.rs", "hi this is where the thing went wrong")]
             snip: SourceSpan,
             #[highlight(snip, "var 1")]
@@ -249,7 +245,7 @@ fn test_snippet_enum() {
         },
         #[diagnostic(code(foo::b))]
         B(
-            Arc<String>,
+            String,
             #[snippet(0, "my_snippet.rs", "hi")] SourceSpan,
             #[highlight(1, "var 1")] SourceSpan,
             #[highlight(1, "var 2")] SourceSpan,

@@ -176,12 +176,12 @@ impl Snippets {
                 .map(|msg| match msg {
                     MemberOrString::String(str) => {
                         quote! {
-                            message: std::option::Option::Some(#str.into()),
+                            message: std::option::Option::Some(#str),
                         }
                     }
                     MemberOrString::Member(m) => {
                         quote! {
-                            message: std::option::Option::Some(self.#m.clone()),
+                            message: std::option::Option::Some(self.#m.as_ref()),
                         }
                     }
                 })
@@ -194,21 +194,20 @@ impl Snippets {
             // Source field
             let src_ident = &snippet.source;
             let src_ident = quote! {
-                // TODO: I don't like this. Think about it more and maybe improve protocol?
-                source: self.#src_ident.clone(),
+                source: &self.#src_ident,
             };
 
             // Context
             let context = &snippet.snippet;
             let context = quote! {
-                context: self.#context.clone(),
+                context: &self.#context,
             };
 
             // Highlights
             let highlights = snippet.highlights.iter().map(|highlight| {
                 let Highlight { highlight } = highlight;
                 quote! {
-                    self.#highlight.clone()
+                    &self.#highlight
                 }
             });
             let highlights = quote! {
@@ -229,7 +228,7 @@ impl Snippets {
         });
         Some(quote! {
             #[allow(unused_variables)]
-            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
+            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
                 Some(Box::new(vec![
                     #(#snippets),*
                 ].into_iter()))
@@ -248,7 +247,7 @@ impl Snippets {
                         .map(|msg| match msg {
                             MemberOrString::String(str) => {
                                 quote! {
-                                    message: std::option::Option::Some(#str.into()),
+                                    message: std::option::Option::Some(#str),
                                 }
                             }
                             MemberOrString::Member(m) => {
@@ -259,7 +258,7 @@ impl Snippets {
                                     }
                                 };
                                 quote! {
-                                    message: std::option::Option::Some(#m.clone()),
+                                    message: std::option::Option::Some(#m.as_ref()),
                                 }
                             }
                         })
@@ -278,7 +277,7 @@ impl Snippets {
                     };
                     let src_ident = quote! {
                         // TODO: I don't like this. Think about it more and maybe improve protocol?
-                        source: #src_ident.clone(),
+                        source: #src_ident,
                     };
 
                     // Context
@@ -289,7 +288,7 @@ impl Snippets {
                         }
                     };
                     let context = quote! {
-                        context: #context.clone(),
+                        context: #context,
                     };
 
                     // Highlights
@@ -302,7 +301,7 @@ impl Snippets {
                             }
                         };
                         quote! {
-                            #m.clone()
+                            #m
                         }
                     });
                     let highlights = quote! {
@@ -346,7 +345,7 @@ impl Snippets {
         });
         Some(quote! {
             #[allow(unused_variables)]
-            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
+            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
                 match self {
                     #(#variant_arms)*
                     _ => std::option::Option::None,

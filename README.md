@@ -50,7 +50,6 @@ You can derive a Diagnostic from any `std::error::Error` type.
 
 `thiserror` is a great way to define them so, and plays extremely nicely with `miette`!
 */
-use std::sync::Arc;
 use miette::Diagnostic;
 use thiserror::Error;
 
@@ -62,7 +61,7 @@ use thiserror::Error;
     help("try doing it better next time?"),
 )]
 struct MyBad {
-    src: Arc<String>,
+    src: String,
     // Snippets and highlights can be included in the diagnostic!
     #[snippet(src, "This is the part that broke")]
     snip: SourceSpan,
@@ -101,7 +100,7 @@ fn pretend_this_is_main() -> Result<(), MyBad> {
     let len = src.len();
 
     Err(MyBad {
-        src: Arc::new(src),
+        src,
         snip: ("bad_file.rs", 0, len).into(),
         bad_bit: ("this bit here", 9, 3).into(),
     })
