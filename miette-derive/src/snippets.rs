@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
-use quote::{quote, ToTokens};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -30,6 +30,11 @@ struct SnippetAttr {
     source: syn::Member,
     source_name: MemberOrString,
     message: Option<MemberOrString>,
+}
+
+struct HighlightAttr {
+    snippet: syn::Member,
+    label: Option<MemberOrString>,
 }
 
 enum MemberOrString {
@@ -87,11 +92,6 @@ impl Parse for SnippetAttr {
             message,
         })
     }
-}
-
-struct HighlightAttr {
-    snippet: syn::Member,
-    label: Option<MemberOrString>,
 }
 
 impl Parse for HighlightAttr {
@@ -270,9 +270,147 @@ impl Snippets {
     }
 
     pub(crate) fn gen_enum(
-        _diag: &Diagnostic,
-        _variants: &[DiagnosticVariant],
+        diag: &Diagnostic,
+        variants: &[DiagnosticVariant],
     ) -> Option<TokenStream> {
-        None
+        let variant_arms = variants.iter().map(|variant| {
+            variant.snippets.as_ref().map(|snippets| {
+                let variant_snippets = snippets.0.iter().map(|snippet| {
+                    // snippet message
+                    let msg = snippet
+                        .message
+                        .as_ref()
+                        .map(|msg| match msg {
+                            MemberOrString::String(str) => {
+                                quote! {
+                                    message: std::option::Option::Some(#str.into()),
+                                }
+                            }
+                            MemberOrString::Member(m) => {
+                                let m = match m {
+                                    syn::Member::Named(id) => id.clone(),
+                                    syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                        format_ident!("_{}", index)
+                                    }
+                                };
+                                quote! {
+                                    message: std::option::Option::Some(#m.clone()),
+                                }
+                            }
+                        })
+                        .unwrap_or_else(|| {
+                            quote! {
+                                message: std::option::Option::None,
+                            }
+                        });
+
+                    // Source field
+                    let src_ident = match &snippet.source {
+                        syn::Member::Named(id) => id.clone(),
+                        syn::Member::Unnamed(syn::Index { index, .. }) => {
+                            format_ident!("_{}", index)
+                        }
+                    };
+                    let src_ident = quote! {
+                        // TODO: I don't like this. Think about it more and maybe improve protocol?
+                        source: #src_ident.clone(),
+                    };
+
+                    // Source name
+                    let src_name = match &snippet.source_name {
+                        MemberOrString::String(str) => {
+                            quote! {
+                                source_name: #str.into(),
+                            }
+                        }
+                        MemberOrString::Member(m) => {
+                            let m = match m {
+                                syn::Member::Named(id) => id.clone(),
+                                syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                    format_ident!("_{}", index)
+                                }
+                            };
+                            quote! {
+                                source_name: #m.clone(),
+                            }
+                        }
+                    };
+
+                    // Context
+                    let context = match &snippet.snippet {
+                        syn::Member::Named(id) => id.clone(),
+                        syn::Member::Unnamed(syn::Index { index, .. }) => {
+                            format_ident!("_{}", index)
+                        }
+                    };
+                    let context = quote! {
+                        context: #context.clone(),
+                    };
+
+                    // Highlights
+                    let highlights = snippet.highlights.iter().map(|highlight| {
+                        let Highlight { highlight, label } = highlight;
+                        let m = match highlight {
+                            syn::Member::Named(id) => id.clone(),
+                            syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                format_ident!("_{}", index)
+                            }
+                        };
+                        quote! {
+                            (#label.into(), #m.clone())
+                        }
+                    });
+                    let highlights = quote! {
+                        highlights: std::option::Option::Some(vec![
+                            #(#highlights),*
+                        ]),
+                    };
+
+                    // Generate the snippet itself
+                    quote! {
+                        miette::DiagnosticSnippet {
+                            #msg
+                            #src_name
+                            #src_ident
+                            #context
+                            #highlights
+                        }
+                    }
+                });
+                let variant_name = variant.ident.clone();
+                let members = variant.fields.iter().enumerate().map(|(i, field)| {
+                    field
+                        .ident
+                        .as_ref()
+                        .cloned()
+                        .unwrap_or_else(|| format_ident!("_{}", i))
+                });
+                let diag_ident = match diag {
+                    Diagnostic::Enum { ident, .. } => ident,
+                    Diagnostic::Struct { .. } => unreachable!(),
+                };
+                match &variant.fields {
+                    syn::Fields::Unit => None,
+                    syn::Fields::Named(_) => Some(quote! {
+                        #diag_ident::#variant_name { #(#members),* } => Some(Box::new(vec![
+                            #(#variant_snippets),*
+                        ].into_iter())),
+                    }),
+                    syn::Fields::Unnamed(_) => Some(quote! {
+                        #diag_ident::#variant_name(#(#members),*) => Some(Box::new(vec![
+                            #(#variant_snippets),*
+                        ].into_iter())),
+                    }),
+                }
+            })
+        });
+        Some(quote! {
+            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
+                match self {
+                    #(#variant_arms)*
+                    _ => None,
+                }
+            }
+        })
     }
 }
