@@ -261,6 +261,7 @@ impl Snippets {
             }
         });
         Some(quote! {
+            #[allow(unused_variables)]
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
                 Some(Box::new(vec![
                     #(#snippets),*
@@ -398,6 +399,7 @@ impl Snippets {
             })
         });
         Some(quote! {
+            #[allow(unused_variables)]
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet>>> {
                 match self {
                     #(#variant_arms)*
