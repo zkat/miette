@@ -10,7 +10,7 @@ protocols that allow you to hook into its error reporting facilities, and even
 write your own error reports! It lets you define error types that can print out
 like this (or in any format you like!):
 
-```console
+```sh
 Error: Error[oops::my::bad]: oops it broke!
 
 [bad_file.rs] This is the part that broke:
@@ -46,37 +46,29 @@ $ cargo add miette
 
 ```rust
 /*
-First, you implement a regular `std::error::Error` type.
+You can derive a Diagnostic from any `std::error::Error` type.
 
-`thiserror` is a great way to do so, and plays extremely nicely with `miette`!
+`thiserror` is a great way to define them so, and plays extremely nicely with `miette`!
 */
-
+use std::sync::Arc;
+use miette::Diagnostic;
 use thiserror::Error;
 
-#[derive(Error)]
+#[derive(Error, Diagnostic)]
 #[error("oops it broke!")]
+#[diagnostic(
+    code(oops::my::bad),
+    severity(Warning),
+    help("try doing it better next time?"),
+)]
 struct MyBad {
-    snippets: Vec<DiagnosticSnippet>,
-}
-
-/*
-Next, we have to implement the `Diagnostic` trait for it:
-*/
-
-use miette::{Diagnostic, Severity, DiagnosticSnippet};
-
-impl Diagnostic for MyBad {
-    fn code(&self) -> Box<dyn std::fmt::Display> {
-        Box::new("oops::my::bad")
-    }
-
-    fn help(&self) -> Option<Box<dyn std::fmt::Display>> {
-        Some(Box::new("try doing it better next time?"))
-    }
-
-    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet>>> {
-        Some(Box::new(self.snippets.clone().into_iter()))
-    }
+    src: Arc<String>,
+    filename: String,
+    // Snippets and highlights can be included in the diagnostic!
+    #[snippet(src, filename, "This is the part that broke")]
+    snip: SourceSpan,
+    #[highlight(snip, "this bit here")]
+    bad_bit: SourceSpan,
 }
 
 /*
@@ -102,40 +94,25 @@ impl fmt::Debug for MyBad {
 /*
 Now we can use `miette`~
 */
-use std::sync::Arc;
 use miette::{MietteError, SourceSpan};
 
-fn make_my_error() -> MyBad {
+fn pretend_this_is_main() -> Result<(), MyBad> {
     // You can use plain strings as a `Source`, bu the protocol is fully extensible!
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
 
-    // The Rust runtime will use `{:?}` (Debug) to print any error you return
-    // from `main`!
-    MyBad {
-        // Snippets are **fully optional**, but in some use cases can provide
-        // additional contextual detail for users!
-        //
-        // This is all you need to write to get `rustc`-style, rich error reports!
-        //
-        // See the docs for `DiagnosticSnippet` to learn more about how to
-        // construct these objects!
-        snippets: vec![DiagnosticSnippet {
-            message: Some("This is the part that broke".into()),
-            source_name: "bad_file.rs".into(),
-            source: Arc::new(src),
-            context: SourceSpan {
-                start: 0.into(),
-                end: (len - 1).into(),
-            },
-            highlights: Some(vec![
-                ("this bit here".into(), SourceSpan {
-                    start: 9.into(),
-                    end: 12.into(),
-                })
-            ]),
-        }],
-    }
+    Err(MyBad {
+        src: Arc::new(src),
+        filename: "bad_file.rs".into(),
+        snip: SourceSpan {
+            start: 0.into(),
+            end: (len - 1).into(),
+        },
+        bad_bit: SourceSpan {
+            start: 9.into(),
+            end: 12.into(),
+        },
+    })
 }
 ```
 
