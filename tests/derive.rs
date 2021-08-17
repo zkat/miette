@@ -200,5 +200,30 @@ fn test_snippet_named_struct() {
         var1: SourceSpan,
         #[highlight(snip, "var 2")]
         var2: SourceSpan,
+
+        // Now with member source names
+        filename: String,
+        second_message: String,
+        #[snippet(src, filename, second_message)]
+        snip2: SourceSpan,
     }
+}
+
+#[test]
+fn test_snippet_unnamed_struct() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
+    struct Foo(
+        Arc<String>,
+        #[snippet(0, "my_snippet.rs", "hi")] SourceSpan,
+        #[highlight(1, "var 1")] SourceSpan,
+        #[highlight(1, "var 2")] SourceSpan,
+        // referenced source name
+        String,
+        String,
+        #[snippet(0, 4, 5)] SourceSpan,
+        #[highlight(6, "var 3")] SourceSpan,
+        #[highlight(6, "var 4")] SourceSpan,
+    );
 }

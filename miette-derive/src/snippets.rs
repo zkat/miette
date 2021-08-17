@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
@@ -14,80 +14,73 @@ use crate::diagnostic::{Diagnostic, DiagnosticVariant};
 pub struct Snippets(Vec<Snippet>);
 
 struct Snippet {
-    message: Option<String>,
+    message: Option<MemberOrString>,
     highlights: Vec<Highlight>,
-    source_name: Option<String>,
-    // TODO: These two should be special expressions a-la-thiserror. This won't work for enums either.
-    source: syn::Ident,
-    context: syn::Ident,
+    source_name: MemberOrString,
+    source: syn::Member,
+    snippet: syn::Member,
 }
 
 struct Highlight {
-    highlight: syn::Ident,
-    label: Option<String>,
+    highlight: syn::Member,
+    label: Option<MemberOrString>,
 }
 
 struct SnippetAttr {
-    source: syn::Ident,
-    source_name: Option<String>,
-    message: Option<String>,
+    source: syn::Member,
+    source_name: MemberOrString,
+    message: Option<MemberOrString>,
+}
+
+enum MemberOrString {
+    Member(syn::Member),
+    String(syn::LitStr),
+}
+
+impl ToTokens for MemberOrString {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        use MemberOrString::*;
+        match self {
+            Member(member) => member.to_tokens(tokens),
+            String(string) => string.to_tokens(tokens),
+        }
+    }
+}
+
+impl Parse for MemberOrString {
+    fn parse(input: ParseStream) -> syn::Result<Self> {
+        let lookahead = input.lookahead1();
+        if lookahead.peek(syn::Ident) || lookahead.peek(syn::LitInt) {
+            Ok(MemberOrString::Member(input.parse()?))
+        } else if lookahead.peek(syn::LitStr) {
+            Ok(MemberOrString::String(input.parse()?))
+        } else {
+            Err(syn::Error::new(
+                input.span(),
+                "Expected a string or a field reference.",
+            ))
+        }
+    }
 }
 
 impl Parse for SnippetAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let punc = Punctuated::<syn::Expr, Token![,]>::parse_terminated(input)?;
-        let span = punc.span();
+        let punc = Punctuated::<MemberOrString, Token![,]>::parse_terminated(input)?;
+        let span = input.span();
         let mut iter = punc.into_iter();
-        let source = if let Some(syn::Expr::Path(syn::ExprPath { path, .. })) = iter.next() {
-            if let Some(ident) = path.get_ident() {
-                ident.clone()
-            } else {
+        let source = match iter.next() {
+            Some(MemberOrString::Member(member)) => member,
+            _ => {
                 return Err(syn::Error::new(
                     span,
                     "Source must be an identifier that refers to a Source for this snippet.",
-                ));
+                ))
             }
-        } else {
-            return Err(syn::Error::new(
-                span,
-                "Source must be an identifier that refers to a Source for this snippet.",
-            ));
         };
         let src_name = iter
             .next()
-            .map(|m| {
-                if let syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Str(str),
-                    ..
-                }) = m
-                {
-                    Ok(str.value())
-                } else {
-                    Err(syn::Error::new(
-                        m.span(),
-                        "Only literal strings are supported as snippet source names.",
-                    ))
-                }
-            })
-            .transpose()?;
-
-        let message = iter
-            .next()
-            .map(|m| {
-                if let syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Str(str),
-                    ..
-                }) = m
-                {
-                    Ok(str.value())
-                } else {
-                    Err(syn::Error::new(
-                        m.span(),
-                        "Only literal strings are supported as snippet context messages.",
-                    ))
-                }
-            })
-            .transpose()?;
+            .ok_or_else(|| syn::Error::new(span, "Expected a source name."))?;
+        let message = iter.next();
         Ok(SnippetAttr {
             source,
             source_name: src_name,
@@ -97,70 +90,53 @@ impl Parse for SnippetAttr {
 }
 
 struct HighlightAttr {
-    context: syn::Ident,
-    label: Option<String>,
+    snippet: syn::Member,
+    label: Option<MemberOrString>,
 }
 
 impl Parse for HighlightAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let punc = Punctuated::<syn::Expr, Token![,]>::parse_terminated(input)?;
-        let span = punc.span();
+        let punc = Punctuated::<MemberOrString, Token![,]>::parse_terminated(input)?;
+        let span = input.span();
         let mut iter = punc.into_iter();
-        let context = if let Some(syn::Expr::Path(syn::ExprPath { path, .. })) = iter.next() {
-            if let Some(ident) = path.get_ident() {
-                ident.clone()
-            } else {
-                return Err(syn::Error::new(
+        let snippet =
+            match iter.next() {
+                Some(MemberOrString::Member(member)) => member,
+                _ => return Err(syn::Error::new(
                     span,
-                    "Context must be an identifier that refers to a .",
-                ));
-            }
-        } else {
-            return Err(syn::Error::new(
-                span,
-                "Context must be an identifier that refers to a Source for this snippet.",
-            ));
-        };
-        let label = iter
-            .next()
-            .map(|m| {
-                if let syn::Expr::Lit(syn::ExprLit {
-                    lit: syn::Lit::Str(str),
-                    ..
-                }) = m
-                {
-                    Ok(str.value())
-                } else {
-                    Err(syn::Error::new(
-                        m.span(),
-                        "Only literal strings are supported as snippet context messages.",
-                    ))
-                }
-            })
-            .transpose()?;
-        Ok(HighlightAttr { context, label })
+                    "must be an identifier that refers to something with a #[snippet] attribute.",
+                )),
+            };
+        let label = iter.next();
+        Ok(HighlightAttr { snippet, label })
     }
 }
 
 impl Snippets {
     pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_named_fields(named),
-            syn::Fields::Unnamed(unnamed) => Self::from_unnamed_fields(unnamed),
+            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Unnamed(unnamed) => {
+                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+            }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_named_fields(fields: &syn::FieldsNamed) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
         let mut snippets = HashMap::new();
         // First we collect all the contexts
-        for field in &fields.named {
+        for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path.is_ident("snippet") {
-                    let field_ident = field
-                        .ident
-                        .clone()
-                        .expect("MIETTE BUG: named fields should have idents");
+                    let snippet = if let Some(ident) = field.ident.clone() {
+                        syn::Member::Named(ident)
+                    } else {
+                        syn::Member::Unnamed(syn::Index {
+                            index: i as u32,
+                            span: field.span(),
+                        })
+                    };
                     let SnippetAttr {
                         source,
                         message,
@@ -168,33 +144,38 @@ impl Snippets {
                     } = attr.parse_args::<SnippetAttr>()?;
                     // TODO: useful error when source refers to a field that doesn't exist.
                     snippets.insert(
-                        field_ident.clone(),
+                        snippet.clone(),
                         Snippet {
                             message,
                             highlights: Vec::new(),
                             source_name,
                             source,
-                            context: field_ident,
+                            snippet,
                         },
                     );
                 }
             }
         }
         // Then we loop again looking for highlights
-        for field in &fields.named {
+        for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path.is_ident("highlight") {
-                    let HighlightAttr { context, label } = attr.parse_args::<HighlightAttr>()?;
-                    if let Some(snippet) = snippets.get_mut(&context) {
+                    let HighlightAttr { snippet, label } = attr.parse_args::<HighlightAttr>()?;
+                    if let Some(snippet) = snippets.get_mut(&snippet) {
+                        let member = if let Some(ident) = field.ident.clone() {
+                            syn::Member::Named(ident)
+                        } else {
+                            syn::Member::Unnamed(syn::Index {
+                                index: i as u32,
+                                span: field.span(),
+                            })
+                        };
                         snippet.highlights.push(Highlight {
                             label,
-                            highlight: field
-                                .ident
-                                .clone()
-                                .expect("MIETTE BUG: named fields should have idents?"),
+                            highlight: member,
                         });
                     } else {
-                        return Err(syn::Error::new(context.span(), "Highlight must refer to an existing field with a #[snippet(...)] attribute."));
+                        return Err(syn::Error::new(snippet.span(), "Highlight must refer to an existing field with a #[snippet(...)] attribute."));
                     }
                 }
             }
@@ -206,19 +187,22 @@ impl Snippets {
         }
     }
 
-    fn from_unnamed_fields(_fields: &syn::FieldsUnnamed) -> syn::Result<Option<Self>> {
-        Ok(None)
-    }
-
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let snippets = self.0.iter().map(|snippet| {
             // snippet message
             let msg = snippet
                 .message
                 .as_ref()
-                .map(|msg| {
-                    quote! {
-                        message: std::option::Option::Some(#msg.into()),
+                .map(|msg| match msg {
+                    MemberOrString::String(str) => {
+                        quote! {
+                            message: std::option::Option::Some(#str.into()),
+                        }
+                    }
+                    MemberOrString::Member(m) => {
+                        quote! {
+                            message: std::option::Option::Some(self.#m.clone()),
+                        }
                     }
                 })
                 .unwrap_or_else(|| {
@@ -235,13 +219,19 @@ impl Snippets {
             };
 
             // Source name
-            let src_name = &snippet.source_name;
-            let src_name = quote! {
-                source_name: #src_name.into(),
+            let src_name = match &snippet.source_name {
+                MemberOrString::String(str) => {
+                    quote! {
+                        source_name: #str.into(),
+                    }
+                }
+                MemberOrString::Member(member) => quote! {
+                    source_name: self.#member.clone(),
+                },
             };
 
             // Context
-            let context = &snippet.context;
+            let context = &snippet.snippet;
             let context = quote! {
                 context: self.#context.clone(),
             };
