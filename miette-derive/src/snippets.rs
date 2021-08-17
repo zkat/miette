@@ -16,25 +16,21 @@ pub struct Snippets(Vec<Snippet>);
 struct Snippet {
     message: Option<MemberOrString>,
     highlights: Vec<Highlight>,
-    source_name: MemberOrString,
     source: syn::Member,
     snippet: syn::Member,
 }
 
 struct Highlight {
     highlight: syn::Member,
-    label: Option<MemberOrString>,
 }
 
 struct SnippetAttr {
     source: syn::Member,
-    source_name: MemberOrString,
     message: Option<MemberOrString>,
 }
 
 struct HighlightAttr {
     snippet: syn::Member,
-    label: Option<MemberOrString>,
 }
 
 enum MemberOrString {
@@ -82,15 +78,8 @@ impl Parse for SnippetAttr {
                 ))
             }
         };
-        let src_name = iter
-            .next()
-            .ok_or_else(|| syn::Error::new(span, "Expected a source name."))?;
         let message = iter.next();
-        Ok(SnippetAttr {
-            source,
-            source_name: src_name,
-            message,
-        })
+        Ok(SnippetAttr { source, message })
     }
 }
 
@@ -107,8 +96,7 @@ impl Parse for HighlightAttr {
                     "must be an identifier that refers to something with a #[snippet] attribute.",
                 )),
             };
-        let label = iter.next();
-        Ok(HighlightAttr { snippet, label })
+        Ok(HighlightAttr { snippet })
     }
 }
 
@@ -137,18 +125,13 @@ impl Snippets {
                             span: field.span(),
                         })
                     };
-                    let SnippetAttr {
-                        source,
-                        message,
-                        source_name,
-                    } = attr.parse_args::<SnippetAttr>()?;
+                    let SnippetAttr { source, message } = attr.parse_args::<SnippetAttr>()?;
                     // TODO: useful error when source refers to a field that doesn't exist.
                     snippets.insert(
                         snippet.clone(),
                         Snippet {
                             message,
                             highlights: Vec::new(),
-                            source_name,
                             source,
                             snippet,
                         },
@@ -160,7 +143,7 @@ impl Snippets {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path.is_ident("highlight") {
-                    let HighlightAttr { snippet, label } = attr.parse_args::<HighlightAttr>()?;
+                    let HighlightAttr { snippet } = attr.parse_args::<HighlightAttr>()?;
                     if let Some(snippet) = snippets.get_mut(&snippet) {
                         let member = if let Some(ident) = field.ident.clone() {
                             syn::Member::Named(ident)
@@ -170,10 +153,7 @@ impl Snippets {
                                 span: field.span(),
                             })
                         };
-                        snippet.highlights.push(Highlight {
-                            label,
-                            highlight: member,
-                        });
+                        snippet.highlights.push(Highlight { highlight: member });
                     } else {
                         return Err(syn::Error::new(snippet.span(), "Highlight must refer to an existing field with a #[snippet(...)] attribute."));
                     }
@@ -218,18 +198,6 @@ impl Snippets {
                 source: self.#src_ident.clone(),
             };
 
-            // Source name
-            let src_name = match &snippet.source_name {
-                MemberOrString::String(str) => {
-                    quote! {
-                        source_name: #str.into(),
-                    }
-                }
-                MemberOrString::Member(member) => quote! {
-                    source_name: self.#member.clone(),
-                },
-            };
-
             // Context
             let context = &snippet.snippet;
             let context = quote! {
@@ -238,9 +206,9 @@ impl Snippets {
 
             // Highlights
             let highlights = snippet.highlights.iter().map(|highlight| {
-                let Highlight { highlight, label } = highlight;
+                let Highlight { highlight } = highlight;
                 quote! {
-                    (#label.into(), self.#highlight.clone())
+                    self.#highlight.clone()
                 }
             });
             let highlights = quote! {
@@ -253,7 +221,6 @@ impl Snippets {
             quote! {
                 miette::DiagnosticSnippet {
                     #msg
-                    #src_name
                     #src_ident
                     #context
                     #highlights
@@ -314,26 +281,6 @@ impl Snippets {
                         source: #src_ident.clone(),
                     };
 
-                    // Source name
-                    let src_name = match &snippet.source_name {
-                        MemberOrString::String(str) => {
-                            quote! {
-                                source_name: #str.into(),
-                            }
-                        }
-                        MemberOrString::Member(m) => {
-                            let m = match m {
-                                syn::Member::Named(id) => id.clone(),
-                                syn::Member::Unnamed(syn::Index { index, .. }) => {
-                                    format_ident!("_{}", index)
-                                }
-                            };
-                            quote! {
-                                source_name: #m.clone(),
-                            }
-                        }
-                    };
-
                     // Context
                     let context = match &snippet.snippet {
                         syn::Member::Named(id) => id.clone(),
@@ -347,7 +294,7 @@ impl Snippets {
 
                     // Highlights
                     let highlights = snippet.highlights.iter().map(|highlight| {
-                        let Highlight { highlight, label } = highlight;
+                        let Highlight { highlight } = highlight;
                         let m = match highlight {
                             syn::Member::Named(id) => id.clone(),
                             syn::Member::Unnamed(syn::Index { index, .. }) => {
@@ -355,7 +302,7 @@ impl Snippets {
                             }
                         };
                         quote! {
-                            (#label.into(), #m.clone())
+                            #m.clone()
                         }
                     });
                     let highlights = quote! {
@@ -368,7 +315,6 @@ impl Snippets {
                     quote! {
                         miette::DiagnosticSnippet {
                             #msg
-                            #src_name
                             #src_ident
                             #context
                             #highlights

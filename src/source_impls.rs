@@ -10,7 +10,7 @@ impl Source for String {
         let mut start_column = 0usize;
         let mut iter = self.chars().peekable();
         while let Some(char) = iter.next() {
-            if offset < span.start.offset() {
+            if offset < span.offset() {
                 match char {
                     '\r' => {
                         if iter.next_if_eq(&'\n').is_some() {
@@ -29,9 +29,9 @@ impl Source for String {
                 }
             }
 
-            if offset >= span.end.offset() {
+            if offset >= span.offset() + span.len() - 1 {
                 return Ok(Box::new(MietteSpanContents::new(
-                    &self.as_bytes()[span.start.offset()..=span.end.offset()],
+                    &self.as_bytes()[span.offset()..span.offset() + span.len()],
                     start_line,
                     start_column,
                 )));
@@ -50,10 +50,7 @@ mod tests {
     #[test]
     fn basic() -> Result<(), MietteError> {
         let src = String::from("foo\n");
-        let contents = src.read_span(&SourceSpan {
-            start: 0.into(),
-            end: 3.into(),
-        })?;
+        let contents = src.read_span(&(0, 4).into())?;
         assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
         Ok(())
     }
@@ -61,10 +58,7 @@ mod tests {
     #[test]
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&SourceSpan {
-            start: 4.into(),
-            end: 7.into(),
-        })?;
+        let contents = src.read_span(&(4, 4).into())?;
         assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
         Ok(())
     }
@@ -72,10 +66,7 @@ mod tests {
     #[test]
     fn with_crlf() -> Result<(), MietteError> {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
-        let contents = src.read_span(&SourceSpan {
-            start: 5.into(),
-            end: 9.into(),
-        })?;
+        let contents = src.read_span(&(5, 5).into())?;
         assert_eq!("bar\r\n", std::str::from_utf8(contents.data()).unwrap());
         Ok(())
     }

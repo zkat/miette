@@ -1,8 +1,6 @@
 use std::{fmt, sync::Arc};
 
-use miette::{
-    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter, SourceSpan,
-};
+use miette::{Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter};
 use thiserror::Error;
 
 #[derive(Error)]
@@ -51,19 +49,9 @@ fn fancy() -> Result<(), MietteError> {
     let err = MyBad {
         snippets: vec![DiagnosticSnippet {
             message: Some("This is the part that broke".into()),
-            source_name: "bad_file.rs".into(),
             source: Arc::new(src),
-            highlights: Some(vec![(
-                "this bit here".into(),
-                SourceSpan {
-                    start: 9.into(),
-                    end: 12.into(),
-                },
-            )]),
-            context: SourceSpan {
-                start: 0.into(),
-                end: (len - 1).into(),
-            },
+            highlights: Some(vec![("this bit here", 9, 4).into()]),
+            context: ("bad_file.rs", 0, len).into(),
         }],
     };
     let out = format!("{:?}", err);

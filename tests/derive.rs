@@ -183,8 +183,8 @@ fn test_snippet_named_struct() {
         //   / [my_snippet]: hi this is where the thing went wrong.
         // 1 | hello
         // 2 |     world
-        #[snippet(src, "my_snippet.rs", "hi this is where the thing went wrong")]
-        snip: SourceSpan,
+        #[snippet(src, "hi this is where the thing went wrong")]
+        snip: SourceSpan, // Defines filename using `label`
 
         // "Highlights" are the specific highlights _inside_ the snippet.
         // These will be used to underline/point to specific sections of the
@@ -196,9 +196,9 @@ fn test_snippet_named_struct() {
         //   | ^^^^   ^^^^ - var 2
         //   | |
         //   | var 1
-        #[highlight(snip, "var 1")]
-        var1: SourceSpan,
-        #[highlight(snip, "var 2")]
+        #[highlight(snip)]
+        var1: SourceSpan, // label from SourceSpan is used, if any.
+        #[highlight(snip)]
         var2: SourceSpan,
 
         // Now with member source names
@@ -216,15 +216,14 @@ fn test_snippet_unnamed_struct() {
     #[diagnostic(code(foo::bar::baz))]
     struct Foo(
         Arc<String>,
-        #[snippet(0, "my_snippet.rs", "hi")] SourceSpan,
-        #[highlight(1, "var 1")] SourceSpan,
-        #[highlight(1, "var 2")] SourceSpan,
+        #[snippet(0, "hi")] SourceSpan,
+        #[highlight(1)] SourceSpan,
+        #[highlight(1)] SourceSpan,
         // referenced source name
         String,
-        String,
-        #[snippet(0, 4, 5)] SourceSpan,
-        #[highlight(6, "var 3")] SourceSpan,
-        #[highlight(6, "var 4")] SourceSpan,
+        #[snippet(0, 4)] SourceSpan,
+        #[highlight(5)] SourceSpan,
+        #[highlight(5)] SourceSpan,
     );
 }
 

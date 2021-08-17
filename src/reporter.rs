@@ -23,7 +23,9 @@ impl MietteReporter {
         snippet: &DiagnosticSnippet,
     ) -> fmt::Result {
         use fmt::Write as _;
-        write!(f, "[{}]", snippet.source_name)?;
+        if let Some(source_name) = snippet.context.label() {
+            write!(f, "[{}]", source_name)?;
+        }
         if let Some(msg) = &snippet.message {
             write!(f, " {}:", msg)?;
         }
@@ -36,7 +38,7 @@ impl MietteReporter {
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
-        let mut offset = snippet.context.start.offset();
+        let mut offset = snippet.context.offset();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
         let mut line_str = String::new();
@@ -71,20 +73,22 @@ impl MietteReporter {
                 writeln!(indented(f), "{: <2} | {}", line, line_str)?;
                 line_str.clear();
                 if let Some(highlights) = highlights {
-                    for (label, span) in highlights {
-                        if span.start.offset() >= line_offset && span.end.offset() < offset {
+                    for span in highlights {
+                        if span.offset() >= line_offset && (span.offset() + span.len()) < offset {
                             // Highlight only covers one line.
                             write!(indented(f), "{: <2} | ", "⫶")?;
                             write!(
                                 f,
                                 "{}{} ",
-                                " ".repeat(span.start.offset() - line_offset),
+                                " ".repeat(span.offset() - line_offset),
                                 "^".repeat(span.len())
                             )?;
-                            writeln!(f, "{}", label)?;
-                        } else if span.start.offset() < offset
-                            && span.start.offset() >= line_offset
-                            && span.end.offset() >= offset
+                            if let Some(label) = span.label() {
+                                writeln!(f, "{}", label)?;
+                            }
+                        } else if span.offset() < offset
+                            && span.offset() >= line_offset
+                            && (span.offset() + span.len()) >= offset
                         {
                             // Multiline highlight.
                             todo!("Multiline highlights.");

@@ -174,8 +174,6 @@ A snippet from a [Source] to be displayed with a message and possibly some highl
 pub struct DiagnosticSnippet {
     /// Explanation of this specific diagnostic snippet.
     pub message: Option<String>,
-    /// The "filename" for this snippet.
-    pub source_name: String,
     /// A [Source] that can be used to read the actual text of a source.
     pub source: Arc<dyn Source>,
     /// The primary [SourceSpan] where this diagnostic is located.
@@ -183,7 +181,7 @@ pub struct DiagnosticSnippet {
     /// Additional [SourceSpan]s that mark specific sections of the span, for
     /// example, to underline specific text within the larger span. They're
     /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<(String, SourceSpan)>>,
+    pub highlights: Option<Vec<SourceSpan>>,
 }
 
 /**
@@ -191,35 +189,65 @@ Span within a [Source] with an associated message.
 */
 #[derive(Clone, Debug)]
 pub struct SourceSpan {
+    /// An optional label for this span. Rendered differently depending on
+    /// context.
+    label: Option<String>,
     /// The start of the span.
-    pub start: SourceOffset,
-    /// The (exclusive) end of the span.
-    pub end: SourceOffset,
+    offset: SourceOffset,
+    /// The total length of the span. Think of this as an offset from `start`.
+    length: SourceOffset,
 }
 
 impl SourceSpan {
-    pub fn new(start: SourceOffset, end: SourceOffset) -> Self {
-        assert!(
-            start.offset() <= end.offset(),
-            "Starting offset must come before the end offset."
-        );
-        Self { start, end }
+    pub fn new(start: SourceOffset, length: SourceOffset) -> Self {
+        Self {
+            label: None,
+            offset: start,
+            length,
+        }
+    }
+
+    pub fn new_labeled(label: impl AsRef<str>, start: SourceOffset, length: SourceOffset) -> Self {
+        Self {
+            label: Some(label.as_ref().into()),
+            offset: start,
+            length,
+        }
+    }
+
+    pub fn offset(&self) -> usize {
+        self.offset.offset()
+    }
+
+    pub fn label(&self) -> Option<&str> {
+        self.label.as_ref().map(|x| &x[..])
     }
 
     pub fn len(&self) -> usize {
-        self.end.offset() - self.start.offset() + 1
+        self.length.offset()
     }
 
     pub fn is_empty(&self) -> bool {
-        self.start.offset() == self.end.offset()
+        self.length.offset() == 0
     }
 }
 
 impl From<(ByteOffset, ByteOffset)> for SourceSpan {
-    fn from((start, end): (ByteOffset, ByteOffset)) -> Self {
+    fn from((start, len): (ByteOffset, ByteOffset)) -> Self {
         Self {
-            start: start.into(),
-            end: end.into(),
+            label: None,
+            offset: start.into(),
+            length: len.into(),
+        }
+    }
+}
+
+impl<T: AsRef<str>> From<(T, ByteOffset, ByteOffset)> for SourceSpan {
+    fn from((label, start, len): (T, ByteOffset, ByteOffset)) -> Self {
+        Self {
+            label: Some(label.as_ref().into()),
+            offset: start.into(),
+            length: len.into(),
         }
     }
 }
