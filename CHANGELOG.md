@@ -1,3 +1,29 @@
+<a name="0.9.0"></a>
+## 0.9.0 (2021-08-17)
+
+Yay new version already! A pretty significant API change, too! ��
+
+#### Breaking Changes
+
+`SourceSpan`s have changed a bit: for one, they're based on offset/length now,
+instead of start/end. For two, they have a new `Option<String>` field,
+`label`, which is meant to be used by reporters in different contexts. For
+example, highlight snippets will use them as the labels for underlined
+sections of code, while the snippet context will use the label as the "file
+name" for the Source they point to.
+
+  * **protocol:** new SourceSpans with labels ([acfeb9c5](https://github.com/zkat/miette/commit/acfeb9c5b0e390c924194ee0363fc49fa8defbac))
+
+#### Bug Fixes
+
+* **derive:**  allow unused variables for the snippets method ([f704d6a9](https://github.com/zkat/miette/commit/f704d6a9ae971dfe61fe9a0e0b4a1a7f98fd37bc))
+
+#### Features
+
+* **protocol:** implement From<(usize, usize)> for SourceSpan ([36b86df9](https://github.com/zkat/miette/commit/36b86df9f51984405efa6f38be8bbb984d605207))
+
+
+
 <a name="0.8.1"></a>
 ## 0.8.1 (2021-08-17)
 
