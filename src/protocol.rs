@@ -215,6 +215,15 @@ impl SourceSpan {
     }
 }
 
+impl From<(ByteOffset, ByteOffset)> for SourceSpan {
+    fn from((start, end): (ByteOffset, ByteOffset)) -> Self {
+        Self {
+            start: start.into(),
+            end: end.into(),
+        }
+    }
+}
+
 /**
 "Raw" type for the byte offset from the beginning of a [Source].
 */

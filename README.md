@@ -104,14 +104,8 @@ fn pretend_this_is_main() -> Result<(), MyBad> {
     Err(MyBad {
         src: Arc::new(src),
         filename: "bad_file.rs".into(),
-        snip: SourceSpan {
-            start: 0.into(),
-            end: (len - 1).into(),
-        },
-        bad_bit: SourceSpan {
-            start: 9.into(),
-            end: 12.into(),
-        },
+        snip: (0, (len - 1)).into(),
+        bad_bit: (9, 12).into(),
     })
 }
 ```
