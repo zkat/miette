@@ -288,6 +288,31 @@ impl SourceOffset {
     pub fn offset(&self) -> ByteOffset {
         self.0
     }
+
+    /// Little utility to help convert line/column locations into
+    /// miette-compatible Spans
+    ///
+    /// This function is infallible: Giving an out-of-range line/column pair
+    /// will return the offset of the last byte in the source.
+    pub fn from_location(source: impl AsRef<str>, loc_line: usize, loc_col: usize) -> Self {
+        let mut line = 0usize;
+        let mut col = 0usize;
+        let mut offset = 0usize;
+        for char in source.as_ref().chars() {
+            if char == '\n' {
+                col = 0;
+                line += 1;
+            } else {
+                col += 1;
+            }
+            if line + 1 >= loc_line && col + 1 >= loc_col {
+                break;
+            }
+            offset += char.len_utf8();
+        }
+
+        SourceOffset(offset)
+    }
 }
 
 impl From<ByteOffset> for SourceOffset {
