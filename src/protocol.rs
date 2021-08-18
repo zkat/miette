@@ -252,6 +252,26 @@ impl<T: AsRef<str>> From<(T, ByteOffset, ByteOffset)> for SourceSpan {
     }
 }
 
+impl From<(SourceOffset, SourceOffset)> for SourceSpan {
+    fn from((start, len): (SourceOffset, SourceOffset)) -> Self {
+        Self {
+            label: None,
+            offset: start,
+            length: len,
+        }
+    }
+}
+
+impl<T: AsRef<str>> From<(T, SourceOffset, SourceOffset)> for SourceSpan {
+    fn from((label, start, len): (T, SourceOffset, SourceOffset)) -> Self {
+        Self {
+            label: Some(label.as_ref().into()),
+            offset: start,
+            length: len,
+        }
+    }
+}
+
 /**
 "Raw" type for the byte offset from the beginning of a [Source].
 */
