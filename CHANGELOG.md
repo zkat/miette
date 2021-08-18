@@ -1,3 +1,26 @@
+<a name="0.10.0"></a>
+## 0.10.0 (2021-08-17)
+
+Lots of goodies in this release! I'm working hard on the [1.0.0
+Roadmap](https://github.com/zkat/miette/issues/10), so things are changing
+pretty quick, and I thought it would be nice to release this checkpoint.
+#### Bug Fixes
+
+* **protocol:**  keep the owned spans ([49151bb0](https://github.com/zkat/miette/commit/49151bb0950c0db9d2743c8fb78dcacfc27bc750))
+
+#### Features/Breaking Changes
+
+* **derive:**  Allow anything Clone + Into<SourceSpan> to be used as a Span ([385171eb](https://github.com/zkat/miette/commit/385171eb8178ce2e7d6d2d2849b78e0f09feb721))
+* **offsets:**
+  *  nice utility function to get an offset from a Rust callsite ([26f409c5](https://github.com/zkat/miette/commit/26f409c5252c3fda5ead140eb4d5ec282f47f0f7))
+  *  utility function for converting from line/col to offset ([75c23127](https://github.com/zkat/miette/commit/75c2312755bf714c112badf6310b2bff1633f6bc))
+  *  more utility From impls for SourceSpan ([95200366](https://github.com/zkat/miette/commit/95200366a1639b0b729db460ae1e50cce6fee9de))
+* **protocol:**
+  *  add Source impls for Cow and Arc ([53074d34](https://github.com/zkat/miette/commit/53074d3488e1404331fc1ca3c5e068ac57e9a852))
+  *  reference-based DiagnosticReport! ([f390520b](https://github.com/zkat/miette/commit/f390520b45823d65055f9f872016e4ee27c0c20a))
+
+
+
 <a name="0.9.0"></a>
 ## 0.9.0 (2021-08-17)
 
