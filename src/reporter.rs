@@ -5,18 +5,71 @@ but largely meant to be an example.
 use std::fmt;
 
 use indenter::indented;
+use once_cell::sync::OnceCell;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticReporter, DiagnosticSnippet, Severity};
+use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
+use crate::MietteError;
+
+static REPORTER: OnceCell<Box<dyn DiagnosticReportPrinter + Send + Sync + 'static>> =
+    OnceCell::new();
+
+/// Set the global [DiagnosticReportPrinter] that will be used when you report
+/// using [DiagnosticReport].
+pub fn set_reporter(
+    reporter: impl DiagnosticReportPrinter + Send + Sync + 'static,
+) -> Result<(), MietteError> {
+    REPORTER
+        .set(Box::new(reporter))
+        .map_err(|_| MietteError::ReporterInstallFailed)
+}
+
+/// Used by [DiagnosticReport] to fetch the reporter that will be used to
+/// print stuff out.
+pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + 'static) {
+    &**REPORTER.get_or_init(|| Box::new(DefaultReportPrinter))
+}
+
+/// Convenience alias. This is intended to be used as the return type for `main()`
+pub type DiagnosticResult<T> = Result<T, DiagnosticReport>;
+
+/// When used with `?`/`From`, this will wrap any Diagnostics and, when
+/// formatted with `Debug`, will fetch the current [DiagnosticReportPrinter] and
+/// use it to format the inner [Diagnostic].
+pub struct DiagnosticReport {
+    diagnostic: Box<dyn Diagnostic + Send + Sync + 'static>,
+}
+
+impl DiagnosticReport {
+    /// Return a reference to the inner [Diagnostic].
+    pub fn inner(&self) -> &(dyn Diagnostic + Send + Sync + 'static) {
+        &*self.diagnostic
+    }
+}
+
+impl std::fmt::Debug for DiagnosticReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        get_reporter().debug(&*self.diagnostic, f)
+    }
+}
+
+impl<T: Diagnostic + Send + Sync + 'static> From<T> for DiagnosticReport {
+    fn from(diagnostic: T) -> Self {
+        DiagnosticReport {
+            diagnostic: Box::new(diagnostic),
+        }
+    }
+}
 
 /**
-Reference implementation of the [DiagnosticReporter] trait. This is generally
-good enough for simple use-cases, but you might want to implement your own if
-you want custom reporting for your tool or app.
+Reference implementation of the [DiagnosticReportPrinter] trait. This is generally
+good enough for simple use-cases, and is the default one installed with `miette`,
+but you might want to implement your own if you want custom reporting for your
+tool or app.
 */
-pub struct MietteReporter;
+pub struct DefaultReportPrinter;
 
-impl MietteReporter {
+impl DefaultReportPrinter {
     fn render_snippet(
         &self,
         f: &mut fmt::Formatter<'_>,
@@ -102,7 +155,7 @@ impl MietteReporter {
     }
 }
 
-impl DiagnosticReporter for MietteReporter {
+impl DiagnosticReportPrinter for DefaultReportPrinter {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use fmt::Write as _;
 
@@ -155,7 +208,7 @@ impl DiagnosticReporter for MietteReporter {
 /// Literally what it says on the tin.
 pub struct JokeReporter;
 
-impl DiagnosticReporter for JokeReporter {
+impl DiagnosticReportPrinter for JokeReporter {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);

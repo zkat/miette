@@ -9,7 +9,7 @@ use std::{fmt::Display, fs, panic::Location};
 use crate::MietteError;
 
 /**
-Adds rich metadata to your Error that can be used by [DiagnosticReporter] to print
+Adds rich metadata to your Error that can be used by [DiagnosticReportPrinter] to print
 really nice and human-friendly error messages.
 */
 pub trait Diagnostic: std::error::Error {
@@ -20,7 +20,7 @@ pub trait Diagnostic: std::error::Error {
     /// `E0123` or Enums will work just fine.
     fn code<'a>(&'a self) -> Box<dyn Display + 'a>;
 
-    /// Diagnostic severity. This may be used by [DiagnosticReporter]s to change the
+    /// Diagnostic severity. This may be used by [DiagnosticReportPrinter]s to change the
     /// display format of this diagnostic.
     ///
     /// If `None`, reporters should treat this as [Severity::Error]
@@ -68,7 +68,7 @@ Protocol for [Diagnostic] handlers, which are responsible for actually printing 
 
 Blatantly based on [EyreHandler](https://docs.rs/eyre/0.6.5/eyre/trait.EyreHandler.html) (thanks, Jane!)
 */
-pub trait DiagnosticReporter: core::any::Any + Send + Sync {
+pub trait DiagnosticReportPrinter: core::any::Any + Send + Sync {
     /// Define the report format.
     fn debug(
         &self,
@@ -88,7 +88,7 @@ pub trait DiagnosticReporter: core::any::Any + Send + Sync {
 }
 
 /**
-[Diagnostic] severity. Intended to be used by [DiagnosticReporter] to change the
+[Diagnostic] severity. Intended to be used by [DiagnosticReportPrinter]s to change the
 way different Diagnostics are displayed.
 */
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
@@ -316,7 +316,7 @@ impl SourceOffset {
 
     /// Returns an offset for the _file_ location of wherever this function is
     /// called. If you want to get _that_ caller's location, mark this
-    /// function's caller with #[track_caller] (and so on and so forth).
+    /// function's caller with `#[track_caller]` (and so on and so forth).
     ///
     /// Returns both the filename that was given and the offset of the caller
     /// as a SourceOffset

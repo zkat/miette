@@ -1,23 +1,13 @@
-use std::fmt;
-
-use miette::{
-    Diagnostic, DiagnosticReporter, DiagnosticSnippet, MietteError, MietteReporter, SourceSpan,
-};
+use miette::{Diagnostic, DiagnosticReport, DiagnosticSnippet, MietteError, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error)]
+#[derive(Debug, Error)]
 #[error("oops!")]
 struct MyBad {
     message: String,
     src: String,
     ctx: SourceSpan,
     highlight: SourceSpan,
-}
-
-impl fmt::Debug for MyBad {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        MietteReporter.debug(self, f)
-    }
 }
 
 impl Diagnostic for MyBad {
@@ -52,7 +42,8 @@ fn fancy() -> Result<(), MietteError> {
         ctx: ("bad_file.rs", 0, len).into(),
         highlight: ("this bit here", 9, 4).into(),
     };
-    let out = format!("{:?}", err);
+    let rep: DiagnosticReport = err.into();
+    let out = format!("{:?}", rep);
     // println!("{}", out);
     assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n    ⫶  |   ^^^^ this bit here\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())

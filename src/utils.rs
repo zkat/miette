@@ -10,8 +10,15 @@ use crate::Diagnostic;
 #[error("{}", self.error)]
 pub struct DiagnosticError {
     #[source]
-    pub error: Box<dyn std::error::Error + Send + Sync + 'static>,
-    pub code: String,
+    error: Box<dyn std::error::Error + Send + Sync + 'static>,
+    code: String,
+}
+
+impl DiagnosticError {
+    /// Return a reference to the inner Error type.
+    pub fn inner(&self) -> &(dyn std::error::Error + Send + Sync + 'static) {
+        &*self.error
+    }
 }
 
 impl Diagnostic for DiagnosticError {
@@ -19,9 +26,6 @@ impl Diagnostic for DiagnosticError {
         Box::new(&self.code)
     }
 }
-
-/// Utility Result type for functions that return boxed [Diagnostic]s.
-pub type DiagnosticResult<T> = Result<T, Box<dyn Diagnostic + Send + Sync + 'static>>;
 
 pub trait IntoDiagnostic<T, E> {
     /// Converts [Result]-like types that return regular errors into a

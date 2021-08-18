@@ -1,5 +1,3 @@
-# miette
-
 you run miette? You run her code like the software? Oh. Oh! Error code for
 coder! Error code for One Thousand Lines!
 
@@ -28,8 +26,13 @@ adds various facilities like [Severity], error codes that could be looked up
 by users, and snippet display with support for multiline reports, arbitrary
 [Source]s, and pretty printing.
 
+`miette` also includes a (lightweight) `anyhow`/`eyre`-style
+[DiagnosticReport] type which can be returned from application-internal
+functions to make the `?` experience nicer. It's extra easy to use when using
+[DiagnosticResult]!
+
 While the `miette` crate bundles some baseline implementations for [Source]
-and [DiagnosticReporter], it's intended to define a protocol that other crates
+and [DiagnosticReportPrinter], it's intended to define a protocol that other crates
 can build on top of to provide rich error reporting, and encourage an
 ecosystem that leans on this extra metadata to provide it for others in a way
 that's compatible with [std::error::Error]
@@ -48,12 +51,12 @@ $ cargo add miette
 /*
 You can derive a Diagnostic from any `std::error::Error` type.
 
-`thiserror` is a great way to define them so, and plays extremely nicely with `miette`!
+`thiserror` is a great way to define them, and plays nicely with `miette`!
 */
-use miette::Diagnostic;
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
-#[derive(Error, Diagnostic)]
+#[derive(Error, Debug, Diagnostic)]
 #[error("oops it broke!")]
 #[diagnostic(
     code(oops::my::bad),
@@ -61,6 +64,7 @@ use thiserror::Error;
     help("try doing it better next time?"),
 )]
 struct MyBad {
+    // The Source that we're gonna be printing snippets out of.
     src: String,
     // Snippets and highlights can be included in the diagnostic!
     #[snippet(src, "This is the part that broke")]
@@ -70,40 +74,39 @@ struct MyBad {
 }
 
 /*
-Then, we implement `std::fmt::Debug` using the included `MietteReporter`,
-which is able to pretty print diagnostics reasonably well.
+Now let's define a function!
 
-You can use any reporter you want here, or no reporter at all,
-but `Debug` is required by `std::error::Error`, so you need to at
-least derive it.
-
-Make sure you pull in the `miette::DiagnosticReporter` trait!.
+Use this DiagnosticResult type (or its expanded version) as the return type
+throughout your app (but NOT your libraries! Those should always return concrete
+types!).
 */
-use std::fmt;
-
-use miette::{DiagnosticReporter, MietteReporter};
-
-impl fmt::Debug for MyBad {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        MietteReporter.debug(self, f)
-    }
-}
-
-/*
-Now we can use `miette`~
-*/
-use miette::{MietteError, SourceSpan};
-
-fn pretend_this_is_main() -> Result<(), MyBad> {
-    // You can use plain strings as a `Source`, bu the protocol is fully extensible!
+use miette::DiagnosticResult as Result;
+fn this_fails() -> Result<()> {
+    // You can use plain strings as a `Source`, or anything that implements
+    // the one-method `Source` trait.
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
 
     Err(MyBad {
         src,
         snip: ("bad_file.rs", 0, len).into(),
-        bad_bit: ("this bit here", 9, 3).into(),
-    })
+        bad_bit: ("this bit here", 9, 4).into(),
+    })?;
+
+    Ok(())
+}
+
+/*
+Now to get everything printed nicely, just return a Result<(), DiagnosticReport>
+and you're all set!
+
+Note: You can swap out the default reporter for a custom one using `miette::set_reporter()`
+*/
+fn pretend_this_is_main() -> Result<()> {
+    // kaboom~
+    this_fails()?;
+
+    Ok(())
 }
 ```
 

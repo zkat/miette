@@ -11,4 +11,6 @@ pub enum MietteError {
     IoError(#[from] io::Error),
     #[error("The given offset is outside the bounds of its Source")]
     OutOfBounds,
+    #[error("Failed to install reporter hook")]
+    ReporterInstallFailed,
 }
