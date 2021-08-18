@@ -177,11 +177,11 @@ pub struct DiagnosticSnippet<'a> {
     /// A [Source] that can be used to read the actual text of a source.
     pub source: &'a (dyn Source),
     /// The primary [SourceSpan] where this diagnostic is located.
-    pub context: &'a SourceSpan,
+    pub context: SourceSpan,
     /// Additional [SourceSpan]s that mark specific sections of the span, for
     /// example, to underline specific text within the larger span. They're
     /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<&'a SourceSpan>>,
+    pub highlights: Option<Vec<SourceSpan>>,
 }
 
 /**

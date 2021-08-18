@@ -34,8 +34,8 @@ impl Diagnostic for MyBad {
             vec![DiagnosticSnippet {
                 message: Some(self.message.as_ref()),
                 source: &self.src,
-                context: &self.ctx,
-                highlights: Some(vec![&self.highlight]),
+                context: self.ctx.clone(),
+                highlights: Some(vec![self.highlight.clone()]),
             }]
             .into_iter(),
         ))

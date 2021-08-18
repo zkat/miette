@@ -33,7 +33,7 @@ impl MietteReporter {
         writeln!(f)?;
         let context_data = snippet
             .source
-            .read_span(snippet.context)
+            .read_span(&snippet.context)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
