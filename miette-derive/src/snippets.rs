@@ -200,14 +200,14 @@ impl Snippets {
             // Context
             let context = &snippet.snippet;
             let context = quote! {
-                context: self.#context.clone(),
+                context: self.#context.clone().into(),
             };
 
             // Highlights
             let highlights = snippet.highlights.iter().map(|highlight| {
                 let Highlight { highlight } = highlight;
                 quote! {
-                    self.#highlight.clone()
+                    self.#highlight.clone().into()
                 }
             });
             let highlights = quote! {
@@ -288,7 +288,7 @@ impl Snippets {
                         }
                     };
                     let context = quote! {
-                        context: #context.clone(),
+                        context: #context.clone().into(),
                     };
 
                     // Highlights
@@ -301,7 +301,7 @@ impl Snippets {
                             }
                         };
                         quote! {
-                            #m.clone()
+                            #m.clone().into()
                         }
                     });
                     let highlights = quote! {

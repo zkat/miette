@@ -193,9 +193,11 @@ fn test_snippet_named_struct() {
         //   | |
         //   | var 1
         #[highlight(snip)]
-        var1: SourceSpan, // label from SourceSpan is used, if any.
+        // label from SourceSpan is used, if any.
+        var1: SourceSpan,
         #[highlight(snip)]
-        var2: SourceSpan,
+        // Anything that's Clone + Into<SourceSpan> can be used here.
+        var2: (String, usize, usize),
 
         // Now with member source names
         filename: String,
