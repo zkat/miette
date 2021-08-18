@@ -1,3 +1,16 @@
+<a name="0.11.0"></a>
+## 0.11.0 (2021-08-18)
+
+BIG changes this time. The whole end-to-end experience for tossing around
+Diagnostics in your code has been overhauled, printing reports is easier than
+ever, and we even have an `eyre::Report`-style wrapper you can pass around in
+app-internal returns!
+
+#### Features
+
+* **reporter:**  Overhauled return type/main/DiagnosticReport experience. ([29c1403e](https://github.com/zkat/miette/commit/29c1403efdd7fd218f240ac458fd19bba17e9551))
+
+
 <a name="0.10.0"></a>
 ## 0.10.0 (2021-08-17)
 
