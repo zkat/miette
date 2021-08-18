@@ -1,6 +1,8 @@
 /*!
 Default trait implementations for [Source].
 */
+use std::{borrow::Cow, sync::Arc};
+
 use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
 
 impl Source for String {
@@ -40,6 +42,24 @@ impl Source for String {
             offset += char.len_utf8();
         }
         Err(MietteError::OutOfBounds)
+    }
+}
+
+impl<T: Source> Source for Arc<T> {
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
+        self.as_ref().read_span(span)
+    }
+}
+
+impl<T: Source + Clone> Source for Cow<'_, T> {
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
+        self.as_ref().read_span(span)
     }
 }
 

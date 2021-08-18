@@ -232,11 +232,11 @@ fn test_snippet_enum() {
         #[diagnostic(code(foo::a))]
         A {
             src: String,
-            #[snippet(src, "my_snippet.rs", "hi this is where the thing went wrong")]
+            #[snippet(src, "hi this is where the thing went wrong")]
             snip: SourceSpan,
-            #[highlight(snip, "var 1")]
+            #[highlight(snip)]
             var1: SourceSpan,
-            #[highlight(snip, "var 2")]
+            #[highlight(snip)]
             var2: SourceSpan,
             filename: String,
             second_message: String,
@@ -246,15 +246,15 @@ fn test_snippet_enum() {
         #[diagnostic(code(foo::b))]
         B(
             String,
-            #[snippet(0, "my_snippet.rs", "hi")] SourceSpan,
-            #[highlight(1, "var 1")] SourceSpan,
+            #[snippet(0, "hi")] SourceSpan,
+            #[highlight(1)] SourceSpan,
             #[highlight(1, "var 2")] SourceSpan,
             // referenced source name
             String,
             String,
             #[snippet(0, 4, 5)] SourceSpan,
-            #[highlight(6, "var 3")] SourceSpan,
-            #[highlight(6, "var 4")] SourceSpan,
+            #[highlight(6)] SourceSpan,
+            #[highlight(6)] SourceSpan,
         ),
     }
 }

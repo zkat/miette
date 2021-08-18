@@ -112,7 +112,7 @@ If you can read it, you can source it,
 and it's not necessary to read the whole thing--meaning you should be able to
 support Sources which are gigabytes or larger in size.
 */
-pub trait Source: std::fmt::Debug + Send + Sync + 'static {
+pub trait Source: std::fmt::Debug + Send + Sync {
     /// Read the bytes for a specific span from this Source.
     fn read_span<'a>(
         &'a self,
