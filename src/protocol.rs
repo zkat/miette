@@ -4,7 +4,7 @@ that you can implement to get access to miette's (and related library's) full
 reporting and such features.
 */
 
-use std::fmt::Display;
+use std::{fmt::Display, fs, panic::Location};
 
 use crate::MietteError;
 
@@ -312,6 +312,27 @@ impl SourceOffset {
         }
 
         SourceOffset(offset)
+    }
+
+    /// Returns an offset for the _file_ location of wherever this function is
+    /// called. If you want to get _that_ caller's location, mark this
+    /// function's caller with #[track_caller] (and so on and so forth).
+    ///
+    /// Returns both the filename that was given and the offset of the caller
+    /// as a SourceOffset
+    ///
+    /// Keep in mind that this fill only work if the file your Rust source
+    /// file was compiled from is actually available at that location. If
+    /// you're shipping binaries for your application, you'll want to ignore
+    /// the Err case or otherwise report it.
+    #[track_caller]
+    pub fn from_current_location() -> Result<(String, Self), MietteError> {
+        let loc = Location::caller();
+        Ok((
+            loc.file().into(),
+            fs::read_to_string(loc.file())
+                .map(|txt| Self::from_location(&txt, loc.line() as usize, loc.column() as usize))?,
+        ))
     }
 }
 
