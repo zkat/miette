@@ -403,11 +403,7 @@ impl DefaultReportPrinter {
         Ok(())
     }
 
-    fn render_multi_line_end(
-        &self,
-        f: &mut fmt::Formatter<'_>,
-        hl: &SourceSpan,
-    ) -> fmt::Result {
+    fn render_multi_line_end(&self, f: &mut fmt::Formatter<'_>, hl: &SourceSpan) -> fmt::Result {
         writeln!(
             f,
             "{} {}",
