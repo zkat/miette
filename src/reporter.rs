@@ -105,13 +105,13 @@ impl Line {
     // Does this line contain the *beginning* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_starts(&self, span: &SourceSpan) -> bool {
-        span.offset() + span.len() > self.offset + self.length
+        span.offset() >= self.offset
     }
 
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &SourceSpan) -> bool {
-        span.offset() + span.len() > self.offset
+        span.offset() + span.len() >= self.offset + self.length
     }
 }
 
@@ -198,8 +198,7 @@ impl DefaultReportPrinter {
             let mut num_highlights = 0;
             for hl in &highlights {
                 if !line.span_line_only(hl)
-                    && line.span_applies(hl)
-                    && (line.span_flyby(hl) || line.span_starts(hl) || line.span_ends(hl))
+                    && line.span_applies(hl) && (line.span_flyby(hl) || line.span_starts(hl) || line.span_ends(hl))
                 {
                     num_highlights += 1;
                 }
@@ -210,7 +209,6 @@ impl DefaultReportPrinter {
             // Make room for the right-arrows
             max_gutter += 2;
         }
-        println!("max_gutter: {}", max_gutter);
 
         // Oh and one more thing: We need to figure out how much room our line numbers need!
         let linum_width = lines[..]
@@ -241,7 +239,7 @@ impl DefaultReportPrinter {
                         // no line number!
                         self.write_no_linum(f, linum_width)?;
                         // gutter _again_
-                        self.render_highlight_gutter(f, max_gutter, line, &highlights, true)?;
+                        self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
 
                         self.render_single_line_highlight(
                             f,
@@ -251,11 +249,11 @@ impl DefaultReportPrinter {
                             max_gutter,
                             &highlights,
                         )?;
-                    } else if line.span_ends(hl) {
+                    } else if line.span_ends(hl) && !line.span_starts(hl) {
                         // no line number!
                         self.write_no_linum(f, linum_width)?;
                         // gutter _again_
-                        self.render_highlight_gutter(f, max_gutter, line, &highlights, false)?;
+                        self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
                         self.render_multi_line_end(f, line, hl, linum_width)?;
                     }
                 }
@@ -299,9 +297,11 @@ impl DefaultReportPrinter {
                 } else if line.span_flyby(hl) {
                     write!(f, "{:width$}", self.chars.vbar, width = max_gutter)?;
                 } else {
+                    println!("uhhhh... nothing?");
                     write!(f, "{:width$}", " ", width = max_gutter + 1)?;
                 }
             } else {
+                println!("didn't apply?...");
                 write!(f, "{:width$}", " ", width = max_gutter + 1)?;
             }
         }
@@ -314,16 +314,15 @@ impl DefaultReportPrinter {
         max_gutter: usize,
         line: &Line,
         highlights: &[SourceSpan],
-        single_line: bool,
     ) -> fmt::Result {
         if max_gutter == 0 {
             return Ok(());
         }
         for hl in highlights {
             if line.span_applies(hl) && !line.span_line_only(hl) {
-                if line.span_starts(hl) && !single_line {
-                    write!(f, "{}{:width$}", self.chars.vbar, " ", width = max_gutter,)?;
-                } else if line.span_ends(hl) && !single_line {
+                if line.span_starts(hl) {
+                    write!(f, "{}{:width$}", self.chars.vbar, " ", width = max_gutter)?;
+                } else if line.span_ends(hl) {
                     write!(
                         f,
                         "{}{}{}{:width$}",
@@ -386,7 +385,7 @@ impl DefaultReportPrinter {
 
         // Next line for this label...
         self.write_no_linum(f, linum_width)?;
-        self.render_highlight_gutter(f, max_gutter, line, highlights, true)?;
+        self.render_highlight_gutter(f, max_gutter, line, highlights)?;
         // Print the label itself...
         writeln!(
             f,
