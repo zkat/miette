@@ -23,7 +23,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     };
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
-    // println!("{}", out);
+    println!("{}", out);
     assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
@@ -80,7 +80,7 @@ fn multiline_highlight() -> Result<(), MietteError> {
     let err = MyBad {
         src,
         ctx: ("bad_file.rs", 0, len).into(),
-        highlight: ("this bit here", 9, 11).into(),
+        highlight: ("these two lines", 9, 11).into(),
     };
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
