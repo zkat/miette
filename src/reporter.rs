@@ -83,6 +83,10 @@ struct Line {
 }
 
 impl Line {
+    fn span_line_only(&self, span: &SourceSpan) -> bool {
+        span.offset() >= self.offset && span.offset() + span.len() <= self.offset + self.length
+    }
+
     fn span_applies(&self, span: &SourceSpan) -> bool {
         // TODO: Check off-by-one errors
         span.offset() >= self.offset && span.offset() <= self.offset + self.length
@@ -100,12 +104,16 @@ impl Line {
             && span.offset() + span.len() > self.offset + self.length
     }
 
-    // Similar to flybys, but we check whether at least one end points to text
-    // in this line.
-    fn span_multiline(&self, span: &SourceSpan) -> bool {
-        self.span_applies(span)
-            && (span.offset() < self.offset
-                || span.offset() + span.len() > self.offset + self.length)
+    // Does this line contain the *beginning* of this multiline span?
+    // This assumes self.span_applies() is true already.
+    fn span_starts(&self, span: &SourceSpan) -> bool {
+        span.offset() + span.len() > self.offset + self.length
+    }
+
+    // Does this line contain the *end* of this multiline span?
+    // This assumes self.span_applies() is true already.
+    fn span_ends(&self, span: &SourceSpan) -> bool {
+        span.offset() < self.offset
     }
 }
 
@@ -197,6 +205,9 @@ impl DefaultReportPrinter {
             }
             max_gutter = std::cmp::max(max_gutter, num_highlights);
         }
+        if max_gutter > 0 {
+            max_gutter += 2;
+        }
 
         // Oh and one more thing: We need to figure out how much room our line numbers need!
         let linum_width = lines[..]
@@ -213,8 +224,34 @@ impl DefaultReportPrinter {
 
             // Then, we need to print the gutter, along with any fly-bys
             for hl in &highlights {
-                if line.span_flyby(hl) {
-                    write!(f, "{}", self.chars.vbar)?;
+                if line.span_applies(hl) {
+                    if line.span_flyby(hl) {
+                        write!(f, "{:width$}", self.chars.vbar, width = max_gutter)?;
+                    } else if line.span_starts(hl) {
+                        write!(
+                            f,
+                            "{}{}{}{:width$}",
+                            self.chars.ltop,
+                            self.chars.hbar,
+                            self.chars.rarrow,
+                            " ",
+                            width = max_gutter - 2
+                        )?;
+                    } else if line.span_ends(hl) {
+                        write!(
+                            f,
+                            "{}{}{}{:width$}",
+                            self.chars.lcross,
+                            self.chars.hbar,
+                            self.chars.rarrow,
+                            " ",
+                            width = max_gutter - 2
+                        )?;
+                    } else {
+                        write!(f, "{:width$}", "", width = max_gutter + 1)?;
+                    }
+                } else {
+                    write!(f, "{:width$}", "", width = max_gutter + 1)?;
                 }
             }
 
@@ -224,15 +261,13 @@ impl DefaultReportPrinter {
             // Next, we write all the highlights that apply to this particular line.
             for hl in &highlights {
                 if line.span_applies(hl) {
-                    // No line number!
-                    self.write_no_linum(f, linum_width)?;
-
                     // Render the actual label/underline/arrow
-                    if line.span_multiline(hl) {
-                        // Thanks I hate it
-                        todo!("render multiline highlights");
-                    } else {
+                    if line.span_line_only(hl) {
                         self.render_single_line_highlight(f, line, hl, linum_width)?;
+                    } else if line.span_ends(hl) {
+                        self.render_multi_line_end(f, line, hl, linum_width)?;
+                    } else {
+                        writeln!(f)?;
                     }
                 }
             }
@@ -265,6 +300,8 @@ impl DefaultReportPrinter {
     ) -> fmt::Result {
         // Single-line stuff is easy! Just underline it, then
         // add a line and slap a label on it.
+        self.write_no_linum(f, linum_width)?;
+
         let local_offset = hl.offset() - line.offset;
         let vbar_offset = local_offset + (hl.len() / 2);
         let num_left = vbar_offset - local_offset;
@@ -292,6 +329,18 @@ impl DefaultReportPrinter {
             hl.label().unwrap_or(""), // TODO: conditional label
             width = vbar_offset
         )?;
+        Ok(())
+    }
+
+    fn render_multi_line_end(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        line: &Line,
+        hl: &SourceSpan,
+        linum_width: usize,
+    ) -> fmt::Result {
+        // TODO
+        writeln!(f, "{}{}", self.chars.lbot, self.chars.hbar)?;
         Ok(())
     }
 
