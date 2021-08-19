@@ -63,7 +63,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
 */
 
 #[test]
-fn multiline_highlight() -> Result<(), MietteError> {
+fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
@@ -85,6 +85,33 @@ fn multiline_highlight() -> Result<(), MietteError> {
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │     source\n 2 │ ╭─▶   text\n 3 │ ├─▶     here\n   · ╰──── these two lines\n\n﹦try doing it better next time?\n".to_string(), out);
+    Ok(())
+}
+
+#[test]
+fn multiline_highlight_flyby() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: String,
+        #[snippet(src, "This is the part that broke")]
+        ctx: SourceSpan,
+        #[highlight(ctx)]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src,
+        ctx: ("bad_file.rs", 0, len).into(),
+        highlight: ("this block", 0, 16).into(),
+    };
+    let rep: DiagnosticReport = err.into();
+    let out = format!("{:?}", rep);
+    println!("{}", out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ │     text\n 3 │ ├─▶     here\n   · ╰──── this block\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }

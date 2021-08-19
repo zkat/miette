@@ -88,8 +88,12 @@ impl Line {
     }
 
     fn span_applies(&self, span: &SourceSpan) -> bool {
-        // TODO: Check off-by-one errors
-        span.offset() >= self.offset && span.offset() <= self.offset + self.length
+        // Span starts in this line
+        (span.offset() >= self.offset && span.offset() <= self.offset +self.length)
+        // Span passes through this line
+        || (span.offset() < self.offset && span.offset() + span.len() > self.offset + self.length) //todo
+        // Span ends on this line
+        || (span.offset() + span.len() >= self.offset && span.offset() + span.len() <= self.offset + self.length)
     }
 
     // A "flyby" is a multi-line span that technically covers this line, but
@@ -111,7 +115,8 @@ impl Line {
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &SourceSpan) -> bool {
-        span.offset() + span.len() >= self.offset + self.length
+        span.offset() + span.len() >= self.offset
+            && span.offset() + span.len() <= self.offset + self.length
     }
 }
 
@@ -198,7 +203,8 @@ impl DefaultReportPrinter {
             let mut num_highlights = 0;
             for hl in &highlights {
                 if !line.span_line_only(hl)
-                    && line.span_applies(hl) && (line.span_flyby(hl) || line.span_starts(hl) || line.span_ends(hl))
+                    && line.span_applies(hl)
+                    && (line.span_flyby(hl) || line.span_starts(hl) || line.span_ends(hl))
                 {
                     num_highlights += 1;
                 }
@@ -254,7 +260,7 @@ impl DefaultReportPrinter {
                         self.write_no_linum(f, linum_width)?;
                         // gutter _again_
                         self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
-                        self.render_multi_line_end(f, line, hl, linum_width)?;
+                        self.render_multi_line_end(f, hl)?;
                     }
                 }
             }
@@ -295,13 +301,11 @@ impl DefaultReportPrinter {
                         width = max_gutter.saturating_sub(2),
                     )?;
                 } else if line.span_flyby(hl) {
-                    write!(f, "{:width$}", self.chars.vbar, width = max_gutter)?;
+                    write!(f, "{:width$}", self.chars.vbar, width = max_gutter + 1)?;
                 } else {
-                    println!("uhhhh... nothing?");
                     write!(f, "{:width$}", " ", width = max_gutter + 1)?;
                 }
             } else {
-                println!("didn't apply?...");
                 write!(f, "{:width$}", " ", width = max_gutter + 1)?;
             }
         }
@@ -328,8 +332,8 @@ impl DefaultReportPrinter {
                         "{}{}{}{:width$}",
                         self.chars.lbot,
                         self.chars.hbar,
-                        self.chars.rarrow,
-                        " ",
+                        self.chars.hbar,
+                        self.chars.hbar,
                         width = max_gutter.saturating_sub(2),
                     )?;
                 } else {
@@ -402,16 +406,12 @@ impl DefaultReportPrinter {
     fn render_multi_line_end(
         &self,
         f: &mut fmt::Formatter<'_>,
-        line: &Line,
         hl: &SourceSpan,
-        linum_width: usize,
     ) -> fmt::Result {
         writeln!(
             f,
-            "{}{}{} {}",
-            self.chars.lbot,
+            "{} {}",
             self.chars.hbar,
-            self.chars.rarrow,
             hl.label().unwrap_or("") // TODO: conditional label
         )?;
         Ok(())
