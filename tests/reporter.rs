@@ -44,7 +44,7 @@ fn fancy() -> Result<(), MietteError> {
     };
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
-    // println!("{}", out);
+    println!("{}", out);
     assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n    1  | source\n    2  |   text\n    ⫶  |   ^^^^ this bit here\n    3  |     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
