@@ -110,7 +110,11 @@ impl Line {
 }
 
 impl DefaultReportPrinter {
-    fn render_report(&self, f: &mut fmt::Formatter<'_>, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_report(
+        &self,
+        f: &mut fmt::Formatter<'_>,
+        diagnostic: &(dyn Diagnostic),
+    ) -> fmt::Result {
         use fmt::Write as _;
         let sev = match diagnostic.severity() {
             Some(Severity::Error) | None => "Error",

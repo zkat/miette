@@ -6,7 +6,7 @@ use proc_macro2::{Delimiter, Group, TokenStream, TokenTree};
 use quote::{format_ident, quote, quote_spanned, ToTokens};
 use syn::ext::IdentExt;
 use syn::parse::{ParseStream, Parser};
-use syn::{Ident, Index, LitStr, Member, Result, Token, braced, bracketed, parenthesized};
+use syn::{braced, bracketed, parenthesized, Ident, Index, LitStr, Member, Result, Token};
 
 #[derive(Clone)]
 pub struct Display {
