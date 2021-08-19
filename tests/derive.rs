@@ -136,25 +136,58 @@ fn list_help() {
 fn fmt_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    #[diagnostic(
-        code(foo::bar::baz),
-        help("{} {}", 1, self.0),
-    )]
+    #[diagnostic(code(foo::bar::baz), help("{} x {0} x {:?}", 1, "2"))]
     struct FooStruct(String);
 
     assert_eq!(
-        "1 hello".to_string(),
+        "1 x hello x \"2\"".to_string(),
         FooStruct("hello".into()).help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    enum FooEnum {
-        #[diagnostic(code(foo::x), help("{} {}", 1, "bar"))]
-        X,
+    #[diagnostic(code(foo::bar::baz), help("{} x {my_field} x {:?}", 1, "2"))]
+    struct BarStruct {
+        my_field: String,
     }
 
-    assert_eq!("1 bar".to_string(), FooEnum::X.help().unwrap().to_string());
+    assert_eq!(
+        "1 x hello x \"2\"".to_string(),
+        BarStruct {
+            my_field: "hello".into()
+        }
+        .help()
+        .unwrap()
+        .to_string()
+    );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    enum FooEnum {
+        #[diagnostic(code(foo::x), help("{} x {0} x {:?}", 1, "2"))]
+        X(String),
+
+        #[diagnostic(code(foo::x), help("{} x {len} x {:?}", 1, "2"))]
+        Y { len: usize },
+
+        #[diagnostic(code(foo::x), help("{} x {self:?} x {:?}", 1, "2"))]
+        Z
+    }
+
+    assert_eq!(
+        "1 x bar x \"2\"".to_string(),
+        FooEnum::X("bar".into()).help().unwrap().to_string()
+    );
+
+    assert_eq!(
+        "1 x 10 x \"2\"".to_string(),
+        FooEnum::Y { len: 10 }.help().unwrap().to_string()
+    );
+
+    assert_eq!(
+        "1 x Z x \"2\"".to_string(),
+        FooEnum::Z.help().unwrap().to_string()
+    );
 }
 
 #[test]

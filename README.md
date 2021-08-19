@@ -127,7 +127,8 @@ Error: Error[oops::my::bad]: oops it broke!
 
 ## License
 
-`miette` is released to the Rust community under the [MIT license](./LICENSE).
+`miette` is released to the Rust community under the [Apache license 2.0](./LICENSE).
 
 It also includes some code taken from [`eyre`](https://github.com/yaahc/eyre),
-also [under the MIT license](https://github.com/yaahc/eyre#license).
+and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
+the Apache License.

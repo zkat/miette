@@ -10,6 +10,7 @@ use crate::snippets::Snippets;
 
 pub enum Diagnostic {
     Struct {
+        fields: syn::Fields,
         ident: syn::Ident,
         generics: syn::Generics,
         code: Code,
@@ -59,6 +60,7 @@ impl Diagnostic {
                     let snippets = Snippets::from_fields(&data_struct.fields)?;
                     let ident = input.ident.clone();
                     Diagnostic::Struct {
+                        fields: data_struct.fields,
                         ident: input.ident,
                         generics: input.generics,
                         code: code.ok_or_else(|| {
@@ -138,6 +140,7 @@ impl Diagnostic {
     pub fn gen(&self) -> TokenStream {
         match self {
             Self::Struct {
+                fields,
                 ident,
                 generics,
                 code,
@@ -147,7 +150,7 @@ impl Diagnostic {
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 let code_body = code.gen_struct();
-                let help_body = help.as_ref().and_then(|x| x.gen_struct());
+                let help_body = help.as_ref().and_then(|x| x.gen_struct(fields));
                 let sev_body = severity.as_ref().and_then(|x| x.gen_struct());
                 let snip_body = snippets.as_ref().and_then(|x| x.gen_struct());
 
