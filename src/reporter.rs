@@ -238,30 +238,31 @@ impl DefaultReportPrinter {
             writeln!(f, "{}", line.text)?;
 
             // Next, we write all the highlights that apply to this particular line.
-            for hl in &highlights {
-                if line.span_applies(hl) {
-                    // Render the actual label/underline/arrow
-                    if line.span_line_only(hl) {
-                        // no line number!
-                        self.write_no_linum(f, linum_width)?;
-                        // gutter _again_
-                        self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
-
-                        self.render_single_line_highlight(
-                            f,
-                            line,
-                            hl,
-                            linum_width,
-                            max_gutter,
-                            &highlights,
-                        )?;
-                    } else if line.span_ends(hl) && !line.span_starts(hl) {
-                        // no line number!
-                        self.write_no_linum(f, linum_width)?;
-                        // gutter _again_
-                        self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
-                        self.render_multi_line_end(f, hl)?;
-                    }
+            let (single_line, multi_line): (Vec<_>, Vec<_>) = highlights
+                .iter()
+                .filter(|hl| line.span_applies(hl))
+                .partition(|hl| line.span_line_only(hl));
+            if !single_line.is_empty() {
+                // no line number!
+                self.write_no_linum(f, linum_width)?;
+                // gutter _again_
+                self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
+                self.render_single_line_highlights(
+                    f,
+                    line,
+                    linum_width,
+                    max_gutter,
+                    &single_line,
+                    &highlights,
+                )?;
+            }
+            for hl in multi_line {
+                if line.span_ends(hl) && !line.span_starts(hl) {
+                    // no line number!
+                    self.write_no_linum(f, linum_width)?;
+                    // gutter _again_
+                    self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
+                    self.render_multi_line_end(f, hl)?;
                 }
             }
         }
@@ -362,44 +363,54 @@ impl DefaultReportPrinter {
         Ok(())
     }
 
-    fn render_single_line_highlight(
+    fn render_single_line_highlights(
         &self,
         f: &mut fmt::Formatter<'_>,
         line: &Line,
-        hl: &SourceSpan,
         linum_width: usize,
         max_gutter: usize,
-        highlights: &[SourceSpan],
+        single_liners: &[&SourceSpan],
+        all_highlights: &[SourceSpan],
     ) -> fmt::Result {
-        // Single-line stuff is easy! Just underline it, then
-        // add a line and slap a label on it.
-        let local_offset = hl.offset() - line.offset;
-        let vbar_offset = local_offset + (hl.len() / 2);
-        let num_left = vbar_offset - local_offset;
-        let num_right = local_offset + hl.len() - vbar_offset - 1;
-        writeln!(
-            f,
-            "{:width$}{}{}{}",
-            " ",
-            self.chars.underline.to_string().repeat(num_left),
-            self.chars.underbar,
-            self.chars.underline.to_string().repeat(num_right),
-            width = local_offset
-        )?;
+        let mut underlines = String::new();
+        let mut highest = 0;
+        for hl in single_liners {
+            let local_offset = hl.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.len() / 2);
+            let num_left = vbar_offset - local_offset;
+            let num_right = local_offset + hl.len() - vbar_offset - 1;
+            let start = std::cmp::max(local_offset, highest);
+            let end = local_offset + hl.len();
+            if start < end {
+                underlines.push_str(&format!(
+                    "{:width$}{}{}{}",
+                    "",
+                    self.chars.underline.to_string().repeat(num_left),
+                    self.chars.underbar,
+                    self.chars.underline.to_string().repeat(num_right),
+                    width = local_offset.saturating_sub(highest),
+                ));
+            }
+            highest = std::cmp::max(highest, end);
+        }
+        writeln!(f, "{}", underlines)?;
 
-        // Next line for this label...
-        self.write_no_linum(f, linum_width)?;
-        self.render_highlight_gutter(f, max_gutter, line, highlights)?;
-        // Print the label itself...
-        writeln!(
-            f,
-            "{:width$}{}{} {}",
-            " ",
-            self.chars.lbot,
-            self.chars.hbar.to_string().repeat(num_right + 1),
-            hl.label().unwrap_or(""), // TODO: conditional label
-            width = vbar_offset
-        )?;
+        for hl in single_liners {
+            self.write_no_linum(f, linum_width)?;
+            self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
+            let local_offset = hl.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.len() / 2);
+            let num_right = local_offset + hl.len() - vbar_offset - 1;
+            writeln!(
+                f,
+                "{:width$}{}{} {}",
+                " ",
+                self.chars.lbot,
+                self.chars.hbar.to_string().repeat(num_right + 1),
+                hl.label().unwrap_or(""), // TODO: conditional label
+                width = vbar_offset
+            )?;
+        }
         Ok(())
     }
 

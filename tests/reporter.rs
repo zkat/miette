@@ -54,7 +54,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text text text text text\n   ·   ──┬─ ──┬─\n   ·     ╰── this bit here\n   ·          ╰── also this bit\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
