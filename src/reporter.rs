@@ -211,10 +211,10 @@ impl DefaultReportPrinter {
             }
             max_gutter = std::cmp::max(max_gutter, num_highlights);
         }
-        if max_gutter > 0 {
-            // Make room for the right-arrows
-            max_gutter += 2;
-        }
+        // if max_gutter > 0 {
+        //     // Make room for the right-arrows
+        //     max_gutter += 2;
+        // }
 
         // Oh and one more thing: We need to figure out how much room our line numbers need!
         let linum_width = lines[..]
@@ -278,37 +278,40 @@ impl DefaultReportPrinter {
         if max_gutter == 0 {
             return Ok(());
         }
-        for hl in highlights {
-            if line.span_applies(hl) {
-                if line.span_starts(hl) {
-                    write!(
-                        f,
-                        "{}{}{}{:width$}",
-                        self.chars.ltop,
-                        self.chars.hbar,
-                        self.chars.rarrow,
-                        " ",
-                        width = max_gutter.saturating_sub(2),
-                    )?;
-                } else if line.span_ends(hl) {
-                    write!(
-                        f,
-                        "{}{}{}{:width$}",
-                        self.chars.lcross,
-                        self.chars.hbar,
-                        self.chars.rarrow,
-                        " ",
-                        width = max_gutter.saturating_sub(2),
-                    )?;
-                } else if line.span_flyby(hl) {
-                    write!(f, "{:width$}", self.chars.vbar, width = max_gutter + 1)?;
-                } else {
-                    write!(f, "{:width$}", " ", width = max_gutter + 1)?;
-                }
+        let mut gutter = String::new();
+        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        for (i, hl) in applicable.enumerate() {
+            if line.span_starts(hl) {
+                gutter.push(self.chars.ltop);
+                gutter.push_str(
+                    &self
+                        .chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i)),
+                );
+                gutter.push(self.chars.rarrow);
+                gutter.push(' ');
+                break;
+            } else if line.span_ends(hl) {
+                gutter.push(self.chars.lcross);
+                gutter.push_str(
+                    &self
+                        .chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i)),
+                );
+                gutter.push(self.chars.rarrow);
+                gutter.push(' ');
+                break;
+            } else if line.span_flyby(hl) {
+                gutter.push(self.chars.vbar);
             } else {
-                write!(f, "{:width$}", " ", width = max_gutter + 1)?;
+                gutter.push(' ');
             }
         }
+        write!(f, "{:width$}", gutter, width = max_gutter + 3)?;
         Ok(())
     }
 
@@ -322,27 +325,24 @@ impl DefaultReportPrinter {
         if max_gutter == 0 {
             return Ok(());
         }
-        for hl in highlights {
-            if line.span_applies(hl) && !line.span_line_only(hl) {
-                if line.span_starts(hl) {
-                    write!(f, "{}{:width$}", self.chars.vbar, " ", width = max_gutter)?;
-                } else if line.span_ends(hl) {
-                    write!(
-                        f,
-                        "{}{}{}{:width$}",
-                        self.chars.lbot,
-                        self.chars.hbar,
-                        self.chars.hbar,
-                        self.chars.hbar,
-                        width = max_gutter.saturating_sub(2),
-                    )?;
-                } else {
-                    write!(f, "{:width$}", " ", width = max_gutter + 1)?;
-                }
+        let mut gutter = String::new();
+        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        for (i, hl) in applicable.enumerate() {
+            if !line.span_line_only(hl) && line.span_ends(hl) {
+                gutter.push(self.chars.lbot);
+                gutter.push_str(
+                    &self
+                        .chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i) + 2),
+                );
+                break;
             } else {
-                write!(f, "{:width$}", " ", width = max_gutter + 1)?;
+                gutter.push(self.chars.hbar);
             }
         }
+        write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
         Ok(())
     }
 

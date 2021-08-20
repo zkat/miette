@@ -138,7 +138,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ ├─▶   text\n   · ╰──── this bit here\n 3 │ ╭─▶     here\n 4 │ ├─▶ more here\n   · ╰──── also this bit\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
