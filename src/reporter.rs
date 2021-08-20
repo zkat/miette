@@ -30,6 +30,8 @@ pub fn set_reporter(
 pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + 'static) {
     &**REPORTER.get_or_init(|| {
         Box::new(DefaultReportPrinter {
+            // TODO: color support detection here?
+            colors: true,
             chars: Characters::unicode(),
         })
     })
@@ -73,7 +75,31 @@ but you might want to implement your own if you want custom reporting for your
 tool or app.
 */
 pub struct DefaultReportPrinter {
+    colors: bool,
     chars: Characters,
+}
+
+impl DefaultReportPrinter {
+    pub fn new() -> Self {
+        Self {
+            colors: true,
+            chars: Characters::unicode(),
+        }
+    }
+
+    pub fn with_colors(self, colors: bool) -> Self {
+        Self { colors, ..self }
+    }
+
+    pub fn with_chars(self, chars: Characters) -> Self {
+        Self { chars, ..self }
+    }
+}
+
+impl Default for DefaultReportPrinter {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 struct Line {
@@ -157,9 +183,9 @@ impl FancySpan {
 }
 
 impl DefaultReportPrinter {
-    fn render_report(
+    pub fn render_report(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         use fmt::Write as _;
@@ -206,7 +232,7 @@ impl DefaultReportPrinter {
 
     fn render_snippet(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        f: &mut impl fmt::Write,
         snippet: &DiagnosticSnippet,
     ) -> fmt::Result {
         // Boring: The Header
@@ -233,7 +259,16 @@ impl DefaultReportPrinter {
         let mut color_gen = ColorGenerator::new();
         let highlights = highlights
             .into_iter()
-            .map(|hl| FancySpan::new(hl, Some(color_gen.gen())))
+            .map(|hl| {
+                FancySpan::new(
+                    hl,
+                    if self.colors {
+                        Some(color_gen.gen())
+                    } else {
+                        None
+                    },
+                )
+            })
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -305,7 +340,7 @@ impl DefaultReportPrinter {
 
     fn render_line_gutter(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        f: &mut impl fmt::Write,
         max_gutter: usize,
         line: &Line,
         highlights: &[FancySpan],
@@ -356,7 +391,7 @@ impl DefaultReportPrinter {
 
     fn render_highlight_gutter(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        f: &mut impl fmt::Write,
         max_gutter: usize,
         line: &Line,
         highlights: &[FancySpan],
@@ -387,12 +422,12 @@ impl DefaultReportPrinter {
         Ok(())
     }
 
-    fn write_linum(&self, f: &mut fmt::Formatter<'_>, width: usize, linum: usize) -> fmt::Result {
+    fn write_linum(&self, f: &mut impl fmt::Write, width: usize, linum: usize) -> fmt::Result {
         write!(f, " {:width$} {} ", linum, self.chars.vbar, width = width)?;
         Ok(())
     }
 
-    fn write_no_linum(&self, f: &mut fmt::Formatter<'_>, width: usize) -> fmt::Result {
+    fn write_no_linum(&self, f: &mut impl fmt::Write, width: usize) -> fmt::Result {
         write!(
             f,
             " {:width$} {} ",
@@ -405,7 +440,7 @@ impl DefaultReportPrinter {
 
     fn render_single_line_highlights(
         &self,
-        f: &mut fmt::Formatter<'_>,
+        f: &mut impl fmt::Write,
         line: &Line,
         linum_width: usize,
         max_gutter: usize,
@@ -454,7 +489,7 @@ impl DefaultReportPrinter {
         Ok(())
     }
 
-    fn render_multi_line_end(&self, f: &mut fmt::Formatter<'_>, hl: &FancySpan) -> fmt::Result {
+    fn render_multi_line_end(&self, f: &mut impl fmt::Write, hl: &FancySpan) -> fmt::Result {
         writeln!(
             f,
             "{} {}",
