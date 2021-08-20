@@ -6,6 +6,7 @@ use std::fmt;
 
 use indenter::indented;
 use once_cell::sync::OnceCell;
+use yansi::Color;
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
@@ -120,6 +121,11 @@ impl Line {
     }
 }
 
+struct FancySpan {
+    span: SourceSpan,
+    color: Color,
+}
+
 impl DefaultReportPrinter {
     fn render_report(
         &self,
@@ -194,6 +200,14 @@ impl DefaultReportPrinter {
         let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
         // sorting is your friend.
         highlights.sort_unstable_by_key(|h| h.offset());
+        let mut color_gen = ColorGenerator::new();
+        let highlights = highlights
+            .into_iter()
+            .map(|hl| FancySpan {
+                color: color_gen.gen(),
+                span: hl,
+            })
+            .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
         // point. We need this to figure out indentation, so we do one loop
@@ -202,7 +216,7 @@ impl DefaultReportPrinter {
         for line in &lines {
             let mut num_highlights = 0;
             for hl in &highlights {
-                if !line.span_line_only(hl) && line.span_applies(hl) {
+                if !line.span_line_only(&hl.span) && line.span_applies(&hl.span) {
                     num_highlights += 1;
                 }
             }
@@ -233,8 +247,8 @@ impl DefaultReportPrinter {
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = highlights
                 .iter()
-                .filter(|hl| line.span_applies(hl))
-                .partition(|hl| line.span_line_only(hl));
+                .filter(|hl| line.span_applies(&hl.span))
+                .partition(|hl| line.span_line_only(&hl.span));
             if !single_line.is_empty() {
                 // no line number!
                 self.write_no_linum(f, linum_width)?;
@@ -250,7 +264,7 @@ impl DefaultReportPrinter {
                 )?;
             }
             for hl in multi_line {
-                if line.span_ends(hl) && !line.span_starts(hl) {
+                if line.span_ends(&hl.span) && !line.span_starts(&hl.span) {
                     // no line number!
                     self.write_no_linum(f, linum_width)?;
                     // gutter _again_
@@ -267,40 +281,48 @@ impl DefaultReportPrinter {
         f: &mut fmt::Formatter<'_>,
         max_gutter: usize,
         line: &Line,
-        highlights: &[SourceSpan],
+        highlights: &[FancySpan],
     ) -> fmt::Result {
         if max_gutter == 0 {
             return Ok(());
         }
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        let applicable = highlights.iter().filter(|hl| line.span_applies(&hl.span));
         for (i, hl) in applicable.enumerate() {
-            if line.span_starts(hl) {
-                gutter.push(self.chars.ltop);
+            if line.span_starts(&hl.span) {
+                gutter.push_str(&hl.color.paint(self.chars.ltop.to_string()).to_string());
                 gutter.push_str(
-                    &self
-                        .chars
-                        .hbar
-                        .to_string()
-                        .repeat(max_gutter.saturating_sub(i)),
+                    &hl.color
+                        .paint(
+                            &self
+                                .chars
+                                .hbar
+                                .to_string()
+                                .repeat(max_gutter.saturating_sub(i)),
+                        )
+                        .to_string(),
                 );
-                gutter.push(self.chars.rarrow);
+                gutter.push_str(&hl.color.paint(self.chars.rarrow.to_string()).to_string());
                 gutter.push(' ');
                 break;
-            } else if line.span_ends(hl) {
-                gutter.push(self.chars.lcross);
+            } else if line.span_ends(&hl.span) {
+                gutter.push_str(&hl.color.paint(self.chars.lcross.to_string()).to_string());
                 gutter.push_str(
-                    &self
-                        .chars
-                        .hbar
-                        .to_string()
-                        .repeat(max_gutter.saturating_sub(i)),
+                    &hl.color
+                        .paint(
+                            &self
+                                .chars
+                                .hbar
+                                .to_string()
+                                .repeat(max_gutter.saturating_sub(i)),
+                        )
+                        .to_string(),
                 );
-                gutter.push(self.chars.rarrow);
+                gutter.push_str(&hl.color.paint(self.chars.rarrow.to_string()).to_string());
                 gutter.push(' ');
                 break;
-            } else if line.span_flyby(hl) {
-                gutter.push(self.chars.vbar);
+            } else if line.span_flyby(&hl.span) {
+                gutter.push_str(&hl.color.paint(self.chars.vbar.to_string()).to_string());
             } else {
                 gutter.push(' ');
             }
@@ -314,26 +336,30 @@ impl DefaultReportPrinter {
         f: &mut fmt::Formatter<'_>,
         max_gutter: usize,
         line: &Line,
-        highlights: &[SourceSpan],
+        highlights: &[FancySpan],
     ) -> fmt::Result {
         if max_gutter == 0 {
             return Ok(());
         }
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        let applicable = highlights.iter().filter(|hl| line.span_applies(&hl.span));
         for (i, hl) in applicable.enumerate() {
-            if !line.span_line_only(hl) && line.span_ends(hl) {
-                gutter.push(self.chars.lbot);
+            if !line.span_line_only(&hl.span) && line.span_ends(&hl.span) {
+                gutter.push_str(&hl.color.paint(&self.chars.lbot.to_string()).to_string());
                 gutter.push_str(
-                    &self
-                        .chars
-                        .hbar
-                        .to_string()
-                        .repeat(max_gutter.saturating_sub(i) + 2),
+                    &hl.color
+                        .paint(
+                            &self
+                                .chars
+                                .hbar
+                                .to_string()
+                                .repeat(max_gutter.saturating_sub(i) + 2),
+                        )
+                        .to_string(),
                 );
                 break;
             } else {
-                gutter.push(self.chars.vbar);
+                gutter.push_str(&hl.color.paint(&self.chars.vbar.to_string()).to_string());
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
@@ -362,27 +388,31 @@ impl DefaultReportPrinter {
         line: &Line,
         linum_width: usize,
         max_gutter: usize,
-        single_liners: &[&SourceSpan],
-        all_highlights: &[SourceSpan],
+        single_liners: &[&FancySpan],
+        all_highlights: &[FancySpan],
     ) -> fmt::Result {
         let mut underlines = String::new();
         let mut highest = 0;
         for hl in single_liners {
-            let local_offset = hl.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.len() / 2);
+            let local_offset = hl.span.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.span.len() / 2);
             let num_left = vbar_offset - local_offset;
-            let num_right = local_offset + hl.len() - vbar_offset - 1;
+            let num_right = local_offset + hl.span.len() - vbar_offset - 1;
             let start = std::cmp::max(local_offset, highest);
-            let end = local_offset + hl.len();
+            let end = local_offset + hl.span.len();
             if start < end {
-                underlines.push_str(&format!(
-                    "{:width$}{}{}{}",
-                    "",
-                    self.chars.underline.to_string().repeat(num_left),
-                    self.chars.underbar,
-                    self.chars.underline.to_string().repeat(num_right),
-                    width = local_offset.saturating_sub(highest),
-                ));
+                underlines.push_str(
+                    &hl.color
+                        .paint(&format!(
+                            "{:width$}{}{}{}",
+                            "",
+                            self.chars.underline.to_string().repeat(num_left),
+                            self.chars.underbar,
+                            self.chars.underline.to_string().repeat(num_right),
+                            width = local_offset.saturating_sub(highest),
+                        ))
+                        .to_string(),
+                );
             }
             highest = std::cmp::max(highest, end);
         }
@@ -391,28 +421,28 @@ impl DefaultReportPrinter {
         for hl in single_liners {
             self.write_no_linum(f, linum_width)?;
             self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
-            let local_offset = hl.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.len() / 2);
-            let num_right = local_offset + hl.len() - vbar_offset - 1;
-            writeln!(
-                f,
+            let local_offset = hl.span.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.span.len() / 2);
+            let num_right = local_offset + hl.span.len() - vbar_offset - 1;
+            let lines = format!(
                 "{:width$}{}{} {}",
                 " ",
                 self.chars.lbot,
                 self.chars.hbar.to_string().repeat(num_right + 1),
-                hl.label().unwrap_or(""), // TODO: conditional label
+                hl.color.paint(hl.span.label().unwrap_or("")), // TODO: conditional label
                 width = vbar_offset
-            )?;
+            );
+            writeln!(f, "{}", hl.color.paint(&lines))?;
         }
         Ok(())
     }
 
-    fn render_multi_line_end(&self, f: &mut fmt::Formatter<'_>, hl: &SourceSpan) -> fmt::Result {
+    fn render_multi_line_end(&self, f: &mut fmt::Formatter<'_>, hl: &FancySpan) -> fmt::Result {
         writeln!(
             f,
             "{} {}",
-            self.chars.hbar,
-            hl.label().unwrap_or("") // TODO: conditional label
+            hl.color.paint(self.chars.hbar.to_string()),
+            hl.color.paint(hl.span.label().unwrap_or("")) // TODO: conditional label
         )?;
         Ok(())
     }
@@ -518,7 +548,9 @@ impl DiagnosticReportPrinter for JokeReporter {
     }
 }
 
-// Taken from ariadne here: https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
+// ---------------------------------------
+// All code below here was taken from ariadne here:
+// https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
 pub struct Characters {
     pub hbar: char,
     pub vbar: char,
@@ -590,5 +622,53 @@ impl Characters {
             underbar: '|',
             underline: '^',
         }
+    }
+}
+
+/// A type that can generate distinct 8-bit colors.
+pub struct ColorGenerator {
+    state: [u16; 3],
+    min_brightness: f32,
+}
+
+impl Default for ColorGenerator {
+    fn default() -> Self {
+        Self::from_state([30000, 15000, 35000], 0.5)
+    }
+}
+
+impl ColorGenerator {
+    /// Create a new [`ColorGenerator`] with the given pre-chosen state.
+    ///
+    /// The minimum brightness can be used to control the colour brightness (0.0 - 1.0). The default is 0.5.
+    pub fn from_state(state: [u16; 3], min_brightness: f32) -> Self {
+        Self {
+            state,
+            min_brightness: min_brightness.max(0.0).min(1.0),
+        }
+    }
+
+    /// Create a new [`ColorGenerator`] with the default state.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Generate the next colour in the sequence.
+    pub fn gen(&mut self) -> Color {
+        for i in 0..3 {
+            // magic constant, one of only two that have this property!
+            self.state[i] = (self.state[i] as usize).wrapping_add(40503 * (i * 4 + 1130)) as u16;
+        }
+        Color::Fixed(
+            16 + ((self.state[2] as f32 / 65535.0 * (1.0 - self.min_brightness)
+                + self.min_brightness)
+                * 5.0
+                + (self.state[1] as f32 / 65535.0 * (1.0 - self.min_brightness)
+                    + self.min_brightness)
+                    * 30.0
+                + (self.state[0] as f32 / 65535.0 * (1.0 - self.min_brightness)
+                    + self.min_brightness)
+                    * 180.0) as u8,
+        )
     }
 }
