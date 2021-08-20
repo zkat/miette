@@ -208,7 +208,6 @@ impl DefaultReportPrinter {
             }
             max_gutter = std::cmp::max(max_gutter, num_highlights);
         }
-        println!("max_gutter: {}", max_gutter);
 
         // Oh and one more thing: We need to figure out how much room our line numbers need!
         let linum_width = lines[..]
