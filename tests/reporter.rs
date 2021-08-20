@@ -105,7 +105,8 @@ line2
 line3
 line4
 line5
-"#.to_string();
+"#
+    .to_string();
     let len = src.len();
     let err = MyBad {
         src,
