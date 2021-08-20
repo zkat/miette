@@ -339,7 +339,7 @@ impl DefaultReportPrinter {
                 );
                 break;
             } else {
-                gutter.push(self.chars.hbar);
+                gutter.push(self.chars.vbar);
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;

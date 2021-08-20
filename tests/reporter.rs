@@ -95,20 +95,28 @@ fn multiline_highlight_flyby() -> Result<(), MietteError> {
         #[snippet(src, "This is the part that broke")]
         ctx: SourceSpan,
         #[highlight(ctx)]
-        highlight: SourceSpan,
+        highlight1: SourceSpan,
+        #[highlight(ctx)]
+        highlight2: SourceSpan,
     }
 
-    let src = "source\n  text\n    here".to_string();
+    let src = r#"line1
+line2
+line3
+line4
+line5
+"#.to_string();
     let len = src.len();
     let err = MyBad {
         src,
         ctx: ("bad_file.rs", 0, len).into(),
-        highlight: ("this block", 0, 16).into(),
+        highlight1: ("block 1", 0, len).into(),
+        highlight2: ("block 2", 10, 9).into(),
     };
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ │     text\n 3 │ ├─▶     here\n   · ╰──── this block\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │├─▶ line4\n   · │╰──── block 2\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -162,8 +170,8 @@ fn multiple_multiline_highlights_overlapping() -> Result<(), MietteError> {
     let err = MyBad {
         src,
         ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("this bit here", 0, 9).into(),
-        highlight2: ("also this bit", 20, 1).into(),
+        highlight1: ("this bit here", 0, 10).into(),
+        highlight2: ("also this bit", 9, 10).into(),
     };
     let rep: DiagnosticReport = err.into();
     let out = format!("{:?}", rep);
