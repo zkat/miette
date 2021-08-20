@@ -189,12 +189,21 @@ impl DefaultReportPrinter {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         use fmt::Write as _;
-        let sev = match diagnostic.severity() {
+        let mut color_gen = ColorGenerator::new();
+        let mut sev = match diagnostic.severity() {
             Some(Severity::Error) | None => "Error",
             Some(Severity::Warning) => "Warning",
             Some(Severity::Advice) => "Advice",
-        };
-        writeln!(f, "{}[{}]: {}", sev, diagnostic.code(), diagnostic)?;
+        }
+        .to_string();
+        let mut code = diagnostic.code().to_string();
+        let mut msg = diagnostic.to_string();
+        if self.colors {
+            sev = color_gen.gen().paint(sev).to_string();
+            code = color_gen.gen().paint(&code).to_string();
+            msg = color_gen.gen().paint(&msg).to_string();
+        }
+        writeln!(f, "{}[{}]: {}", sev, code, msg)?;
 
         if let Some(cause) = diagnostic.source() {
             writeln!(f)?;
@@ -202,11 +211,15 @@ impl DefaultReportPrinter {
             let multiple = cause.source().is_some();
 
             for (n, error) in Chain::new(cause).enumerate() {
+                let mut msg = format!("{}", error);
+                if self.colors {
+                    msg = color_gen.gen().paint(&msg).to_string();
+                }
                 writeln!(f)?;
                 if multiple {
-                    write!(indented(f).ind(n), "{}", error)?;
+                    write!(indented(f).ind(n), "{}", msg)?;
                 } else {
-                    write!(indented(f), "{}", error)?;
+                    write!(indented(f), "{}", msg)?;
                 }
             }
         }
@@ -218,11 +231,15 @@ impl DefaultReportPrinter {
                     writeln!(f)?;
                     pre = true;
                 }
-                self.render_snippet(f, &snippet)?;
+                self.render_snippet(f, &snippet, &mut color_gen)?;
             }
         }
 
         if let Some(help) = diagnostic.help() {
+            let mut help = help.to_string();
+            if self.colors {
+                help = color_gen.gen().paint(&help).to_string();
+            }
             writeln!(f)?;
             writeln!(f, "﹦{}", help)?;
         }
@@ -234,12 +251,21 @@ impl DefaultReportPrinter {
         &self,
         f: &mut impl fmt::Write,
         snippet: &DiagnosticSnippet,
+        color_gen: &mut ColorGenerator,
     ) -> fmt::Result {
         // Boring: The Header
         if let Some(source_name) = snippet.context.label() {
+            let mut source_name = source_name.to_string();
+            if self.colors {
+                source_name = color_gen.gen().paint(&source_name).to_string();
+            }
             write!(f, "[{}]", source_name)?;
         }
         if let Some(msg) = &snippet.message {
+            let mut msg = msg.to_string();
+            if self.colors {
+                msg = color_gen.gen().paint(&msg).to_string();
+            }
             write!(f, " {}:", msg)?;
         }
         writeln!(f)?;
@@ -256,7 +282,6 @@ impl DefaultReportPrinter {
         let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
         // sorting is your friend.
         highlights.sort_unstable_by_key(|h| h.offset());
-        let mut color_gen = ColorGenerator::new();
         let highlights = highlights
             .into_iter()
             .map(|hl| {

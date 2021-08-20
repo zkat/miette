@@ -2,7 +2,9 @@ use miette::{DefaultReportPrinter, Diagnostic, DiagnosticReport, MietteError, So
 use thiserror::Error;
 
 fn fmt_report(diag: DiagnosticReport) -> String {
-    let printer = DefaultReportPrinter::new().with_colors(false);
+    // Mostly for dev purposes.
+    let colors = std::env::var("COLOR").is_ok() || std::env::var("COLORS").is_ok();
+    let printer = DefaultReportPrinter::new().with_colors(colors);
     let mut out = String::new();
     printer.render_report(&mut out, diag.inner()).unwrap();
     out
