@@ -84,11 +84,11 @@ struct Line {
 }
 
 impl Line {
-    fn span_line_only(&self, span: &SourceSpan) -> bool {
+    fn span_line_only(&self, span: &FancySpan) -> bool {
         span.offset() >= self.offset && span.offset() + span.len() <= self.offset + self.length
     }
 
-    fn span_applies(&self, span: &SourceSpan) -> bool {
+    fn span_applies(&self, span: &FancySpan) -> bool {
         // Span starts in this line
         (span.offset() >= self.offset && span.offset() <= self.offset +self.length)
         // Span passes through this line
@@ -100,7 +100,7 @@ impl Line {
     // A "flyby" is a multi-line span that technically covers this line, but
     // does not begin or end within the line itself. This method is used to
     // calculate gutters.
-    fn span_flyby(&self, span: &SourceSpan) -> bool {
+    fn span_flyby(&self, span: &FancySpan) -> bool {
         // the span itself starts before this line's starting offset (so, in a prev line)
         span.offset() < self.offset
             // ...and it stops after this line's end.
@@ -109,13 +109,13 @@ impl Line {
 
     // Does this line contain the *beginning* of this multiline span?
     // This assumes self.span_applies() is true already.
-    fn span_starts(&self, span: &SourceSpan) -> bool {
+    fn span_starts(&self, span: &FancySpan) -> bool {
         span.offset() >= self.offset
     }
 
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
-    fn span_ends(&self, span: &SourceSpan) -> bool {
+    fn span_ends(&self, span: &FancySpan) -> bool {
         span.offset() + span.len() >= self.offset
             && span.offset() + span.len() <= self.offset + self.length
     }
@@ -123,7 +123,37 @@ impl Line {
 
 struct FancySpan {
     span: SourceSpan,
-    color: Color,
+    color: Option<Color>,
+}
+
+impl FancySpan {
+    fn new(span: SourceSpan, color: Option<Color>) -> Self {
+        FancySpan { span, color }
+    }
+
+    fn color(&self) -> Option<Color> {
+        self.color
+    }
+
+    fn label(&self) -> Option<String> {
+        self.span.label().map(|l| self.paint(l))
+    }
+
+    fn paint(&self, text: impl AsRef<str>) -> String {
+        if let Some(color) = self.color() {
+            format!("{}", color.paint(text.as_ref()))
+        } else {
+            text.as_ref().to_string()
+        }
+    }
+
+    fn offset(&self) -> usize {
+        self.span.offset()
+    }
+
+    fn len(&self) -> usize {
+        self.span.len()
+    }
 }
 
 impl DefaultReportPrinter {
@@ -203,10 +233,7 @@ impl DefaultReportPrinter {
         let mut color_gen = ColorGenerator::new();
         let highlights = highlights
             .into_iter()
-            .map(|hl| FancySpan {
-                color: color_gen.gen(),
-                span: hl,
-            })
+            .map(|hl| FancySpan::new(hl, Some(color_gen.gen())))
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -216,7 +243,7 @@ impl DefaultReportPrinter {
         for line in &lines {
             let mut num_highlights = 0;
             for hl in &highlights {
-                if !line.span_line_only(&hl.span) && line.span_applies(&hl.span) {
+                if !line.span_line_only(hl) && line.span_applies(hl) {
                     num_highlights += 1;
                 }
             }
@@ -247,8 +274,8 @@ impl DefaultReportPrinter {
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = highlights
                 .iter()
-                .filter(|hl| line.span_applies(&hl.span))
-                .partition(|hl| line.span_line_only(&hl.span));
+                .filter(|hl| line.span_applies(hl))
+                .partition(|hl| line.span_line_only(hl));
             if !single_line.is_empty() {
                 // no line number!
                 self.write_no_linum(f, linum_width)?;
@@ -264,7 +291,7 @@ impl DefaultReportPrinter {
                 )?;
             }
             for hl in multi_line {
-                if line.span_ends(&hl.span) && !line.span_starts(&hl.span) {
+                if line.span_ends(hl) && !line.span_starts(hl) {
                     // no line number!
                     self.write_no_linum(f, linum_width)?;
                     // gutter _again_
@@ -287,42 +314,38 @@ impl DefaultReportPrinter {
             return Ok(());
         }
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(&hl.span));
+        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
-            if line.span_starts(&hl.span) {
-                gutter.push_str(&hl.color.paint(self.chars.ltop.to_string()).to_string());
+            if line.span_starts(hl) {
+                gutter.push_str(&hl.paint(&self.chars.ltop.to_string()));
                 gutter.push_str(
-                    &hl.color
-                        .paint(
-                            &self
-                                .chars
-                                .hbar
-                                .to_string()
-                                .repeat(max_gutter.saturating_sub(i)),
-                        )
-                        .to_string(),
+                    &hl.paint(
+                        &self
+                            .chars
+                            .hbar
+                            .to_string()
+                            .repeat(max_gutter.saturating_sub(i)),
+                    ),
                 );
-                gutter.push_str(&hl.color.paint(self.chars.rarrow.to_string()).to_string());
+                gutter.push_str(&hl.paint(self.chars.rarrow.to_string()));
                 gutter.push(' ');
                 break;
-            } else if line.span_ends(&hl.span) {
-                gutter.push_str(&hl.color.paint(self.chars.lcross.to_string()).to_string());
+            } else if line.span_ends(hl) {
+                gutter.push_str(&hl.paint(self.chars.lcross.to_string()));
                 gutter.push_str(
-                    &hl.color
-                        .paint(
-                            &self
-                                .chars
-                                .hbar
-                                .to_string()
-                                .repeat(max_gutter.saturating_sub(i)),
-                        )
-                        .to_string(),
+                    &hl.paint(
+                        &self
+                            .chars
+                            .hbar
+                            .to_string()
+                            .repeat(max_gutter.saturating_sub(i)),
+                    ),
                 );
-                gutter.push_str(&hl.color.paint(self.chars.rarrow.to_string()).to_string());
+                gutter.push_str(&hl.paint(self.chars.rarrow.to_string()));
                 gutter.push(' ');
                 break;
-            } else if line.span_flyby(&hl.span) {
-                gutter.push_str(&hl.color.paint(self.chars.vbar.to_string()).to_string());
+            } else if line.span_flyby(hl) {
+                gutter.push_str(&hl.paint(self.chars.vbar.to_string()));
             } else {
                 gutter.push(' ');
             }
@@ -342,24 +365,22 @@ impl DefaultReportPrinter {
             return Ok(());
         }
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(&hl.span));
+        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
-            if !line.span_line_only(&hl.span) && line.span_ends(&hl.span) {
-                gutter.push_str(&hl.color.paint(&self.chars.lbot.to_string()).to_string());
+            if !line.span_line_only(hl) && line.span_ends(hl) {
+                gutter.push_str(&hl.paint(&self.chars.lbot.to_string()));
                 gutter.push_str(
-                    &hl.color
-                        .paint(
-                            &self
-                                .chars
-                                .hbar
-                                .to_string()
-                                .repeat(max_gutter.saturating_sub(i) + 2),
-                        )
-                        .to_string(),
+                    &hl.paint(
+                        &self
+                            .chars
+                            .hbar
+                            .to_string()
+                            .repeat(max_gutter.saturating_sub(i) + 2),
+                    ),
                 );
                 break;
             } else {
-                gutter.push_str(&hl.color.paint(&self.chars.vbar.to_string()).to_string());
+                gutter.push_str(&hl.paint(&self.chars.vbar.to_string()));
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
@@ -394,25 +415,21 @@ impl DefaultReportPrinter {
         let mut underlines = String::new();
         let mut highest = 0;
         for hl in single_liners {
-            let local_offset = hl.span.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.span.len() / 2);
+            let local_offset = hl.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.len() / 2);
             let num_left = vbar_offset - local_offset;
-            let num_right = local_offset + hl.span.len() - vbar_offset - 1;
+            let num_right = local_offset + hl.len() - vbar_offset - 1;
             let start = std::cmp::max(local_offset, highest);
-            let end = local_offset + hl.span.len();
+            let end = local_offset + hl.len();
             if start < end {
-                underlines.push_str(
-                    &hl.color
-                        .paint(&format!(
-                            "{:width$}{}{}{}",
-                            "",
-                            self.chars.underline.to_string().repeat(num_left),
-                            self.chars.underbar,
-                            self.chars.underline.to_string().repeat(num_right),
-                            width = local_offset.saturating_sub(highest),
-                        ))
-                        .to_string(),
-                );
+                underlines.push_str(&hl.paint(&format!(
+                    "{:width$}{}{}{}",
+                    "",
+                    self.chars.underline.to_string().repeat(num_left),
+                    self.chars.underbar,
+                    self.chars.underline.to_string().repeat(num_right),
+                    width = local_offset.saturating_sub(highest),
+                )));
             }
             highest = std::cmp::max(highest, end);
         }
@@ -421,18 +438,18 @@ impl DefaultReportPrinter {
         for hl in single_liners {
             self.write_no_linum(f, linum_width)?;
             self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
-            let local_offset = hl.span.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.span.len() / 2);
-            let num_right = local_offset + hl.span.len() - vbar_offset - 1;
+            let local_offset = hl.offset() - line.offset;
+            let vbar_offset = local_offset + (hl.len() / 2);
+            let num_right = local_offset + hl.len() - vbar_offset - 1;
             let lines = format!(
                 "{:width$}{}{} {}",
                 " ",
                 self.chars.lbot,
                 self.chars.hbar.to_string().repeat(num_right + 1),
-                hl.color.paint(hl.span.label().unwrap_or("")), // TODO: conditional label
+                hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
                 width = vbar_offset
             );
-            writeln!(f, "{}", hl.color.paint(&lines))?;
+            writeln!(f, "{}", hl.paint(&lines))?;
         }
         Ok(())
     }
@@ -441,8 +458,8 @@ impl DefaultReportPrinter {
         writeln!(
             f,
             "{} {}",
-            hl.color.paint(self.chars.hbar.to_string()),
-            hl.color.paint(hl.span.label().unwrap_or("")) // TODO: conditional label
+            hl.paint(self.chars.hbar.to_string()),
+            hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
         )?;
         Ok(())
     }
