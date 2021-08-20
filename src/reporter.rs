@@ -202,19 +202,13 @@ impl DefaultReportPrinter {
         for line in &lines {
             let mut num_highlights = 0;
             for hl in &highlights {
-                if !line.span_line_only(hl)
-                    && line.span_applies(hl)
-                    && (line.span_flyby(hl) || line.span_starts(hl) || line.span_ends(hl))
-                {
+                if !line.span_line_only(hl) && line.span_applies(hl) {
                     num_highlights += 1;
                 }
             }
             max_gutter = std::cmp::max(max_gutter, num_highlights);
         }
-        // if max_gutter > 0 {
-        //     // Make room for the right-arrows
-        //     max_gutter += 2;
-        // }
+        println!("max_gutter: {}", max_gutter);
 
         // Oh and one more thing: We need to figure out how much room our line numbers need!
         let linum_width = lines[..]
