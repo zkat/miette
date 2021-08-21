@@ -8,7 +8,21 @@ that allow you to hook into its error reporting facilities, and even write
 your own error reports! It lets you define error types that can print out like
 this (or in any format you like!):
 
-<img src="https://raw.githubusercontent.com/zkat/miette/main/images/serde_json.png" alt="miette rendering a serde_json error very nicely">
+<img src="https://raw.githubusercontent.com/zkat/miette/main/images/serde_json.png" alt="Hi! miette also includes a screen-reader-oriented diagnostic printer that's enabled in various situations, such as when you use NO_COLOR or CLICOLOR settings, or on CI. This behavior is also fully configurable and customizable. For example, this is what this particular diagnostic will look like when the narrated printer is enabled:
+\
+Error: Received some bad JSON from the source. Unable to parse.
+    Caused by: missing field `foo` at line 1 column 1700
+\
+Begin snippet for https://api.nuget.org/v3/registration5-gz-semver2/json.net/index.json starting
+at line 1, column 1659
+\
+snippet line 1: gs&quot;:[&quot;json&quot;],&quot;title&quot;:&quot;&quot;,&quot;version&quot;:&quot;1.0.0&quot;},&quot;packageContent&quot;:&quot;https://api.nuget.o
+    highlight starting at line 1, column 1699: last parsing location
+\
+diagnostic help: This is a bug. It might be in ruget, or it might be in the source you're using,
+but it's definitely a bug and should be reported.
+diagnostic error code: ruget::api::bad_json
+" />
 
 The [Diagnostic] trait in `miette` is an extension of `std::error::Error` that
 adds various facilities like [Severity], error codes that could be looked up
@@ -100,7 +114,22 @@ fn pretend_this_is_main() -> Result<()> {
 
 And this is the output you'll get if you run this program:
 
-<img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="miette rendering a single-line error">
+<img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="
+Narratable printout:
+\
+Error: oops!
+    Diagnostic severity: error
+\
+Begin snippet for bad_file.rs starting at line 1, column 1
+\
+snippet line 1: source
+snippet line 2:   text
+    highlight starting at line 2, column 3: these two lines
+snippet line 3:     here
+\
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
+">
 
 ## License
 
