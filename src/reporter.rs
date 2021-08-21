@@ -175,9 +175,9 @@ impl DefaultReportPrinter {
     ) -> fmt::Result {
         use fmt::Write as _;
         let sev = match diagnostic.severity() {
-            Some(Severity::Error) | None => "Error",
-            Some(Severity::Warning) => "Warning",
-            Some(Severity::Advice) => "Advice",
+            Some(Severity::Error) | None => "Error".style(self.theme.styles.error),
+            Some(Severity::Warning) => "Warning".style(self.theme.styles.warning),
+            Some(Severity::Advice) => "Advice".style(self.theme.styles.advice),
         }
         .to_string();
         let code = diagnostic.code();
@@ -633,6 +633,9 @@ impl Default for MietteTheme {
 }
 
 pub struct MietteStyles {
+    pub error: Style,
+    pub warning: Style,
+    pub advice: Style,
     pub code: Style,
     pub help: Style,
     pub filename: Style,
@@ -642,10 +645,13 @@ pub struct MietteStyles {
 impl MietteStyles {
     pub fn ansi() -> Self {
         Self {
+            error: Style::new().color(AnsiColors::Red),
+            warning: Style::new().color(AnsiColors::Yellow),
+            advice: Style::new().color(AnsiColors::Cyan),
             code: Style::new().color(AnsiColors::Yellow),
             help: Style::new().color(AnsiColors::Cyan),
             filename: Style::new().color(AnsiColors::Green),
-            highlights: vec![AnsiColors::Red, AnsiColors::Yellow, AnsiColors::Cyan]
+            highlights: vec![AnsiColors::Red, AnsiColors::Magenta, AnsiColors::Cyan]
                 .into_iter()
                 .map(|c| Style::new().color(c))
                 .collect(),
@@ -654,6 +660,9 @@ impl MietteStyles {
 
     pub fn none() -> Self {
         Self {
+            error: Style::new(),
+            warning: Style::new(),
+            advice: Style::new(),
             code: Style::new(),
             help: Style::new(),
             filename: Style::new(),

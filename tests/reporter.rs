@@ -5,7 +5,7 @@ use thiserror::Error;
 
 fn fmt_report(diag: DiagnosticReport) -> String {
     // Mostly for dev purposes.
-    let theme = if std::env::var("COLOR").is_ok() {
+    let theme = if std::env::var("STYLE").is_ok() {
         MietteTheme::unicode()
     } else {
         MietteTheme::unicode_nocolor()
