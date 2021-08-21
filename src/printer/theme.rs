@@ -1,3 +1,4 @@
+use atty::Stream;
 use owo_colors::Style;
 
 pub struct MietteTheme {
@@ -35,6 +36,7 @@ impl MietteTheme {
 impl Default for MietteTheme {
     fn default() -> Self {
         match std::env::var("NO_COLOR") {
+            _ if !atty::is(Stream::Stdout) || !atty::is(Stream::Stderr) => Self::basic(),
             Ok(string) if string != "0" => Self::unicode_nocolor(),
             _ => Self::unicode(),
         }
