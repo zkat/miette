@@ -11,12 +11,8 @@ fn fmt_report(diag: DiagnosticReport) -> String {
         DefaultReportPrinter::new_themed(MietteTheme::unicode())
             .render_report(&mut out, diag.inner())
             .unwrap();
-    } else if std::env::var("NARRATED").is_ok() {
-        NarratableReportPrinter
-            .render_report(&mut out, diag.inner())
-            .unwrap();
     } else {
-        DefaultReportPrinter::new_themed(MietteTheme::unicode_nocolor())
+        NarratableReportPrinter
             .render_report(&mut out, diag.inner())
             .unwrap();
     };
@@ -46,18 +42,18 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ source
- 2 │   text
-   ·   ──┬─
-   ·     ╰── this bit here
- 3 │     here
+snippet line 1: source
+snippet line 2:   text
+    highlight starting at line 2, column 3: this bit here
+snippet line 3:     here
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -88,17 +84,18 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ source
- 2 │   text
-   ·   ────
- 3 │     here
+snippet line 1: source
+snippet line 2:   text
+    highlight starting at line 2, column 3
+snippet line 3:     here
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -132,19 +129,19 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ source
- 2 │   text text text text text
-   ·   ──┬─ ──┬─
-   ·     ╰── this bit here
-   ·          ╰── also this bit
- 3 │     here
+snippet line 1: source
+snippet line 2:   text text text text text
+    highlight starting at line 2, column 3: this bit here
+    highlight starting at line 2, column 8: also this bit
+snippet line 3:     here
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -175,17 +172,18 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │     source
- 2 │ ╭─▶   text
- 3 │ ├─▶     here
-   · ╰──── these two lines
+snippet line 1: source
+snippet line 2:   text
+    highlight starting at line 2, column 3: these two lines
+snippet line 3:     here
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -225,20 +223,21 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ ╭──▶ line1
- 2 │ │╭─▶ line2
- 3 │ ││   line3
- 4 │ │├─▶ line4
-   · │╰──── block 2
- 6 │ ├──▶ line5
-   · ╰───── block 1
+snippet line 1: line1
+    highlight starting at line 1, column 1: block 1
+snippet line 2: line2
+    highlight starting at line 2, column 5: block 2
+snippet line 3: line3
+snippet line 4: line4
+snippet line 6: line5
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -278,19 +277,21 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ ╭──▶ line1
- 2 │ │╭─▶ line2
- 3 │ ││   line3
- 4 │ │╰─▶ line4
- 6 │ ├──▶ line5
-   · ╰───── block 1
+snippet line 1: line1
+    highlight starting at line 1, column 1: block 1
+snippet line 2: line2
+    highlight starting at line 2, column 5
+snippet line 3: line3
+snippet line 4: line4
+snippet line 6: line5
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -324,19 +325,20 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+oops!
+    Diagnostic severity: error
 
-    × oops!
+Begin snippet for bad_file.rs starting at line 1, column 1
 
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ ╭─▶ source
- 2 │ ├─▶   text
-   · ╰──── this bit here
- 3 │ ╭─▶     here
- 4 │ ├─▶ more here
-   · ╰──── also this bit
+snippet line 1: source
+    highlight starting at line 1, column 1: this bit here
+snippet line 2:   text
+snippet line 3:     here
+    highlight starting at line 3, column 7: also this bit
+snippet line 4: more here
 
-    ‽ try doing it better next time?
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -345,8 +347,6 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
 }
 
 #[test]
-// TODO: This breaks because those highlights aren't "truly" overlapping (in absolute byte offset), but they ARE overlapping in lines. Need to detect the latter case better
-#[ignore]
 /// Lines are overlapping, but the offsets themselves aren't, so they _look_
 /// disjunct if you only look at offsets.
 fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> {
@@ -373,7 +373,24 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+oops!
+    Diagnostic severity: error
+
+Begin snippet for bad_file.rs starting at line 1, column 1
+
+snippet line 1: source
+    highlight starting at line 1, column 1: this bit here
+snippet line 2:   text
+    highlight starting at line 2, column 3: also this bit
+snippet line 3:     here
+
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -404,6 +421,23 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+oops!
+    Diagnostic severity: error
+
+Begin snippet for bad_file.rs starting at line 1, column 1
+
+snippet line 1: source
+    highlight starting at line 1, column 1: this bit here
+snippet line 2:   text
+    highlight starting at line 2, column 4: also this bit
+snippet line 3:     here
+
+diagnostic help: try doing it better next time?
+diagnostic error code: oops::my::bad
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
