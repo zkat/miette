@@ -6,7 +6,7 @@ use std::fmt;
 
 use indenter::indented;
 use once_cell::sync::OnceCell;
-use yansi::Color;
+use owo_colors::{AnsiColors, OwoColorize};
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
@@ -31,8 +31,8 @@ pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + '
     &**REPORTER.get_or_init(|| {
         Box::new(DefaultReportPrinter {
             // TODO: color support detection here?
+            theme: MietteTheme::default(),
             colors: true,
-            chars: Characters::unicode(),
         })
     })
 }
@@ -75,24 +75,24 @@ but you might want to implement your own if you want custom reporting for your
 tool or app.
 */
 pub struct DefaultReportPrinter {
+    theme: MietteTheme,
     colors: bool,
-    chars: Characters,
 }
 
 impl DefaultReportPrinter {
     pub fn new() -> Self {
         Self {
+            theme: MietteTheme::default(),
             colors: true,
-            chars: Characters::unicode(),
         }
     }
 
-    pub fn with_colors(self, colors: bool) -> Self {
-        Self { colors, ..self }
+    pub fn with_theme(self, theme: MietteTheme) -> Self {
+        Self { theme, ..self }
     }
 
-    pub fn with_chars(self, chars: Characters) -> Self {
-        Self { chars, ..self }
+    pub fn toggle_colors(self, colors: bool) -> Self {
+        Self { colors, ..self }
     }
 }
 
@@ -149,15 +149,15 @@ impl Line {
 
 struct FancySpan {
     span: SourceSpan,
-    color: Option<Color>,
+    color: Option<AnsiColors>,
 }
 
 impl FancySpan {
-    fn new(span: SourceSpan, color: Option<Color>) -> Self {
+    fn new(span: SourceSpan, color: Option<AnsiColors>) -> Self {
         FancySpan { span, color }
     }
 
-    fn color(&self) -> Option<Color> {
+    fn color(&self) -> Option<AnsiColors> {
         self.color
     }
 
@@ -167,7 +167,7 @@ impl FancySpan {
 
     fn paint(&self, text: impl AsRef<str>) -> String {
         if let Some(color) = self.color() {
-            format!("{}", color.paint(text.as_ref()))
+            format!("{}", text.as_ref().color(color))
         } else {
             text.as_ref().to_string()
         }
@@ -189,21 +189,18 @@ impl DefaultReportPrinter {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         use fmt::Write as _;
-        let mut color_gen = ColorGenerator::new();
-        let mut sev = match diagnostic.severity() {
+        let sev = match diagnostic.severity() {
             Some(Severity::Error) | None => "Error",
             Some(Severity::Warning) => "Warning",
             Some(Severity::Advice) => "Advice",
         }
         .to_string();
         let mut code = diagnostic.code().to_string();
-        let mut msg = diagnostic.to_string();
+        let msg = diagnostic.to_string();
         if self.colors {
-            sev = color_gen.gen().paint(sev).to_string();
-            code = color_gen.gen().paint(&code).to_string();
-            msg = color_gen.gen().paint(&msg).to_string();
+            code = code.color(self.theme.colors.code).to_string();
         }
-        writeln!(f, "{}[{}]: {}", sev, code, msg)?;
+        writeln!(f, "{} [{}]: {}", sev, code, msg)?;
 
         if let Some(cause) = diagnostic.source() {
             writeln!(f)?;
@@ -211,10 +208,7 @@ impl DefaultReportPrinter {
             let multiple = cause.source().is_some();
 
             for (n, error) in Chain::new(cause).enumerate() {
-                let mut msg = format!("{}", error);
-                if self.colors {
-                    msg = color_gen.gen().paint(&msg).to_string();
-                }
+                let msg = format!("{}", error);
                 writeln!(f)?;
                 if multiple {
                     write!(indented(f).ind(n), "{}", msg)?;
@@ -231,41 +225,32 @@ impl DefaultReportPrinter {
                     writeln!(f)?;
                     pre = true;
                 }
-                self.render_snippet(f, &snippet, &mut color_gen)?;
+                self.render_snippet(f, &snippet)?;
             }
         }
 
         if let Some(help) = diagnostic.help() {
             let mut help = help.to_string();
             if self.colors {
-                help = color_gen.gen().paint(&help).to_string();
+                help = help.color(self.theme.colors.help).to_string();
             }
             writeln!(f)?;
-            writeln!(f, "﹦{}", help)?;
+            writeln!(f, "{} {}", self.theme.characters.eq, help)?;
         }
 
         Ok(())
     }
 
-    fn render_snippet(
-        &self,
-        f: &mut impl fmt::Write,
-        snippet: &DiagnosticSnippet,
-        color_gen: &mut ColorGenerator,
-    ) -> fmt::Result {
+    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet) -> fmt::Result {
         // Boring: The Header
         if let Some(source_name) = snippet.context.label() {
             let mut source_name = source_name.to_string();
             if self.colors {
-                source_name = color_gen.gen().paint(&source_name).to_string();
+                source_name = source_name.color(self.theme.colors.filename).to_string();
             }
             write!(f, "[{}]", source_name)?;
         }
         if let Some(msg) = &snippet.message {
-            let mut msg = msg.to_string();
-            if self.colors {
-                msg = color_gen.gen().paint(&msg).to_string();
-            }
             write!(f, " {}:", msg)?;
         }
         writeln!(f)?;
@@ -284,16 +269,8 @@ impl DefaultReportPrinter {
         highlights.sort_unstable_by_key(|h| h.offset());
         let highlights = highlights
             .into_iter()
-            .map(|hl| {
-                FancySpan::new(
-                    hl,
-                    if self.colors {
-                        Some(color_gen.gen())
-                    } else {
-                        None
-                    },
-                )
-            })
+            .zip(self.theme.colors.highlight_colors.iter())
+            .map(|(hl, color)| FancySpan::new(hl, if self.colors { Some(*color) } else { None }))
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -373,39 +350,28 @@ impl DefaultReportPrinter {
         if max_gutter == 0 {
             return Ok(());
         }
+        let chars = &self.theme.characters;
         let mut gutter = String::new();
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
             if line.span_starts(hl) {
-                gutter.push_str(&hl.paint(&self.chars.ltop.to_string()));
+                gutter.push_str(&hl.paint(chars.ltop.to_string()));
                 gutter.push_str(
-                    &hl.paint(
-                        &self
-                            .chars
-                            .hbar
-                            .to_string()
-                            .repeat(max_gutter.saturating_sub(i)),
-                    ),
+                    &hl.paint(chars.hbar.to_string().repeat(max_gutter.saturating_sub(i))),
                 );
-                gutter.push_str(&hl.paint(self.chars.rarrow.to_string()));
+                gutter.push_str(&hl.paint(chars.rarrow.to_string()));
                 gutter.push(' ');
                 break;
             } else if line.span_ends(hl) {
-                gutter.push_str(&hl.paint(self.chars.lcross.to_string()));
+                gutter.push_str(&hl.paint(chars.lcross.to_string()));
                 gutter.push_str(
-                    &hl.paint(
-                        &self
-                            .chars
-                            .hbar
-                            .to_string()
-                            .repeat(max_gutter.saturating_sub(i)),
-                    ),
+                    &hl.paint(chars.hbar.to_string().repeat(max_gutter.saturating_sub(i))),
                 );
-                gutter.push_str(&hl.paint(self.chars.rarrow.to_string()));
+                gutter.push_str(&hl.paint(chars.rarrow.to_string()));
                 gutter.push(' ');
                 break;
             } else if line.span_flyby(hl) {
-                gutter.push_str(&hl.paint(self.chars.vbar.to_string()));
+                gutter.push_str(&hl.paint(chars.vbar.to_string()));
             } else {
                 gutter.push(' ');
             }
@@ -424,15 +390,15 @@ impl DefaultReportPrinter {
         if max_gutter == 0 {
             return Ok(());
         }
+        let chars = &self.theme.characters;
         let mut gutter = String::new();
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
-                gutter.push_str(&hl.paint(&self.chars.lbot.to_string()));
+                gutter.push_str(&hl.paint(chars.lbot.to_string()));
                 gutter.push_str(
                     &hl.paint(
-                        &self
-                            .chars
+                        chars
                             .hbar
                             .to_string()
                             .repeat(max_gutter.saturating_sub(i) + 2),
@@ -440,7 +406,7 @@ impl DefaultReportPrinter {
                 );
                 break;
             } else {
-                gutter.push_str(&hl.paint(&self.chars.vbar.to_string()));
+                gutter.push_str(&hl.paint(chars.vbar.to_string()));
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
@@ -448,7 +414,13 @@ impl DefaultReportPrinter {
     }
 
     fn write_linum(&self, f: &mut impl fmt::Write, width: usize, linum: usize) -> fmt::Result {
-        write!(f, " {:width$} {} ", linum, self.chars.vbar, width = width)?;
+        write!(
+            f,
+            " {:width$} {} ",
+            linum,
+            self.theme.characters.vbar,
+            width = width
+        )?;
         Ok(())
     }
 
@@ -457,7 +429,7 @@ impl DefaultReportPrinter {
             f,
             " {:width$} {} ",
             "",
-            self.chars.vbar_break,
+            self.theme.characters.vbar_break,
             width = width
         )?;
         Ok(())
@@ -474,6 +446,7 @@ impl DefaultReportPrinter {
     ) -> fmt::Result {
         let mut underlines = String::new();
         let mut highest = 0;
+        let chars = &self.theme.characters;
         for hl in single_liners {
             let local_offset = hl.offset() - line.offset;
             let vbar_offset = local_offset + (hl.len() / 2);
@@ -485,9 +458,9 @@ impl DefaultReportPrinter {
                 underlines.push_str(&hl.paint(&format!(
                     "{:width$}{}{}{}",
                     "",
-                    self.chars.underline.to_string().repeat(num_left),
-                    self.chars.underbar,
-                    self.chars.underline.to_string().repeat(num_right),
+                    chars.underline.to_string().repeat(num_left),
+                    chars.underbar,
+                    chars.underline.to_string().repeat(num_right),
                     width = local_offset.saturating_sub(highest),
                 )));
             }
@@ -504,8 +477,8 @@ impl DefaultReportPrinter {
             let lines = format!(
                 "{:width$}{}{} {}",
                 " ",
-                self.chars.lbot,
-                self.chars.hbar.to_string().repeat(num_right + 1),
+                chars.lbot,
+                chars.hbar.to_string().repeat(num_right + 1),
                 hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
                 width = vbar_offset
             );
@@ -518,7 +491,7 @@ impl DefaultReportPrinter {
         writeln!(
             f,
             "{} {}",
-            hl.paint(self.chars.hbar.to_string()),
+            hl.paint(self.theme.characters.hbar.to_string()),
             hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
         )?;
         Ok(())
@@ -625,10 +598,54 @@ impl DiagnosticReportPrinter for JokeReporter {
     }
 }
 
+pub struct MietteTheme {
+    pub characters: MietteCharacters,
+    pub colors: MietteColors,
+}
+
+impl MietteTheme {
+    pub fn basic() -> Self {
+        Self {
+            characters: MietteCharacters::ascii(),
+            colors: MietteColors::ansi(),
+        }
+    }
+    pub fn simple() -> Self {
+        Self {
+            characters: MietteCharacters::unicode(),
+            colors: MietteColors::ansi(),
+        }
+    }
+}
+
+impl Default for MietteTheme {
+    fn default() -> Self {
+        Self::simple()
+    }
+}
+
+pub struct MietteColors {
+    pub code: AnsiColors,
+    pub help: AnsiColors,
+    pub filename: AnsiColors,
+    pub highlight_colors: Vec<AnsiColors>,
+}
+
+impl MietteColors {
+    pub fn ansi() -> Self {
+        Self {
+            code: AnsiColors::Yellow,
+            help: AnsiColors::Cyan,
+            filename: AnsiColors::Green,
+            highlight_colors: vec![AnsiColors::Red, AnsiColors::Yellow, AnsiColors::Cyan],
+        }
+    }
+}
+
 // ---------------------------------------
 // All code below here was taken from ariadne here:
 // https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
-pub struct Characters {
+pub struct MietteCharacters {
     pub hbar: char,
     pub vbar: char,
     pub xbar: char,
@@ -652,9 +669,11 @@ pub struct Characters {
 
     pub underbar: char,
     pub underline: char,
+
+    pub eq: char,
 }
 
-impl Characters {
+impl MietteCharacters {
     pub fn unicode() -> Self {
         Self {
             hbar: '─',
@@ -675,6 +694,7 @@ impl Characters {
             rcross: '┤',
             underbar: '┬',
             underline: '─',
+            eq: '﹦',
         }
     }
 
@@ -698,54 +718,7 @@ impl Characters {
             rcross: '|',
             underbar: '|',
             underline: '^',
+            eq: '=',
         }
-    }
-}
-
-/// A type that can generate distinct 8-bit colors.
-pub struct ColorGenerator {
-    state: [u16; 3],
-    min_brightness: f32,
-}
-
-impl Default for ColorGenerator {
-    fn default() -> Self {
-        Self::from_state([30000, 15000, 35000], 0.5)
-    }
-}
-
-impl ColorGenerator {
-    /// Create a new [`ColorGenerator`] with the given pre-chosen state.
-    ///
-    /// The minimum brightness can be used to control the colour brightness (0.0 - 1.0). The default is 0.5.
-    pub fn from_state(state: [u16; 3], min_brightness: f32) -> Self {
-        Self {
-            state,
-            min_brightness: min_brightness.max(0.0).min(1.0),
-        }
-    }
-
-    /// Create a new [`ColorGenerator`] with the default state.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Generate the next colour in the sequence.
-    pub fn gen(&mut self) -> Color {
-        for i in 0..3 {
-            // magic constant, one of only two that have this property!
-            self.state[i] = (self.state[i] as usize).wrapping_add(40503 * (i * 4 + 1130)) as u16;
-        }
-        Color::Fixed(
-            16 + ((self.state[2] as f32 / 65535.0 * (1.0 - self.min_brightness)
-                + self.min_brightness)
-                * 5.0
-                + (self.state[1] as f32 / 65535.0 * (1.0 - self.min_brightness)
-                    + self.min_brightness)
-                    * 30.0
-                + (self.state[0] as f32 / 65535.0 * (1.0 - self.min_brightness)
-                    + self.min_brightness)
-                    * 180.0) as u8,
-        )
     }
 }
