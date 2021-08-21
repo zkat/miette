@@ -7,7 +7,7 @@ fn fmt_report(diag: DiagnosticReport) -> String {
     // Mostly for dev purposes.
     let theme = if std::env::var("STYLE").is_ok() {
         MietteTheme::unicode()
-    } else if std::env::var("NO_COLOR").is_ok() {
+    } else if std::env::var("BASIC").is_ok() {
         MietteTheme::none()
     } else {
         MietteTheme::unicode_nocolor()

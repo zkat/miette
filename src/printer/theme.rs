@@ -34,7 +34,10 @@ impl MietteTheme {
 
 impl Default for MietteTheme {
     fn default() -> Self {
-        Self::unicode()
+        match std::env::var("NO_COLOR") {
+            Ok(string) if string != "0" => Self::unicode_nocolor(),
+            _ => Self::unicode(),
+        }
     }
 }
 
@@ -61,11 +64,7 @@ impl MietteStyles {
             code: style().yellow(),
             help: style().cyan(),
             filename: style().green(),
-            highlights: vec![
-                style().red(),
-                style().magenta(),
-                style().cyan(),
-            ],
+            highlights: vec![style().red(), style().magenta(), style().cyan()],
         }
     }
 
