@@ -3,23 +3,12 @@ coder! Error code for One Thousand Lines!
 
 ## About
 
-`miette` is a diagnostic definition library for Rust. It includes a series of
-protocols that allow you to hook into its error reporting facilities, and even
-write your own error reports! It lets you define error types that can print out
-like this (or in any format you like!):
+`miette` is a diagnostic library for Rust. It includes a series of protocols
+that allow you to hook into its error reporting facilities, and even write
+your own error reports! It lets you define error types that can print out like
+this (or in any format you like!):
 
-```sh
-Error: Error[oops::my::bad]: oops it broke!
-
-[bad_file.rs] This is the part that broke:
-
-    1  | source
-    2  |   text
-    ⫶  |   ^^^^ this bit here
-    3  |     here
-
-﹦try doing it better next time?
-```
+<img src="https://raw.githubusercontent.com/zkat/miette/main/images/serde_json.png" alt="miette rendering a serde_json error very nicely">
 
 The [Diagnostic] trait in `miette` is an extension of `std::error::Error` that
 adds various facilities like [Severity], error codes that could be looked up
@@ -35,7 +24,7 @@ While the `miette` crate bundles some baseline implementations for [Source]
 and [DiagnosticReportPrinter], it's intended to define a protocol that other crates
 can build on top of to provide rich error reporting, and encourage an
 ecosystem that leans on this extra metadata to provide it for others in a way
-that's compatible with [std::error::Error]
+that's compatible with [std::error::Error].
 
 ## Installing
 
@@ -57,10 +46,9 @@ use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
-#[error("oops it broke!")]
+#[error("oops!")]
 #[diagnostic(
     code(oops::my::bad),
-    severity(Warning),
     help("try doing it better next time?"),
 )]
 struct MyBad {
@@ -112,18 +100,7 @@ fn pretend_this_is_main() -> Result<()> {
 
 And this is the output you'll get if you run this program:
 
-```sh
-Error: Error[oops::my::bad]: oops it broke!
-
-[bad_file.rs] This is the part that broke:
-
-    1  | source
-    2  |   text
-    ⫶  |   ^^^^ this bit here
-    3  |     here
-
-﹦try doing it better next time?
-```
+<img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="miette rendering a single-line error">
 
 ## License
 
