@@ -39,37 +39,6 @@ pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + '
     })
 }
 
-/// Convenience alias. This is intended to be used as the return type for `main()`
-pub type DiagnosticResult<T> = Result<T, DiagnosticReport>;
-
-/// When used with `?`/`From`, this will wrap any Diagnostics and, when
-/// formatted with `Debug`, will fetch the current [DiagnosticReportPrinter] and
-/// use it to format the inner [Diagnostic].
-pub struct DiagnosticReport {
-    diagnostic: Box<dyn Diagnostic + Send + Sync + 'static>,
-}
-
-impl DiagnosticReport {
-    /// Return a reference to the inner [Diagnostic].
-    pub fn inner(&self) -> &(dyn Diagnostic + Send + Sync + 'static) {
-        &*self.diagnostic
-    }
-}
-
-impl std::fmt::Debug for DiagnosticReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        get_reporter().debug(&*self.diagnostic, f)
-    }
-}
-
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for DiagnosticReport {
-    fn from(diagnostic: T) -> Self {
-        DiagnosticReport {
-            diagnostic: Box::new(diagnostic),
-        }
-    }
-}
-
 /// Literally what it says on the tin.
 pub struct JokeReporter;
 

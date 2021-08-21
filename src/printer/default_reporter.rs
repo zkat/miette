@@ -5,7 +5,7 @@ use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::reporter::theme::*;
+use crate::printer::theme::*;
 use crate::SourceSpan;
 
 /**

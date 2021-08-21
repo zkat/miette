@@ -2,7 +2,10 @@ use std::fmt;
 
 use thiserror::Error;
 
-use crate::Diagnostic;
+use crate::{Diagnostic, DiagnosticReport};
+
+/// Convenience alias. This is intended to be used as the return type for `main()`
+pub type DiagnosticResult<T> = Result<T, DiagnosticReport>;
 
 /// Convenience [Diagnostic] that can be used as an "anonymous" wrapper for
 /// Errors. This is intended to be paired with [IntoDiagnostic].
