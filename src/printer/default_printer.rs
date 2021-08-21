@@ -94,7 +94,12 @@ impl DefaultReportPrinter {
                 } else {
                     self.theme.characters.lbot
                 };
-                let msg = format!("    {}{}{} {}", char, self.theme.characters.hbar, self.theme.characters.rarrow, error).style(severity_style).to_string();
+                let msg = format!(
+                    "    {}{}{} {}",
+                    char, self.theme.characters.hbar, self.theme.characters.rarrow, error
+                )
+                .style(severity_style)
+                .to_string();
                 writeln!(f, "{}", msg)?;
             }
         }

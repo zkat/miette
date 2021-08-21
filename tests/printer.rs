@@ -53,7 +53,9 @@ fn single_line_highlight() -> Result<(), MietteError> {
  3 │     here
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -92,7 +94,9 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
  3 │     here
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -136,7 +140,9 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
  3 │     here
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -175,7 +181,9 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
    · ╰──── these two lines
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -211,7 +219,7 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    let expected =r#"
+    let expected = r#"
 ────[oops::my::bad]────────────────────
 
     × oops!
@@ -226,7 +234,9 @@ line5
    · ╰───── block 1
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -276,7 +286,9 @@ line5
    · ╰───── block 1
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -306,7 +318,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    let expected =r#"
+    let expected = r#"
 ────[oops::my::bad]────────────────────
 
     × oops!
@@ -320,7 +332,9 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
    · ╰──── also this bit
 
     ‽ try doing it better next time?
-"#.trim_start().to_string();
+"#
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }

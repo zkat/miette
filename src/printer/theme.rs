@@ -66,7 +66,11 @@ impl MietteStyles {
             code: style().yellow(),
             help: style().cyan(),
             filename: style().cyan().underline().bold(),
-            highlights: vec![style().red().bold(), style().yellow().bold(), style().cyan().bold()],
+            highlights: vec![
+                style().red().bold(),
+                style().yellow().bold(),
+                style().cyan().bold(),
+            ],
         }
     }
 
