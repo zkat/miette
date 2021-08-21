@@ -1,3 +1,27 @@
+<a name="0.12.0"></a>
+## 0.12.0 (2021-08-21)
+
+This is a SUPER EXCITING release! With this, miette now has a full-featured
+pretty-printer that can handle cause chains, snippets, help text, and lots
+more!
+
+Check out [the serde_json
+example](https://github.com/zkat/miette/blob/5fd2765bf05edf25251ce199994b8815524fd47d/images/serde_json.png)
+to see a "real-world" case!
+
+This release also adds support for full `thiserror`-style format strings to
+the `help()` diagnostic derive attribute!
+
+We're rapidly approaching a 1.0-beta release. One more extra-fun treat left
+and we can start stabilizing!
+
+#### Features
+
+* **derive:**  format string support for help() ([8fbad1b1](https://github.com/zkat/miette/commit/8fbad1b1cd173ce3c0b803f8b2db013e278c63a6))
+* **printer:**  lots of small improvements to printer ([5fbcd530](https://github.com/zkat/miette/commit/5fbcd53026c131ceafe2a66bebbc20de570363c9))
+* **reporter:**  fancy new reporter with unicode, colors, and multiline (#23) ([d675334e](https://github.com/zkat/miette/commit/d675334e48ddc188a34e166ad040eaceda117d0a))
+
+
 <a name="0.11.0"></a>
 ## 0.11.0 (2021-08-18)
 
