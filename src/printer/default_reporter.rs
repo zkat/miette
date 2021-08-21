@@ -4,8 +4,8 @@ use indenter::indented;
 use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
 use crate::printer::theme::*;
+use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
 use crate::SourceSpan;
 
 /**
@@ -194,7 +194,7 @@ impl DefaultReportPrinter {
                 )?;
             }
             for hl in multi_line {
-                if line.span_ends(hl) && !line.span_starts(hl) {
+                if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
                     // no line number!
                     self.write_no_linum(f, linum_width)?;
                     // gutter _again_
@@ -234,7 +234,11 @@ impl DefaultReportPrinter {
                 gutter.push(' ');
                 break;
             } else if line.span_ends(hl) {
-                gutter.push_str(&chars.lcross.to_string().style(hl.style).to_string());
+                if hl.label().is_some() {
+                    gutter.push_str(&chars.lcross.to_string().style(hl.style).to_string());
+                } else {
+                    gutter.push_str(&chars.lbot.to_string().style(hl.style).to_string());
+                }
                 gutter.push_str(
                     &chars
                         .hbar
@@ -336,7 +340,11 @@ impl DefaultReportPrinter {
                         "{:width$}{}{}{}",
                         "",
                         chars.underline.to_string().repeat(num_left),
-                        chars.underbar,
+                        if hl.label().is_some() {
+                            chars.underbar
+                        } else {
+                            chars.underline
+                        },
                         chars.underline.to_string().repeat(num_right),
                         width = local_offset.saturating_sub(highest),
                     )
@@ -349,20 +357,22 @@ impl DefaultReportPrinter {
         writeln!(f, "{}", underlines)?;
 
         for hl in single_liners {
-            self.write_no_linum(f, linum_width)?;
-            self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
-            let local_offset = hl.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.len() / 2);
-            let num_right = local_offset + hl.len() - vbar_offset - 1;
-            let lines = format!(
-                "{:width$}{}{} {}",
-                " ",
-                chars.lbot,
-                chars.hbar.to_string().repeat(num_right + 1),
-                hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
-                width = vbar_offset
-            );
-            writeln!(f, "{}", lines.style(hl.style))?;
+            if let Some(label) = hl.label() {
+                self.write_no_linum(f, linum_width)?;
+                self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
+                let local_offset = hl.offset() - line.offset;
+                let vbar_offset = local_offset + (hl.len() / 2);
+                let num_right = local_offset + hl.len() - vbar_offset - 1;
+                let lines = format!(
+                    "{:width$}{}{} {}",
+                    " ",
+                    chars.lbot,
+                    chars.hbar.to_string().repeat(num_right + 1),
+                    label,
+                    width = vbar_offset
+                );
+                writeln!(f, "{}", lines.style(hl.style))?;
+            }
         }
         Ok(())
     }
@@ -372,7 +382,7 @@ impl DefaultReportPrinter {
             f,
             "{} {}",
             self.theme.characters.hbar.to_string().style(hl.style),
-            hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
+            hl.label().unwrap_or_else(|| "".into()),
         )?;
         Ok(())
     }

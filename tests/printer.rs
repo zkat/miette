@@ -45,6 +45,32 @@ fn single_line_highlight() -> Result<(), MietteError> {
 }
 
 #[test]
+fn single_line_highlight_no_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: String,
+        #[snippet(src, "This is the part that broke")]
+        ctx: SourceSpan,
+        #[highlight(ctx)]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src,
+        ctx: ("bad_file.rs", 0, len).into(),
+        highlight: (9, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ────\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    Ok(())
+}
+
+#[test]
 fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
@@ -131,6 +157,41 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │├─▶ line4\n   · │╰──── block 2\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦ try doing it better next time?\n".to_string(), out);
+    Ok(())
+}
+
+#[test]
+fn multiline_highlight_no_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: String,
+        #[snippet(src, "This is the part that broke")]
+        ctx: SourceSpan,
+        #[highlight(ctx)]
+        highlight1: SourceSpan,
+        #[highlight(ctx)]
+        highlight2: SourceSpan,
+    }
+
+    let src = r#"line1
+line2
+line3
+line4
+line5
+"#
+    .to_string();
+    let len = src.len();
+    let err = MyBad {
+        src,
+        ctx: ("bad_file.rs", 0, len).into(),
+        highlight1: ("block 1", 0, len).into(),
+        highlight2: (10, 9).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │╰─▶ line4\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
