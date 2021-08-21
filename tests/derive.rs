@@ -171,7 +171,7 @@ fn fmt_help() {
         Y { len: usize },
 
         #[diagnostic(code(foo::x), help("{} x {self:?} x {:?}", 1, "2"))]
-        Z
+        Z,
     }
 
     assert_eq!(

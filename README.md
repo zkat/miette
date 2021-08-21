@@ -131,4 +131,5 @@ Error: Error[oops::my::bad]: oops it broke!
 
 It also includes some code taken from [`eyre`](https://github.com/yaahc/eyre),
 and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
-the Apache License.
+the Apache License. Some code is taken from
+[`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.

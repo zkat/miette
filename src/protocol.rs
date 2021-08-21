@@ -4,7 +4,11 @@ that you can implement to get access to miette's (and related library's) full
 reporting and such features.
 */
 
-use std::{fmt::Display, fs, panic::Location};
+use std::{
+    fmt::{self, Display},
+    fs,
+    panic::Location,
+};
 
 use crate::MietteError;
 
@@ -60,6 +64,36 @@ impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + Sen
 impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + 'static> {
     fn from(diag: T) -> Self {
         Box::<dyn Diagnostic + Send + Sync>::from(diag)
+    }
+}
+
+/**
+When used with `?`/`From`, this will wrap any Diagnostics and, when
+formatted with `Debug`, will fetch the current [DiagnosticReportPrinter] and
+use it to format the inner [Diagnostic].
+*/
+pub struct DiagnosticReport {
+    diagnostic: Box<dyn Diagnostic + Send + Sync + 'static>,
+}
+
+impl DiagnosticReport {
+    /// Return a reference to the inner [Diagnostic].
+    pub fn inner(&self) -> &(dyn Diagnostic + Send + Sync + 'static) {
+        &*self.diagnostic
+    }
+}
+
+impl std::fmt::Debug for DiagnosticReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        crate::get_reporter().debug(&*self.diagnostic, f)
+    }
+}
+
+impl<T: Diagnostic + Send + Sync + 'static> From<T> for DiagnosticReport {
+    fn from(diagnostic: T) -> Self {
+        DiagnosticReport {
+            diagnostic: Box::new(diagnostic),
+        }
     }
 }
 
