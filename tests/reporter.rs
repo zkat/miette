@@ -10,7 +10,7 @@ fn fmt_report(diag: DiagnosticReport) -> String {
     } else {
         MietteTheme::unicode_nocolor()
     };
-    let printer = DefaultReportPrinter::new().with_theme(theme);
+    let printer = DefaultReportPrinter::new_themed(theme);
     let mut out = String::new();
     printer.render_report(&mut out, diag.inner()).unwrap();
     out

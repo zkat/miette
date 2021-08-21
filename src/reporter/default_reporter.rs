@@ -1,71 +1,12 @@
-/*!
-Basic reporter for Diagnostics. Probably good enough for most use-cases,
-but largely meant to be an example.
-*/
 use std::fmt;
 
 use indenter::indented;
-use once_cell::sync::OnceCell;
 use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::{MietteError, SourceSpan};
-
-static REPORTER: OnceCell<Box<dyn DiagnosticReportPrinter + Send + Sync + 'static>> =
-    OnceCell::new();
-
-/// Set the global [DiagnosticReportPrinter] that will be used when you report
-/// using [DiagnosticReport].
-pub fn set_reporter(
-    reporter: impl DiagnosticReportPrinter + Send + Sync + 'static,
-) -> Result<(), MietteError> {
-    REPORTER
-        .set(Box::new(reporter))
-        .map_err(|_| MietteError::ReporterInstallFailed)
-}
-
-/// Used by [DiagnosticReport] to fetch the reporter that will be used to
-/// print stuff out.
-pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + 'static) {
-    &**REPORTER.get_or_init(|| {
-        Box::new(DefaultReportPrinter {
-            // TODO: color support detection here?
-            theme: MietteTheme::default(),
-        })
-    })
-}
-
-/// Convenience alias. This is intended to be used as the return type for `main()`
-pub type DiagnosticResult<T> = Result<T, DiagnosticReport>;
-
-/// When used with `?`/`From`, this will wrap any Diagnostics and, when
-/// formatted with `Debug`, will fetch the current [DiagnosticReportPrinter] and
-/// use it to format the inner [Diagnostic].
-pub struct DiagnosticReport {
-    diagnostic: Box<dyn Diagnostic + Send + Sync + 'static>,
-}
-
-impl DiagnosticReport {
-    /// Return a reference to the inner [Diagnostic].
-    pub fn inner(&self) -> &(dyn Diagnostic + Send + Sync + 'static) {
-        &*self.diagnostic
-    }
-}
-
-impl std::fmt::Debug for DiagnosticReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        get_reporter().debug(&*self.diagnostic, f)
-    }
-}
-
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for DiagnosticReport {
-    fn from(diagnostic: T) -> Self {
-        DiagnosticReport {
-            diagnostic: Box::new(diagnostic),
-        }
-    }
-}
+use crate::reporter::theme::*;
+use crate::SourceSpan;
 
 /**
 Reference implementation of the [DiagnosticReportPrinter] trait. This is generally
@@ -74,7 +15,7 @@ but you might want to implement your own if you want custom reporting for your
 tool or app.
 */
 pub struct DefaultReportPrinter {
-    theme: MietteTheme,
+    pub(crate) theme: MietteTheme,
 }
 
 impl DefaultReportPrinter {
@@ -84,7 +25,7 @@ impl DefaultReportPrinter {
         }
     }
 
-    pub fn with_theme(self, theme: MietteTheme) -> Self {
+    pub fn new_themed(theme: MietteTheme) -> Self {
         Self { theme }
     }
 }
@@ -95,85 +36,30 @@ impl Default for DefaultReportPrinter {
     }
 }
 
-struct Line {
-    line_number: usize,
-    offset: usize,
-    length: usize,
-    text: String,
-}
-
-impl Line {
-    fn span_line_only(&self, span: &FancySpan) -> bool {
-        span.offset() >= self.offset && span.offset() + span.len() <= self.offset + self.length
-    }
-
-    fn span_applies(&self, span: &FancySpan) -> bool {
-        // Span starts in this line
-        (span.offset() >= self.offset && span.offset() <= self.offset +self.length)
-        // Span passes through this line
-        || (span.offset() < self.offset && span.offset() + span.len() > self.offset + self.length) //todo
-        // Span ends on this line
-        || (span.offset() + span.len() >= self.offset && span.offset() + span.len() <= self.offset + self.length)
-    }
-
-    // A "flyby" is a multi-line span that technically covers this line, but
-    // does not begin or end within the line itself. This method is used to
-    // calculate gutters.
-    fn span_flyby(&self, span: &FancySpan) -> bool {
-        // the span itself starts before this line's starting offset (so, in a prev line)
-        span.offset() < self.offset
-            // ...and it stops after this line's end.
-            && span.offset() + span.len() > self.offset + self.length
-    }
-
-    // Does this line contain the *beginning* of this multiline span?
-    // This assumes self.span_applies() is true already.
-    fn span_starts(&self, span: &FancySpan) -> bool {
-        span.offset() >= self.offset
-    }
-
-    // Does this line contain the *end* of this multiline span?
-    // This assumes self.span_applies() is true already.
-    fn span_ends(&self, span: &FancySpan) -> bool {
-        span.offset() + span.len() >= self.offset
-            && span.offset() + span.len() <= self.offset + self.length
-    }
-}
-
-struct FancySpan {
-    span: SourceSpan,
-    style: Style,
-}
-
-impl FancySpan {
-    fn new(span: SourceSpan, style: Style) -> Self {
-        FancySpan { span, style }
-    }
-
-    fn style(&self) -> Style {
-        self.style
-    }
-
-    fn label(&self) -> Option<String> {
-        self.span.label().map(|l| l.style(self.style()).to_string())
-    }
-
-    fn offset(&self) -> usize {
-        self.span.offset()
-    }
-
-    fn len(&self) -> usize {
-        self.span.len()
-    }
-}
-
 impl DefaultReportPrinter {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
-        use fmt::Write as _;
+        self.render_header(f, diagnostic)?;
+        self.render_causes(f, diagnostic)?;
+        if let Some(snippets) = diagnostic.snippets() {
+            let mut pre = false;
+            for snippet in snippets {
+                if !pre {
+                    writeln!(f)?;
+                    pre = true;
+                }
+                self.render_snippet(f, &snippet)?;
+            }
+        }
+
+        self.render_footer(f, diagnostic)?;
+        Ok(())
+    }
+
+    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         let sev = match diagnostic.severity() {
             Some(Severity::Error) | None => "Error".style(self.theme.styles.error),
             Some(Severity::Warning) => "Warning".style(self.theme.styles.warning),
@@ -189,10 +75,16 @@ impl DefaultReportPrinter {
             code.style(self.theme.styles.code),
             msg
         )?;
+        Ok(())
+    }
+
+    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+        use fmt::Write as _;
 
         if let Some(cause) = diagnostic.source() {
             writeln!(f)?;
             write!(f, "Caused by:")?;
+
             let multiple = cause.source().is_some();
 
             for (n, error) in Chain::new(cause).enumerate() {
@@ -206,23 +98,15 @@ impl DefaultReportPrinter {
             }
         }
 
-        if let Some(snippets) = diagnostic.snippets() {
-            let mut pre = false;
-            for snippet in snippets {
-                if !pre {
-                    writeln!(f)?;
-                    pre = true;
-                }
-                self.render_snippet(f, &snippet)?;
-            }
-        }
+        Ok(())
+    }
 
+    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
             let help = help.style(self.theme.styles.help);
             writeln!(f)?;
             writeln!(f, "{} {}", self.theme.characters.eq, help)?;
         }
-
         Ok(())
     }
 
@@ -557,198 +441,78 @@ impl DiagnosticReportPrinter for DefaultReportPrinter {
     }
 }
 
-/// Literally what it says on the tin.
-pub struct JokeReporter;
+/*
+Support types
+*/
 
-impl DiagnosticReportPrinter for JokeReporter {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            return fmt::Debug::fmt(diagnostic, f);
-        }
+struct Line {
+    line_number: usize,
+    offset: usize,
+    length: usize,
+    text: String,
+}
 
-        let sev = match diagnostic.severity() {
-            Some(Severity::Error) | None => "error",
-            Some(Severity::Warning) => "warning",
-            Some(Severity::Advice) => "advice",
-        };
-        writeln!(
-            f,
-            "me, with {} {}: {}",
-            sev,
-            diagnostic,
-            diagnostic
-                .help()
-                .unwrap_or_else(|| Box::new(&"have you tried not failing?"))
-        )?;
-        writeln!(
-            f,
-            "miette, her eyes enormous: you {} miette? you {}? oh! oh! jail for mother! jail for mother for One Thousand Years!!!!",
-            diagnostic.code(),
-            diagnostic.snippets().map(|snippets| {
-                snippets.map(|snippet| snippet.message.map(|x| x.to_owned()))
-                .collect::<Option<Vec<String>>>()
-            }).flatten().map(|x| x.join(", ")).unwrap_or_else(||"try and cause miette to panic".into())
-        )?;
+impl Line {
+    fn span_line_only(&self, span: &FancySpan) -> bool {
+        span.offset() >= self.offset && span.offset() + span.len() <= self.offset + self.length
+    }
 
-        Ok(())
+    fn span_applies(&self, span: &FancySpan) -> bool {
+        // Span starts in this line
+        (span.offset() >= self.offset && span.offset() <= self.offset +self.length)
+        // Span passes through this line
+        || (span.offset() < self.offset && span.offset() + span.len() > self.offset + self.length) //todo
+        // Span ends on this line
+        || (span.offset() + span.len() >= self.offset && span.offset() + span.len() <= self.offset + self.length)
+    }
+
+    // A "flyby" is a multi-line span that technically covers this line, but
+    // does not begin or end within the line itself. This method is used to
+    // calculate gutters.
+    fn span_flyby(&self, span: &FancySpan) -> bool {
+        // the span itself starts before this line's starting offset (so, in a prev line)
+        span.offset() < self.offset
+            // ...and it stops after this line's end.
+            && span.offset() + span.len() > self.offset + self.length
+    }
+
+    // Does this line contain the *beginning* of this multiline span?
+    // This assumes self.span_applies() is true already.
+    fn span_starts(&self, span: &FancySpan) -> bool {
+        span.offset() >= self.offset
+    }
+
+    // Does this line contain the *end* of this multiline span?
+    // This assumes self.span_applies() is true already.
+    fn span_ends(&self, span: &FancySpan) -> bool {
+        span.offset() + span.len() >= self.offset
+            && span.offset() + span.len() <= self.offset + self.length
     }
 }
 
-pub struct MietteTheme {
-    pub characters: MietteCharacters,
-    pub styles: MietteStyles,
+struct FancySpan {
+    span: SourceSpan,
+    style: Style,
 }
 
-impl MietteTheme {
-    pub fn basic() -> Self {
-        Self {
-            characters: MietteCharacters::ascii(),
-            styles: MietteStyles::ansi(),
-        }
-    }
-    pub fn unicode() -> Self {
-        Self {
-            characters: MietteCharacters::unicode(),
-            styles: MietteStyles::ansi(),
-        }
-    }
-    pub fn unicode_nocolor() -> Self {
-        Self {
-            characters: MietteCharacters::unicode(),
-            styles: MietteStyles::none(),
-        }
-    }
-    pub fn none() -> Self {
-        Self {
-            characters: MietteCharacters::ascii(),
-            styles: MietteStyles::none(),
-        }
-    }
-}
-
-impl Default for MietteTheme {
-    fn default() -> Self {
-        Self::unicode()
-    }
-}
-
-pub struct MietteStyles {
-    pub error: Style,
-    pub warning: Style,
-    pub advice: Style,
-    pub code: Style,
-    pub help: Style,
-    pub filename: Style,
-    pub highlights: Vec<Style>,
-}
-
-impl MietteStyles {
-    pub fn ansi() -> Self {
-        Self {
-            error: Style::new().red(),
-            warning: Style::new().yellow(),
-            advice: Style::new().cyan(),
-            code: Style::new().yellow(),
-            help: Style::new().cyan(),
-            filename: Style::new().green(),
-            highlights: vec![
-                Style::new().red(),
-                Style::new().magenta(),
-                Style::new().cyan(),
-            ],
-        }
+impl FancySpan {
+    fn new(span: SourceSpan, style: Style) -> Self {
+        FancySpan { span, style }
     }
 
-    pub fn none() -> Self {
-        Self {
-            error: Style::new(),
-            warning: Style::new(),
-            advice: Style::new(),
-            code: Style::new(),
-            help: Style::new(),
-            filename: Style::new(),
-            highlights: vec![Style::new()],
-        }
-    }
-}
-
-// ---------------------------------------
-// All code below here was taken from ariadne here:
-// https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
-pub struct MietteCharacters {
-    pub hbar: char,
-    pub vbar: char,
-    pub xbar: char,
-    pub vbar_break: char,
-
-    pub uarrow: char,
-    pub rarrow: char,
-
-    pub ltop: char,
-    pub mtop: char,
-    pub rtop: char,
-    pub lbot: char,
-    pub rbot: char,
-    pub mbot: char,
-
-    pub lbox: char,
-    pub rbox: char,
-
-    pub lcross: char,
-    pub rcross: char,
-
-    pub underbar: char,
-    pub underline: char,
-
-    pub eq: char,
-}
-
-impl MietteCharacters {
-    pub fn unicode() -> Self {
-        Self {
-            hbar: '─',
-            vbar: '│',
-            xbar: '┼',
-            vbar_break: '·',
-            uarrow: '▲',
-            rarrow: '▶',
-            ltop: '╭',
-            mtop: '┬',
-            rtop: '╮',
-            lbot: '╰',
-            mbot: '┴',
-            rbot: '╯',
-            lbox: '[',
-            rbox: ']',
-            lcross: '├',
-            rcross: '┤',
-            underbar: '┬',
-            underline: '─',
-            eq: '﹦',
-        }
+    fn style(&self) -> Style {
+        self.style
     }
 
-    pub fn ascii() -> Self {
-        Self {
-            hbar: '-',
-            vbar: '|',
-            xbar: '+',
-            vbar_break: ':',
-            uarrow: '^',
-            rarrow: '>',
-            ltop: ',',
-            mtop: 'v',
-            rtop: '.',
-            lbot: '`',
-            mbot: '^',
-            rbot: '\'',
-            lbox: '[',
-            rbox: ']',
-            lcross: '|',
-            rcross: '|',
-            underbar: '|',
-            underline: '^',
-            eq: '=',
-        }
+    fn label(&self) -> Option<String> {
+        self.span.label().map(|l| l.style(self.style()).to_string())
+    }
+
+    fn offset(&self) -> usize {
+        self.span.offset()
+    }
+
+    fn len(&self) -> usize {
+        self.span.len()
     }
 }
