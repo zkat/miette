@@ -219,6 +219,7 @@ impl DefaultReportPrinter {
         let chars = &self.theme.characters;
         let mut gutter = String::new();
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        let mut arrow = false;
         for (i, hl) in applicable.enumerate() {
             if line.span_starts(hl) {
                 gutter.push_str(&chars.ltop.to_string().style(hl.style).to_string());
@@ -231,7 +232,7 @@ impl DefaultReportPrinter {
                         .to_string(),
                 );
                 gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
-                gutter.push(' ');
+                arrow = true;
                 break;
             } else if line.span_ends(hl) {
                 if hl.label().is_some() {
@@ -248,7 +249,7 @@ impl DefaultReportPrinter {
                         .to_string(),
                 );
                 gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
-                gutter.push(' ');
+                arrow = true;
                 break;
             } else if line.span_flyby(hl) {
                 gutter.push_str(&chars.vbar.to_string().style(hl.style).to_string());
@@ -256,7 +257,12 @@ impl DefaultReportPrinter {
                 gutter.push(' ');
             }
         }
-        write!(f, "{:width$}", gutter, width = max_gutter + 3)?;
+        write!(
+            f,
+            "{}{}",
+            gutter,
+            " ".repeat(if arrow { 1 } else { 3 } + max_gutter.saturating_sub(gutter.chars().count()))
+        )?;
         Ok(())
     }
 
