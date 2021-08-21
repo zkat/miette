@@ -40,7 +40,21 @@ fn single_line_highlight() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   text
+   ·   ──┬─
+   ·     ╰── this bit here
+ 3 │     here
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -66,7 +80,20 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ────\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   text
+   ·   ────
+ 3 │     here
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -95,7 +122,22 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text text text text text\n   ·   ──┬─ ──┬─\n   ·     ╰── this bit here\n   ·          ╰── also this bit\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   text text text text text
+   ·   ──┬─ ──┬─
+   ·     ╰── this bit here
+   ·          ╰── also this bit
+ 3 │     here
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -121,7 +163,20 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │     source\n 2 │ ╭─▶   text\n 3 │ ├─▶     here\n   · ╰──── these two lines\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │     source
+ 2 │ ╭─▶   text
+ 3 │ ├─▶     here
+   · ╰──── these two lines
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -156,7 +211,23 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │├─▶ line4\n   · │╰──── block 2\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected =r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ ╭──▶ line1
+ 2 │ │╭─▶ line2
+ 3 │ ││   line3
+ 4 │ │├─▶ line4
+   · │╰──── block 2
+ 6 │ ├──▶ line5
+   · ╰───── block 1
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -191,7 +262,22 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │╰─▶ line4\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ ╭──▶ line1
+ 2 │ │╭─▶ line2
+ 3 │ ││   line3
+ 4 │ │╰─▶ line4
+ 6 │ ├──▶ line5
+   · ╰───── block 1
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -220,7 +306,22 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ ├─▶   text\n   · ╰──── this bit here\n 3 │ ╭─▶     here\n 4 │ ├─▶ more here\n   · ╰──── also this bit\n\n﹦ try doing it better next time?\n".to_string(), out);
+    let expected =r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ ╭─▶ source
+ 2 │ ├─▶   text
+   · ╰──── this bit here
+ 3 │ ╭─▶     here
+ 4 │ ├─▶ more here
+   · ╰──── also this bit
+
+    ‽ try doing it better next time?
+"#.trim_start().to_string();
+    assert_eq!(expected, out);
     Ok(())
 }
 

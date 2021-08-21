@@ -65,8 +65,8 @@ impl MietteStyles {
             advice: style().cyan(),
             code: style().yellow(),
             help: style().cyan(),
-            filename: style().green(),
-            highlights: vec![style().red(), style().magenta(), style().cyan()],
+            filename: style().cyan().underline().bold(),
+            highlights: vec![style().red().bold(), style().yellow().bold(), style().cyan().bold()],
         }
     }
 
@@ -111,7 +111,10 @@ pub struct MietteCharacters {
     pub underbar: char,
     pub underline: char,
 
-    pub eq: char,
+    pub fyi: char,
+    pub x: char,
+    pub warning: char,
+    pub point_right: char,
 }
 
 impl MietteCharacters {
@@ -135,7 +138,10 @@ impl MietteCharacters {
             rcross: '┤',
             underbar: '┬',
             underline: '─',
-            eq: '﹦',
+            fyi: '‽',
+            x: '×',
+            warning: '⚠',
+            point_right: '☞',
         }
     }
 
@@ -159,7 +165,10 @@ impl MietteCharacters {
             rcross: '|',
             underbar: '|',
             underline: '^',
-            eq: '=',
+            fyi: 'i',
+            x: 'x',
+            warning: '!',
+            point_right: '>',
         }
     }
 }

@@ -1,12 +1,11 @@
 use std::fmt;
 
-use indenter::indented;
 use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
 use crate::printer::theme::*;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::SourceSpan;
+use crate::{SourceSpan, SpanContents};
 
 /**
 Reference implementation of the [DiagnosticReportPrinter] trait. This is generally
@@ -44,13 +43,10 @@ impl DefaultReportPrinter {
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
         self.render_causes(f, diagnostic)?;
+
         if let Some(snippets) = diagnostic.snippets() {
-            let mut pre = false;
             for snippet in snippets {
-                if !pre {
-                    writeln!(f)?;
-                    pre = true;
-                }
+                writeln!(f)?;
                 self.render_snippet(f, &snippet)?;
             }
         }
@@ -60,41 +56,46 @@ impl DefaultReportPrinter {
     }
 
     fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        let sev = match diagnostic.severity() {
-            Some(Severity::Error) | None => "Error".style(self.theme.styles.error),
-            Some(Severity::Warning) => "Warning".style(self.theme.styles.warning),
-            Some(Severity::Advice) => "Advice".style(self.theme.styles.advice),
-        }
-        .to_string();
+        let (severity_style, severity_icon) = match diagnostic.severity() {
+            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
+            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
+            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
+        };
         let code = diagnostic.code();
-        let msg = diagnostic.to_string();
         writeln!(
             f,
-            "{} [{}]: {}",
-            sev,
+            "{}[{}]{}",
+            self.theme.characters.hbar.to_string().repeat(4),
             code.style(self.theme.styles.code),
-            msg
+            self.theme.characters.hbar.to_string().repeat(20),
+        )?;
+        writeln!(f)?;
+        writeln!(
+            f,
+            "    {} {}",
+            severity_icon.style(severity_style),
+            diagnostic.style(severity_style)
         )?;
         Ok(())
     }
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        use fmt::Write as _;
+        let severity_style = match diagnostic.severity() {
+            Some(Severity::Error) | None => self.theme.styles.error,
+            Some(Severity::Warning) => self.theme.styles.warning,
+            Some(Severity::Advice) => self.theme.styles.advice,
+        };
 
         if let Some(cause) = diagnostic.source() {
-            writeln!(f)?;
-            write!(f, "Caused by:")?;
-
-            let multiple = cause.source().is_some();
-
-            for (n, error) in Chain::new(cause).enumerate() {
-                let msg = format!("{}", error);
-                writeln!(f)?;
-                if multiple {
-                    write!(indented(f).ind(n), "{}", msg)?;
+            let mut cause_iter = Chain::new(cause).peekable();
+            while let Some(error) = cause_iter.next() {
+                let char = if cause_iter.peek().is_some() {
+                    self.theme.characters.lcross
                 } else {
-                    write!(indented(f), "{}", msg)?;
-                }
+                    self.theme.characters.lbot
+                };
+                let msg = format!("    {}{}{} {}", char, self.theme.characters.hbar, self.theme.characters.rarrow, error).style(severity_style).to_string();
+                writeln!(f, "{}", msg)?;
             }
         }
 
@@ -105,27 +106,13 @@ impl DefaultReportPrinter {
         if let Some(help) = diagnostic.help() {
             let help = help.style(self.theme.styles.help);
             writeln!(f)?;
-            writeln!(f, "{} {}", self.theme.characters.eq, help)?;
+            writeln!(f, "    {} {}", self.theme.characters.fyi, help)?;
         }
         Ok(())
     }
 
     fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet) -> fmt::Result {
-        // Boring: The Header
-        if let Some(source_name) = snippet.context.label() {
-            let source_name = source_name.style(self.theme.styles.filename);
-            write!(f, "[{}]", source_name)?;
-        }
-        if let Some(msg) = &snippet.message {
-            write!(f, " {}:", msg)?;
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-
-        // Fun time!
-
-        // Our actual code, line by line! Handy!
-        let lines = self.get_lines(snippet)?;
+        let (contents, lines) = self.get_lines(snippet)?;
 
         // Highlights are the bits we're going to underline in our overall
         // snippet, and we need to do some analysis first to come up with
@@ -160,6 +147,25 @@ impl DefaultReportPrinter {
             .line_number
             .to_string()
             .len();
+
+        // Header
+        if let Some(source_name) = snippet.context.label() {
+            let source_name = source_name.style(self.theme.styles.filename);
+            write!(
+                f,
+                "{}{}{}[{}:{}:{}]",
+                " ".repeat(linum_width + 2),
+                self.theme.characters.ltop,
+                self.theme.characters.hbar.to_string().repeat(3),
+                source_name,
+                contents.line() + 1,
+                contents.column() + 1
+            )?;
+            if let Some(msg) = &snippet.message {
+                write!(f, " {}:", msg)?;
+            }
+            writeln!(f)?;
+        }
 
         // Now it's time for the fun part--actually rendering everything!
         for line in &lines {
@@ -222,7 +228,7 @@ impl DefaultReportPrinter {
         let mut arrow = false;
         for (i, hl) in applicable.enumerate() {
             if line.span_starts(hl) {
-                gutter.push_str(&chars.ltop.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.ltop.style(hl.style).to_string());
                 gutter.push_str(
                     &chars
                         .hbar
@@ -231,14 +237,14 @@ impl DefaultReportPrinter {
                         .style(hl.style)
                         .to_string(),
                 );
-                gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.rarrow.style(hl.style).to_string());
                 arrow = true;
                 break;
             } else if line.span_ends(hl) {
                 if hl.label().is_some() {
-                    gutter.push_str(&chars.lcross.to_string().style(hl.style).to_string());
+                    gutter.push_str(&chars.lcross.style(hl.style).to_string());
                 } else {
-                    gutter.push_str(&chars.lbot.to_string().style(hl.style).to_string());
+                    gutter.push_str(&chars.lbot.style(hl.style).to_string());
                 }
                 gutter.push_str(
                     &chars
@@ -248,11 +254,11 @@ impl DefaultReportPrinter {
                         .style(hl.style)
                         .to_string(),
                 );
-                gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.rarrow.style(hl.style).to_string());
                 arrow = true;
                 break;
             } else if line.span_flyby(hl) {
-                gutter.push_str(&chars.vbar.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.vbar.style(hl.style).to_string());
             } else {
                 gutter.push(' ');
             }
@@ -283,7 +289,7 @@ impl DefaultReportPrinter {
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
-                gutter.push_str(&chars.lbot.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.lbot.style(hl.style).to_string());
                 gutter.push_str(
                     &chars
                         .hbar
@@ -294,7 +300,7 @@ impl DefaultReportPrinter {
                 );
                 break;
             } else {
-                gutter.push_str(&chars.vbar.to_string().style(hl.style).to_string());
+                gutter.push_str(&chars.vbar.style(hl.style).to_string());
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
@@ -389,13 +395,16 @@ impl DefaultReportPrinter {
         writeln!(
             f,
             "{} {}",
-            self.theme.characters.hbar.to_string().style(hl.style),
+            self.theme.characters.hbar.style(hl.style),
             hl.label().unwrap_or_else(|| "".into()),
         )?;
         Ok(())
     }
 
-    fn get_lines(&self, snippet: &DiagnosticSnippet) -> Result<Vec<Line>, fmt::Error> {
+    fn get_lines<'a>(
+        &'a self,
+        snippet: &'a DiagnosticSnippet,
+    ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
         let context_data = snippet
             .source
             .read_span(&snippet.context)
@@ -445,7 +454,7 @@ impl DefaultReportPrinter {
                 line_offset = offset;
             }
         }
-        Ok(lines)
+        Ok((context_data, lines))
     }
 }
 

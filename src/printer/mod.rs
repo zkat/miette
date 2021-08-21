@@ -9,10 +9,10 @@ use once_cell::sync::OnceCell;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, Severity};
 use crate::MietteError;
 
-pub use default_reporter::*;
+pub use default_printer::*;
 pub use theme::*;
 
-mod default_reporter;
+mod default_printer;
 mod theme;
 
 static REPORTER: OnceCell<Box<dyn DiagnosticReportPrinter + Send + Sync + 'static>> =
