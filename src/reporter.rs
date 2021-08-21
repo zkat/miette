@@ -6,7 +6,7 @@ use std::fmt;
 
 use indenter::indented;
 use once_cell::sync::OnceCell;
-use owo_colors::{AnsiColors, OwoColorize};
+use owo_colors::{AnsiColors, OwoColorize, Style};
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
@@ -32,7 +32,6 @@ pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + '
         Box::new(DefaultReportPrinter {
             // TODO: color support detection here?
             theme: MietteTheme::default(),
-            colors: true,
         })
     })
 }
@@ -76,23 +75,17 @@ tool or app.
 */
 pub struct DefaultReportPrinter {
     theme: MietteTheme,
-    colors: bool,
 }
 
 impl DefaultReportPrinter {
     pub fn new() -> Self {
         Self {
             theme: MietteTheme::default(),
-            colors: true,
         }
     }
 
     pub fn with_theme(self, theme: MietteTheme) -> Self {
-        Self { theme, ..self }
-    }
-
-    pub fn toggle_colors(self, colors: bool) -> Self {
-        Self { colors, ..self }
+        Self { theme }
     }
 }
 
@@ -149,28 +142,20 @@ impl Line {
 
 struct FancySpan {
     span: SourceSpan,
-    color: Option<AnsiColors>,
+    style: Style,
 }
 
 impl FancySpan {
-    fn new(span: SourceSpan, color: Option<AnsiColors>) -> Self {
-        FancySpan { span, color }
+    fn new(span: SourceSpan, style: Style) -> Self {
+        FancySpan { span, style }
     }
 
-    fn color(&self) -> Option<AnsiColors> {
-        self.color
+    fn style(&self) -> Style {
+        self.style
     }
 
     fn label(&self) -> Option<String> {
-        self.span.label().map(|l| self.paint(l))
-    }
-
-    fn paint(&self, text: impl AsRef<str>) -> String {
-        if let Some(color) = self.color() {
-            format!("{}", text.as_ref().color(color))
-        } else {
-            text.as_ref().to_string()
-        }
+        self.span.label().map(|l| l.style(self.style()).to_string())
     }
 
     fn offset(&self) -> usize {
@@ -195,12 +180,15 @@ impl DefaultReportPrinter {
             Some(Severity::Advice) => "Advice",
         }
         .to_string();
-        let mut code = diagnostic.code().to_string();
+        let code = diagnostic.code();
         let msg = diagnostic.to_string();
-        if self.colors {
-            code = code.color(self.theme.colors.code).to_string();
-        }
-        writeln!(f, "{} [{}]: {}", sev, code, msg)?;
+        writeln!(
+            f,
+            "{} [{}]: {}",
+            sev,
+            code.style(self.theme.styles.code),
+            msg
+        )?;
 
         if let Some(cause) = diagnostic.source() {
             writeln!(f)?;
@@ -230,10 +218,7 @@ impl DefaultReportPrinter {
         }
 
         if let Some(help) = diagnostic.help() {
-            let mut help = help.to_string();
-            if self.colors {
-                help = help.color(self.theme.colors.help).to_string();
-            }
+            let help = help.style(self.theme.styles.help);
             writeln!(f)?;
             writeln!(f, "{} {}", self.theme.characters.eq, help)?;
         }
@@ -244,10 +229,7 @@ impl DefaultReportPrinter {
     fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet) -> fmt::Result {
         // Boring: The Header
         if let Some(source_name) = snippet.context.label() {
-            let mut source_name = source_name.to_string();
-            if self.colors {
-                source_name = source_name.color(self.theme.colors.filename).to_string();
-            }
+            let source_name = source_name.style(self.theme.styles.filename);
             write!(f, "[{}]", source_name)?;
         }
         if let Some(msg) = &snippet.message {
@@ -269,8 +251,8 @@ impl DefaultReportPrinter {
         highlights.sort_unstable_by_key(|h| h.offset());
         let highlights = highlights
             .into_iter()
-            .zip(self.theme.colors.highlight_colors.iter())
-            .map(|(hl, color)| FancySpan::new(hl, if self.colors { Some(*color) } else { None }))
+            .zip(self.theme.styles.highlights.iter().cloned().cycle())
+            .map(|(hl, st)| FancySpan::new(hl, st))
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -355,23 +337,33 @@ impl DefaultReportPrinter {
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
             if line.span_starts(hl) {
-                gutter.push_str(&hl.paint(chars.ltop.to_string()));
+                gutter.push_str(&chars.ltop.to_string().style(hl.style).to_string());
                 gutter.push_str(
-                    &hl.paint(chars.hbar.to_string().repeat(max_gutter.saturating_sub(i))),
+                    &chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i))
+                        .style(hl.style)
+                        .to_string(),
                 );
-                gutter.push_str(&hl.paint(chars.rarrow.to_string()));
+                gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
                 gutter.push(' ');
                 break;
             } else if line.span_ends(hl) {
-                gutter.push_str(&hl.paint(chars.lcross.to_string()));
+                gutter.push_str(&chars.lcross.to_string().style(hl.style).to_string());
                 gutter.push_str(
-                    &hl.paint(chars.hbar.to_string().repeat(max_gutter.saturating_sub(i))),
+                    &chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i))
+                        .style(hl.style)
+                        .to_string(),
                 );
-                gutter.push_str(&hl.paint(chars.rarrow.to_string()));
+                gutter.push_str(&chars.rarrow.to_string().style(hl.style).to_string());
                 gutter.push(' ');
                 break;
             } else if line.span_flyby(hl) {
-                gutter.push_str(&hl.paint(chars.vbar.to_string()));
+                gutter.push_str(&chars.vbar.to_string().style(hl.style).to_string());
             } else {
                 gutter.push(' ');
             }
@@ -395,18 +387,18 @@ impl DefaultReportPrinter {
         let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
-                gutter.push_str(&hl.paint(chars.lbot.to_string()));
+                gutter.push_str(&chars.lbot.to_string().style(hl.style).to_string());
                 gutter.push_str(
-                    &hl.paint(
-                        chars
-                            .hbar
-                            .to_string()
-                            .repeat(max_gutter.saturating_sub(i) + 2),
-                    ),
+                    &chars
+                        .hbar
+                        .to_string()
+                        .repeat(max_gutter.saturating_sub(i) + 2)
+                        .style(hl.style)
+                        .to_string(),
                 );
                 break;
             } else {
-                gutter.push_str(&hl.paint(chars.vbar.to_string()));
+                gutter.push_str(&chars.vbar.to_string().style(hl.style).to_string());
             }
         }
         write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
@@ -455,14 +447,18 @@ impl DefaultReportPrinter {
             let start = std::cmp::max(local_offset, highest);
             let end = local_offset + hl.len();
             if start < end {
-                underlines.push_str(&hl.paint(&format!(
-                    "{:width$}{}{}{}",
-                    "",
-                    chars.underline.to_string().repeat(num_left),
-                    chars.underbar,
-                    chars.underline.to_string().repeat(num_right),
-                    width = local_offset.saturating_sub(highest),
-                )));
+                underlines.push_str(
+                    &format!(
+                        "{:width$}{}{}{}",
+                        "",
+                        chars.underline.to_string().repeat(num_left),
+                        chars.underbar,
+                        chars.underline.to_string().repeat(num_right),
+                        width = local_offset.saturating_sub(highest),
+                    )
+                    .style(hl.style)
+                    .to_string(),
+                );
             }
             highest = std::cmp::max(highest, end);
         }
@@ -482,7 +478,7 @@ impl DefaultReportPrinter {
                 hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
                 width = vbar_offset
             );
-            writeln!(f, "{}", hl.paint(&lines))?;
+            writeln!(f, "{}", lines.style(hl.style))?;
         }
         Ok(())
     }
@@ -491,7 +487,7 @@ impl DefaultReportPrinter {
         writeln!(
             f,
             "{} {}",
-            hl.paint(self.theme.characters.hbar.to_string()),
+            self.theme.characters.hbar.to_string().style(hl.style),
             hl.label().unwrap_or_else(|| "".into()), // TODO: conditional label
         )?;
         Ok(())
@@ -600,44 +596,68 @@ impl DiagnosticReportPrinter for JokeReporter {
 
 pub struct MietteTheme {
     pub characters: MietteCharacters,
-    pub colors: MietteColors,
+    pub styles: MietteStyles,
 }
 
 impl MietteTheme {
     pub fn basic() -> Self {
         Self {
             characters: MietteCharacters::ascii(),
-            colors: MietteColors::ansi(),
+            styles: MietteStyles::ansi(),
         }
     }
-    pub fn simple() -> Self {
+    pub fn unicode() -> Self {
         Self {
             characters: MietteCharacters::unicode(),
-            colors: MietteColors::ansi(),
+            styles: MietteStyles::ansi(),
+        }
+    }
+    pub fn unicode_nocolor() -> Self {
+        Self {
+            characters: MietteCharacters::unicode(),
+            styles: MietteStyles::none(),
+        }
+    }
+    pub fn none() -> Self {
+        Self {
+            characters: MietteCharacters::ascii(),
+            styles: MietteStyles::none(),
         }
     }
 }
 
 impl Default for MietteTheme {
     fn default() -> Self {
-        Self::simple()
+        Self::unicode()
     }
 }
 
-pub struct MietteColors {
-    pub code: AnsiColors,
-    pub help: AnsiColors,
-    pub filename: AnsiColors,
-    pub highlight_colors: Vec<AnsiColors>,
+pub struct MietteStyles {
+    pub code: Style,
+    pub help: Style,
+    pub filename: Style,
+    pub highlights: Vec<Style>,
 }
 
-impl MietteColors {
+impl MietteStyles {
     pub fn ansi() -> Self {
         Self {
-            code: AnsiColors::Yellow,
-            help: AnsiColors::Cyan,
-            filename: AnsiColors::Green,
-            highlight_colors: vec![AnsiColors::Red, AnsiColors::Yellow, AnsiColors::Cyan],
+            code: Style::new().color(AnsiColors::Yellow),
+            help: Style::new().color(AnsiColors::Cyan),
+            filename: Style::new().color(AnsiColors::Green),
+            highlights: vec![AnsiColors::Red, AnsiColors::Yellow, AnsiColors::Cyan]
+                .into_iter()
+                .map(|c| Style::new().color(c))
+                .collect(),
+        }
+    }
+
+    pub fn none() -> Self {
+        Self {
+            code: Style::new(),
+            help: Style::new(),
+            filename: Style::new(),
+            highlights: vec![Style::new()],
         }
     }
 }

@@ -1,10 +1,16 @@
-use miette::{DefaultReportPrinter, Diagnostic, DiagnosticReport, MietteError, SourceSpan};
+use miette::{
+    DefaultReportPrinter, Diagnostic, DiagnosticReport, MietteError, MietteTheme, SourceSpan,
+};
 use thiserror::Error;
 
 fn fmt_report(diag: DiagnosticReport) -> String {
     // Mostly for dev purposes.
-    let colors = std::env::var("COLOR").is_ok() || std::env::var("COLORS").is_ok();
-    let printer = DefaultReportPrinter::new().toggle_colors(colors);
+    let theme = if std::env::var("COLOR").is_ok() {
+        MietteTheme::unicode()
+    } else {
+        MietteTheme::unicode_nocolor()
+    };
+    let printer = DefaultReportPrinter::new().with_theme(theme);
     let mut out = String::new();
     printer.render_report(&mut out, diag.inner()).unwrap();
     out
@@ -32,7 +38,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -61,7 +67,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text text text text text\n   ·   ──┬─ ──┬─\n   ·     ╰── this bit here\n   ·          ╰── also this bit\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text text text text text\n   ·   ──┬─ ──┬─\n   ·     ╰── this bit here\n   ·          ╰── also this bit\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -87,7 +93,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │     source\n 2 │ ╭─▶   text\n 3 │ ├─▶     here\n   · ╰──── these two lines\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │     source\n 2 │ ╭─▶   text\n 3 │ ├─▶     here\n   · ╰──── these two lines\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -122,7 +128,7 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │├─▶ line4\n   · │╰──── block 2\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭──▶ line1\n 2 │ │╭─▶ line2\n 3 │ ││   line3\n 4 │ │├─▶ line4\n   · │╰──── block 2\n 6 │ ├──▶ line5\n   · ╰───── block 1\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -151,7 +157,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ ├─▶   text\n   · ╰──── this bit here\n 3 │ ╭─▶     here\n 4 │ ├─▶ more here\n   · ╰──── also this bit\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ ╭─▶ source\n 2 │ ├─▶   text\n   · ╰──── this bit here\n 3 │ ╭─▶     here\n 4 │ ├─▶ more here\n   · ╰──── also this bit\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -184,7 +190,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
 
@@ -215,6 +221,6 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert_eq!("Error[oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦try doing it better next time?\n".to_string(), out);
+    assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
