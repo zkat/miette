@@ -1,3 +1,45 @@
+<a name="0.13.0"></a>
+## 0.13.0 (2021-08-21)
+
+This release includes some accessibility improvements: miette now includes a "narratable" printer that formats diagnostics like this:
+
+```
+Error: Received some bad JSON from the source. Unable to parse.
+    Caused by: missing field `foo` at line 1 column 1700
+
+Begin snippet for https://api.nuget.org/v3/registration5-gz-semver2/json.net/index.json starting
+at line 1, column 1659
+
+snippet line 1: gs":["json"],"title":"","version":"1.0.0"},"packageContent":"https://api.nuget.o
+    highlight starting at line 1, column 1699: last parsing location
+
+diagnostic help: This is a bug. It might be in ruget, or it might be in the source you're using,
+but it's definitely a bug and should be reported.
+diagnostic error code: ruget::api::bad_json
+```
+
+This style is the default in a number of situations:
+
+1. The `NO_COLOR` env var is present and set, and not `0`.
+2. The `CLICOLOR` env var is present and not set to `1`.
+3. `stdout` or `stderr` are not TTYs.
+4. A CI environment is detected.
+
+You can override and customize this behavior any way you want by using the
+`miette::set_reporter()` function at the toplevel of your application, but we
+encourage you to at least make the narratable printer an option for your
+users, since miette's default printer is exceptionally bad for screen
+readers.
+
+Our hope is that this release is only the starting point towards making
+miette's error reporting not just really fancy and cool, but friendly and
+accessible to everyone.
+
+#### Features
+
+* **printer:**  added (and hooked up) an accessible report printer ([5369a942](https://github.com/zkat/miette/commit/5369a9424e7ed2c66b193b85422fe8b98bc37b6c))
+
+
 <a name="0.12.0"></a>
 ## 0.12.0 (2021-08-21)
 
