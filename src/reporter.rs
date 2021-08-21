@@ -6,7 +6,7 @@ use std::fmt;
 
 use indenter::indented;
 use once_cell::sync::OnceCell;
-use owo_colors::{AnsiColors, OwoColorize, Style};
+use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
@@ -645,16 +645,17 @@ pub struct MietteStyles {
 impl MietteStyles {
     pub fn ansi() -> Self {
         Self {
-            error: Style::new().color(AnsiColors::Red),
-            warning: Style::new().color(AnsiColors::Yellow),
-            advice: Style::new().color(AnsiColors::Cyan),
-            code: Style::new().color(AnsiColors::Yellow),
-            help: Style::new().color(AnsiColors::Cyan),
-            filename: Style::new().color(AnsiColors::Green),
-            highlights: vec![AnsiColors::Red, AnsiColors::Magenta, AnsiColors::Cyan]
-                .into_iter()
-                .map(|c| Style::new().color(c))
-                .collect(),
+            error: Style::new().red(),
+            warning: Style::new().yellow(),
+            advice: Style::new().cyan(),
+            code: Style::new().yellow(),
+            help: Style::new().cyan(),
+            filename: Style::new().green(),
+            highlights: vec![
+                Style::new().red(),
+                Style::new().magenta(),
+                Style::new().cyan(),
+            ],
         }
     }
 
