@@ -261,7 +261,9 @@ impl DefaultReportPrinter {
             f,
             "{}{}",
             gutter,
-            " ".repeat(if arrow { 1 } else { 3 } + max_gutter.saturating_sub(gutter.chars().count()))
+            " ".repeat(
+                if arrow { 1 } else { 3 } + max_gutter.saturating_sub(gutter.chars().count())
+            )
         )?;
         Ok(())
     }

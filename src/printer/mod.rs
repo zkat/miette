@@ -9,8 +9,8 @@ use once_cell::sync::OnceCell;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, Severity};
 use crate::MietteError;
 
-pub use theme::*;
 pub use default_reporter::*;
+pub use theme::*;
 
 mod default_reporter;
 mod theme;
