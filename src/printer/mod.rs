@@ -28,7 +28,7 @@ pub fn set_reporter(
 ) -> Result<(), MietteError> {
     REPORTER
         .set(Box::new(reporter))
-        .map_err(|_| MietteError::ReporterInstallFailed)
+        .map_err(|_| MietteError::SetPrinterFailure)
 }
 
 /// Used by [DiagnosticReport] to fetch the reporter that will be used to
