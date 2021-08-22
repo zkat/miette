@@ -1,6 +1,5 @@
 /*!
-Basic reporter for Diagnostics. Probably good enough for most use-cases,
-but largely meant to be an example.
+Reporters included with `miette`.
 */
 use std::fmt;
 
@@ -10,11 +9,11 @@ use once_cell::sync::OnceCell;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, Severity};
 use crate::MietteError;
 
-pub use default_printer::*;
+pub use graphical_printer::*;
 pub use narratable_printer::*;
 pub use theme::*;
 
-mod default_printer;
+mod graphical_printer;
 mod narratable_printer;
 mod theme;
 
@@ -22,8 +21,8 @@ static REPORTER: OnceCell<Box<dyn DiagnosticReportPrinter + Send + Sync + 'stati
     OnceCell::new();
 
 /// Set the global [DiagnosticReportPrinter] that will be used when you report
-/// using [DiagnosticReport].
-pub fn set_reporter(
+/// using [crate::DiagnosticReport].
+pub fn set_printer(
     reporter: impl DiagnosticReportPrinter + Send + Sync + 'static,
 ) -> Result<(), MietteError> {
     REPORTER
@@ -31,9 +30,9 @@ pub fn set_reporter(
         .map_err(|_| MietteError::SetPrinterFailure)
 }
 
-/// Used by [DiagnosticReport] to fetch the reporter that will be used to
+/// Used by [crate::DiagnosticReport] to fetch the reporter that will be used to
 /// print stuff out.
-pub fn get_reporter() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + 'static) {
+pub(crate) fn get_printer() -> &'static (dyn DiagnosticReportPrinter + Send + Sync + 'static) {
     &**REPORTER.get_or_init(get_default_printer)
 }
 
@@ -46,8 +45,8 @@ fn get_default_printer() -> Box<dyn DiagnosticReportPrinter + Send + Sync + 'sta
         atty::is(Stream::Stdout) && atty::is(Stream::Stderr) && !ci_info::is_ci()
     };
     if fancy {
-        Box::new(DefaultReportPrinter {
-            theme: MietteTheme::default(),
+        Box::new(GraphicalReportPrinter {
+            theme: GraphicalTheme::default(),
         })
     } else {
         Box::new(NarratableReportPrinter)
@@ -55,9 +54,9 @@ fn get_default_printer() -> Box<dyn DiagnosticReportPrinter + Send + Sync + 'sta
 }
 
 /// Literally what it says on the tin.
-pub struct JokeReporter;
+pub struct JokePrinter;
 
-impl DiagnosticReportPrinter for JokeReporter {
+impl DiagnosticReportPrinter for JokePrinter {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);

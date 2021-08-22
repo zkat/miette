@@ -10,6 +10,7 @@ good enough for simple use-cases, and is the default one installed with `miette`
 but you might want to implement your own if you want custom reporting for your
 tool or app.
 */
+#[derive(Debug, Clone)]
 pub struct NarratableReportPrinter;
 
 impl NarratableReportPrinter {

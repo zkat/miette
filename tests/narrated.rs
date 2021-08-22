@@ -1,5 +1,5 @@
 use miette::{
-    DefaultReportPrinter, Diagnostic, DiagnosticReport, MietteError, MietteTheme,
+    GraphicalReportPrinter, Diagnostic, DiagnosticReport, MietteError, GraphicalTheme,
     NarratableReportPrinter, SourceSpan,
 };
 use thiserror::Error;
@@ -8,7 +8,7 @@ fn fmt_report(diag: DiagnosticReport) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
     if std::env::var("STYLE").is_ok() {
-        DefaultReportPrinter::new_themed(MietteTheme::unicode())
+        GraphicalReportPrinter::new_themed(GraphicalTheme::unicode())
             .render_report(&mut out, diag.inner())
             .unwrap();
     } else {

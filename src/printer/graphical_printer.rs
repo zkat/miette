@@ -8,34 +8,52 @@ use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Se
 use crate::{SourceSpan, SpanContents};
 
 /**
-Reference implementation of the [DiagnosticReportPrinter] trait. This is generally
-good enough for simple use-cases, and is the default one installed with `miette`,
-but you might want to implement your own if you want custom reporting for your
-tool or app.
+A [DiagnosticReportPrinter] that displays a given [crate::DiagnosticReport] in a quasi-graphical way, using terminal colors, unicode drawing characters, and other such things.
+
+This is the default reporter bundled with `miette`.
+
+This printer can be customized by using `new_themed()` and handing it a [GraphicalTheme] of your own creation (or using one of its own defaults!)
+
+See [crate::set_printer] for more details on customizing your global printer.
+
+## Example
+
+```
+use miette::{GraphicalReportPrinter, GraphicalTheme};
+miette::set_printer(GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor()));
+```
 */
-pub struct DefaultReportPrinter {
-    pub(crate) theme: MietteTheme,
+#[derive(Debug, Clone)]
+pub struct GraphicalReportPrinter {
+    pub(crate) theme: GraphicalTheme,
 }
 
-impl DefaultReportPrinter {
+impl GraphicalReportPrinter {
+    /// Create a new [GraphicalReportPrinter] with the default
+    /// [GraphicalTheme]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
-            theme: MietteTheme::default(),
+            theme: GraphicalTheme::default(),
         }
     }
 
-    pub fn new_themed(theme: MietteTheme) -> Self {
+    ///Create a new [GraphicalReportPrinter] with a given [GraphicalTheme].
+    pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self { theme }
     }
 }
 
-impl Default for DefaultReportPrinter {
+impl Default for GraphicalReportPrinter {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl DefaultReportPrinter {
+impl GraphicalReportPrinter {
+    /// Render a [Diagnostic]. This function is mostly internal and meant to
+    /// be called by the toplevel [DiagnosticReportPrinter] handler, but is
+    /// made public to make it easier (possible) to test in isolation from
+    /// global state.
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
@@ -116,7 +134,7 @@ impl DefaultReportPrinter {
         Ok(())
     }
 
-    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet) -> fmt::Result {
+    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet<'_>) -> fmt::Result {
         let (contents, lines) = self.get_lines(snippet)?;
 
         // Highlights are the bits we're going to underline in our overall
@@ -408,7 +426,7 @@ impl DefaultReportPrinter {
 
     fn get_lines<'a>(
         &'a self,
-        snippet: &'a DiagnosticSnippet,
+        snippet: &'a DiagnosticSnippet<'_>,
     ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
         let context_data = snippet
             .source
@@ -463,7 +481,7 @@ impl DefaultReportPrinter {
     }
 }
 
-impl DiagnosticReportPrinter for DefaultReportPrinter {
+impl DiagnosticReportPrinter for GraphicalReportPrinter {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);

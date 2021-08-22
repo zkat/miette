@@ -1,55 +1,91 @@
 use atty::Stream;
 use owo_colors::Style;
 
-pub struct MietteTheme {
-    pub characters: MietteCharacters,
-    pub styles: MietteStyles,
+/**
+Theme used by [crate::GraphicalReportPrinter] to render fancy [crate::Diagnostic] reports.
+
+A theme consists of two things: the set of characters to be used for drawing,
+and the [owo_colors::Style]s to be used to paint various items.
+
+You can create your own custom graphical theme using this type, or you can use
+one of the predefined ones using the methods below.
+*/
+#[derive(Debug, Clone)]
+pub struct GraphicalTheme {
+    /// Characters to be used for drawing.
+    pub characters: ThemeCharacters,
+    /// Styles to be used for painting.
+    pub styles: ThemeStyles,
 }
 
-impl MietteTheme {
-    pub fn basic() -> Self {
+impl GraphicalTheme {
+    /// ASCII-art-based graphical drawing, with ANSI styling.
+    pub fn ascii() -> Self {
         Self {
-            characters: MietteCharacters::ascii(),
-            styles: MietteStyles::ansi(),
+            characters: ThemeCharacters::ascii(),
+            styles: ThemeStyles::ansi(),
         }
     }
+
+    /// Graphical theme that draws using both ansi colors and unicode characters.
     pub fn unicode() -> Self {
         Self {
-            characters: MietteCharacters::unicode(),
-            styles: MietteStyles::ansi(),
+            characters: ThemeCharacters::unicode(),
+            styles: ThemeStyles::ansi(),
         }
     }
+
+    /// Graphical theme that draws in monochrome, while still using unicode
+    /// characters.
     pub fn unicode_nocolor() -> Self {
         Self {
-            characters: MietteCharacters::unicode(),
-            styles: MietteStyles::none(),
+            characters: ThemeCharacters::unicode(),
+            styles: ThemeStyles::none(),
         }
     }
+
+    /// A "basic" graphical theme that skips colors and unicode characters and
+    /// just does monochrome ascii art. If you want a completely non-graphical
+    /// rendering of your `Diagnostic`s, check out
+    /// [crate::NarratableReportPrinter], or write your own
+    /// [crate::DiagnosticReportPrinter]!
     pub fn none() -> Self {
         Self {
-            characters: MietteCharacters::ascii(),
-            styles: MietteStyles::none(),
+            characters: ThemeCharacters::ascii(),
+            styles: ThemeStyles::none(),
         }
     }
 }
 
-impl Default for MietteTheme {
+impl Default for GraphicalTheme {
     fn default() -> Self {
         match std::env::var("NO_COLOR") {
-            _ if !atty::is(Stream::Stdout) || !atty::is(Stream::Stderr) => Self::basic(),
+            _ if !atty::is(Stream::Stdout) || !atty::is(Stream::Stderr) => Self::ascii(),
             Ok(string) if string != "0" => Self::unicode_nocolor(),
             _ => Self::unicode(),
         }
     }
 }
 
-pub struct MietteStyles {
+/**
+Styles for various parts of graphical rendering for the [crate::GraphicalReportPrinter].
+*/
+#[derive(Debug, Clone)]
+pub struct ThemeStyles {
+    /// Style to apply to things highlighted as "error".
     pub error: Style,
+    /// Style to apply to things highlighted as "warning".
     pub warning: Style,
+    /// Style to apply to things highlighted as "advice".
     pub advice: Style,
+    /// Style to apply to the diagnostic code.
     pub code: Style,
+    /// Style to apply to the help text.
     pub help: Style,
+    /// Style to apply to the filename/source name.
     pub filename: Style,
+    /// Styles to cycle through (using `.iter().cycle()`), to render the lines
+    /// and text for diagnostic highlights.
     pub highlights: Vec<Style>,
 }
 
@@ -57,7 +93,8 @@ fn style() -> Style {
     Style::new()
 }
 
-impl MietteStyles {
+impl ThemeStyles {
+    /// ANSI color-based styles.
     pub fn ansi() -> Self {
         Self {
             error: style().red(),
@@ -74,6 +111,7 @@ impl MietteStyles {
         }
     }
 
+    /// No styling. Just regular ol' monochrome.
     pub fn none() -> Self {
         Self {
             error: style(),
@@ -88,9 +126,13 @@ impl MietteStyles {
 }
 
 // ---------------------------------------
-// All code below here was taken from ariadne here:
+// Most of these characters were taken from
 // https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
-pub struct MietteCharacters {
+
+/// Characters to be used when drawing when using [crate::GraphicalReportPrinter].
+#[allow(missing_docs)]
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ThemeCharacters {
     pub hbar: char,
     pub vbar: char,
     pub xbar: char,
@@ -121,7 +163,8 @@ pub struct MietteCharacters {
     pub point_right: char,
 }
 
-impl MietteCharacters {
+impl ThemeCharacters {
+    /// Fancy unicode-based graphical elements.
     pub fn unicode() -> Self {
         Self {
             hbar: '─',
@@ -149,6 +192,7 @@ impl MietteCharacters {
         }
     }
 
+    /// ASCII-art-based graphical elements. Works well on older terminals.
     pub fn ascii() -> Self {
         Self {
             hbar: '-',
