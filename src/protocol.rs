@@ -233,6 +233,7 @@ pub struct SourceSpan {
 }
 
 impl SourceSpan {
+    /// Create a new [SourceSpan].
     pub fn new(start: SourceOffset, length: SourceOffset) -> Self {
         Self {
             label: None,
@@ -241,6 +242,7 @@ impl SourceSpan {
         }
     }
 
+    /// Create a new [SourceSpan] with a label.
     pub fn new_labeled(label: impl AsRef<str>, start: SourceOffset, length: SourceOffset) -> Self {
         Self {
             label: Some(label.as_ref().into()),
@@ -249,18 +251,27 @@ impl SourceSpan {
         }
     }
 
+    /// The absolute offset, in bytes, from the beginning of a [Source].
     pub fn offset(&self) -> usize {
         self.offset.offset()
     }
 
+    /// Returns a reference to this [SourceSpan]'s label. This label may be
+    /// used for different things in different contexts. In highlights, it
+    /// will be interpreted as the text on the other end of an underscored
+    /// section of text. In snippet spans, this will be treated as the source
+    /// name.
     pub fn label(&self) -> Option<&str> {
         self.label.as_ref().map(|x| &x[..])
     }
 
+    /// Total length of the [SourceSpan], in bytes.
     pub fn len(&self) -> usize {
         self.length.offset()
     }
 
+    /// Whether this [SourceSpan] has a length of zero. It may still be useful
+    /// to point to a specific point.
     pub fn is_empty(&self) -> bool {
         self.length.offset() == 0
     }

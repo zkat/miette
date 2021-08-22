@@ -5,15 +5,16 @@ use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Se
 use crate::{SourceSpan, SpanContents};
 
 /**
-Reference implementation of the [DiagnosticReportPrinter] trait. This is generally
-good enough for simple use-cases, and is the default one installed with `miette`,
-but you might want to implement your own if you want custom reporting for your
-tool or app.
+[DiagnosticReportPrinter] that renders plain text and avoids extraneous graphics.
+It's optimized for screen readers and braille users, but is also used in any
+non-graphical environments, such as non-TTY output.
 */
 #[derive(Debug, Clone)]
 pub struct NarratableReportPrinter;
 
 impl NarratableReportPrinter {
+    /// Create a new [NarratableReportPrinter]. There are no customization
+    /// options.
     pub fn new() -> Self {
         Self
     }
@@ -26,6 +27,10 @@ impl Default for NarratableReportPrinter {
 }
 
 impl NarratableReportPrinter {
+    /// Render a [Diagnostic]. This function is mostly internal and meant to
+    /// be called by the toplevel [DiagnosticReportPrinter] handler, but is
+    /// made public to make it easier (possible) to test in isolation from
+    /// global state.
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,

@@ -19,7 +19,7 @@ atty = "0.2.14"
 ci_info = "0.14.2"
 
 [dev-dependencies]
-thiserror = "1.0.26"
+semver = "1.0.4"
 
 [workspace]
 members = ["miette-derive"]
