@@ -1,3 +1,30 @@
+<a name="1.0.0-beta.1"></a>
+## 1.0.0-beta.1 (2021-08-22)
+
+It's happening, folks! `miette` is now working towards stability and is now in
+beta! We'll keep it like this for a little while until a few more people have
+tried it out and given feedback. New features may still be added, and breaking
+changes may still happen, but `miette` is now considered "good enough to use",
+and breaking changes are expected to be more rare.
+
+Oh, and as part of this release, the docs were overhauled, particularly the
+README, so you might want to take a gander at them!
+
+#### Breaking Changes
+
+* **printer:**  rename default printer and consistify some naming conventions with printing ([aafa4a3d](https://github.com/zkat/miette/commit/aafa4a3de1298dd8e7625138d09a408ff3579d3f), breaks [#](https://github.com/zkat/miette/issues/))
+* **into_diagnostic:**  .into_diagnostic() is now generic across any impl fmt::Display instead of expecting a `dyn` ([c1da4a0d](https://github.com/zkat/miette/commit/c1da4a0d2744e94e409cabeafe911e99598d4ee3))
+
+#### Features
+
+* **error:**  diagnostic-ify MietteError ([e980b723](https://github.com/zkat/miette/commit/e980b7237334b56f7b8c092956d35cd2bbadac41))
+
+#### Bug Fixes
+
+* **derive:**  #[diagnosic(severity)] works for named and unnamed variants/structs now ([adf0bc93](https://github.com/zkat/miette/commit/adf0bc933f62852514067ade96e07362c889f012))
+* **protocol:**  oops, missed a spot after a rename ([5c077d30](https://github.com/zkat/miette/commit/5c077d30a4aca71f71e61b2561081575c04a4d64))
+
+
 <a name="0.13.0"></a>
 ## 0.13.0 (2021-08-21)
 
