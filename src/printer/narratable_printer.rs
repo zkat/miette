@@ -79,7 +79,11 @@ impl NarratableReportPrinter {
         Ok(())
     }
 
-    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet<'_>) -> fmt::Result {
+    fn render_snippet(
+        &self,
+        f: &mut impl fmt::Write,
+        snippet: &DiagnosticSnippet<'_>,
+    ) -> fmt::Result {
         let (contents, lines) = self.get_lines(snippet)?;
 
         write!(f, "Begin snippet")?;

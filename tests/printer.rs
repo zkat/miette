@@ -1,5 +1,5 @@
 use miette::{
-    GraphicalReportPrinter, Diagnostic, DiagnosticReport, MietteError, GraphicalTheme,
+    Diagnostic, DiagnosticReport, GraphicalReportPrinter, GraphicalTheme, MietteError,
     NarratableReportPrinter, SourceSpan,
 };
 use thiserror::Error;

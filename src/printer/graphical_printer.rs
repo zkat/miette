@@ -134,7 +134,11 @@ impl GraphicalReportPrinter {
         Ok(())
     }
 
-    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet<'_>) -> fmt::Result {
+    fn render_snippet(
+        &self,
+        f: &mut impl fmt::Write,
+        snippet: &DiagnosticSnippet<'_>,
+    ) -> fmt::Result {
         let (contents, lines) = self.get_lines(snippet)?;
 
         // Highlights are the bits we're going to underline in our overall
