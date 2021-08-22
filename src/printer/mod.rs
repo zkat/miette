@@ -9,8 +9,13 @@ use once_cell::sync::OnceCell;
 use crate::protocol::{Diagnostic, DiagnosticReportPrinter, Severity};
 use crate::MietteError;
 
+// NOTE(zkat): I don't understand why these three are "unreachable" when
+// they're clearly being exported? Maybe a bug?
+#[allow(unreachable_pub)]
 pub use graphical_printer::*;
+#[allow(unreachable_pub)]
 pub use narratable_printer::*;
+#[allow(unreachable_pub)]
 pub use theme::*;
 
 mod graphical_printer;
@@ -54,6 +59,7 @@ fn get_default_printer() -> Box<dyn DiagnosticReportPrinter + Send + Sync + 'sta
 }
 
 /// Literally what it says on the tin.
+#[derive(Debug, Clone)]
 pub struct JokePrinter;
 
 impl DiagnosticReportPrinter for JokePrinter {

@@ -79,7 +79,7 @@ impl NarratableReportPrinter {
         Ok(())
     }
 
-    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet) -> fmt::Result {
+    fn render_snippet(&self, f: &mut impl fmt::Write, snippet: &DiagnosticSnippet<'_>) -> fmt::Result {
         let (contents, lines) = self.get_lines(snippet)?;
 
         write!(f, "Begin snippet")?;
@@ -127,7 +127,7 @@ impl NarratableReportPrinter {
 
     fn get_lines<'a>(
         &'a self,
-        snippet: &'a DiagnosticSnippet,
+        snippet: &'a DiagnosticSnippet<'a>,
     ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
         let context_data = snippet
             .source

@@ -40,7 +40,7 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
-    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet> + '_>> {
+    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'_>> + '_>> {
         None
     }
 }
