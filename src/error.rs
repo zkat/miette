@@ -13,6 +13,7 @@ pub enum MietteError {
     /// wrong while reading a [crate::Source].
     #[error(transparent)]
     #[diagnostic(code(miette::io_error))]
+    #[doc(alias = "miette::io_error")]
     IoError(#[from] io::Error),
 
     /// Returned when a [crate::SourceSpan] extends beyond the bounds of a given [crate::Source].
@@ -21,11 +22,13 @@ pub enum MietteError {
         code(miette::span_out_of_bounds),
         help("Double-check your spans. Do you have an off-by-one error?")
     )]
+    #[doc(alias = "miette::span_out_of_bounds")]
     OutOfBounds,
 
     /// Returned when installing a [crate::DiagnosticReportPrinter] failed.
     /// Typically, this will be because [crate::set_printer] was called twice.
     #[error("Failed to install DiagnosticReportPrinter")]
     #[diagnostic(code(miette::set_printer_failed))]
+    #[doc(alias = "miette::set_printer_failed")]
     SetPrinterFailure,
 }
