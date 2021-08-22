@@ -7,6 +7,7 @@ use crate::diagnostic_arg::DiagnosticArg;
 use crate::help::Help;
 use crate::severity::Severity;
 use crate::snippets::Snippets;
+use crate::url::Url;
 
 pub enum Diagnostic {
     Struct {
@@ -17,6 +18,7 @@ pub enum Diagnostic {
         severity: Option<Severity>,
         help: Option<Help>,
         snippets: Option<Snippets>,
+        url: Option<Url>,
     },
     Enum {
         ident: syn::Ident,
@@ -32,6 +34,7 @@ pub struct DiagnosticVariant {
     pub severity: Option<Severity>,
     pub help: Option<Help>,
     pub snippets: Option<Snippets>,
+    pub url: Option<Url>,
 }
 
 impl Diagnostic {
@@ -45,11 +48,15 @@ impl Diagnostic {
                     let mut code = None;
                     let mut severity = None;
                     let mut help = None;
+                    let mut url = None;
                     for arg in args {
                         match arg {
                             DiagnosticArg::Code(new_code) => {
                                 // TODO: error on multiple?
                                 code = Some(new_code);
+                            }
+                            DiagnosticArg::Url(u) => {
+                                url = Some(u);
                             }
                             DiagnosticArg::Severity(sev) => {
                                 severity = Some(sev);
@@ -69,6 +76,7 @@ impl Diagnostic {
                         help,
                         severity,
                         snippets,
+                        url,
                     }
                 } else {
                     // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -88,6 +96,7 @@ impl Diagnostic {
                         let mut code = None;
                         let mut severity = None;
                         let mut help = None;
+                        let mut url = None;
                         for arg in args {
                             match arg {
                                 DiagnosticArg::Code(new_code) => {
@@ -99,6 +108,9 @@ impl Diagnostic {
                                 }
                                 DiagnosticArg::Help(hl) => {
                                     help = Some(hl);
+                                }
+                                DiagnosticArg::Url(u) => {
+                                    url = Some(u);
                                 }
                             }
                         }
@@ -113,6 +125,7 @@ impl Diagnostic {
                             help,
                             severity,
                             snippets,
+                            url,
                         });
                     } else {
                         // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -147,12 +160,14 @@ impl Diagnostic {
                 severity,
                 help,
                 snippets,
+                url,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 let code_body = code.gen_struct();
                 let help_body = help.as_ref().and_then(|x| x.gen_struct(fields));
                 let sev_body = severity.as_ref().and_then(|x| x.gen_struct());
                 let snip_body = snippets.as_ref().and_then(|x| x.gen_struct());
+                let url_body = url.as_ref().and_then(|x| x.gen_struct(ident, fields));
 
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -160,6 +175,7 @@ impl Diagnostic {
                         #help_body
                         #sev_body
                         #snip_body
+                        #url_body
                     }
                 }
             }
@@ -173,13 +189,14 @@ impl Diagnostic {
                 let help_body = Help::gen_enum(variants);
                 let sev_body = Severity::gen_enum(variants);
                 let snip_body = Snippets::gen_enum(variants);
-
+                let url_body = Url::gen_enum(ident, variants);
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                         #code_body
                         #help_body
                         #sev_body
                         #snip_body
+                        #url_body
                     }
                 }
             }

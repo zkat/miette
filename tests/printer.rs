@@ -407,3 +407,45 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
+
+#[test]
+fn url_links() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(
+        code(oops::my::bad),
+        help("try doing it better next time?"),
+        url("https://example.com")
+    )]
+    struct MyBad;
+    let err = MyBad;
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    assert!(out.contains("https://example.com"));
+    assert!(out.contains("click for details"));
+    assert!(out.contains("oops::my::bad"));
+    Ok(())
+}
+
+#[test]
+fn disable_url_links() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(
+        code(oops::my::bad),
+        help("try doing it better next time?"),
+        url("https://example.com")
+    )]
+    struct MyBad;
+    let err = MyBad;
+    let mut out = String::new();
+    GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor())
+        .without_code_linking()
+        .render_report(&mut out, &err)
+        .unwrap();
+    println!("{}", out);
+    assert!(!out.contains("https://example.com"));
+    assert!(!out.contains("click for details"));
+    assert!(out.contains("oops::my::bad"));
+    Ok(())
+}

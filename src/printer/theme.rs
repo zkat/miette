@@ -31,7 +31,7 @@ impl GraphicalTheme {
     pub fn unicode() -> Self {
         Self {
             characters: ThemeCharacters::unicode(),
-            styles: ThemeStyles::ansi(),
+            styles: ThemeStyles::rgb(),
         }
     }
 

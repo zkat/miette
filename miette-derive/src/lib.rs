@@ -10,6 +10,7 @@ mod fmt;
 mod help;
 mod severity;
 mod snippets;
+mod url;
 mod utils;
 
 #[proc_macro_derive(Diagnostic, attributes(diagnostic, snippet, highlight))]

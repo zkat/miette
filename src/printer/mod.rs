@@ -50,9 +50,7 @@ fn get_default_printer() -> Box<dyn DiagnosticReportPrinter + Send + Sync + 'sta
         atty::is(Stream::Stdout) && atty::is(Stream::Stderr) && !ci_info::is_ci()
     };
     if fancy {
-        Box::new(GraphicalReportPrinter {
-            theme: GraphicalTheme::default(),
-        })
+        Box::new(GraphicalReportPrinter::new())
     } else {
         Box::new(NarratableReportPrinter)
     }

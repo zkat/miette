@@ -38,6 +38,11 @@ pub trait Diagnostic: std::error::Error {
         None
     }
 
+    /// URL to visit for a more details explanation/help about this Diagnostic.
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        None
+    }
+
     /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
     fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'_>> + '_>> {

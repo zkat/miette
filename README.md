@@ -34,6 +34,7 @@ diagnostic error code: ruget::api::bad_json
   - [... in libraries](#-in-libraries)
   - [... in application code](#-in-application-code)
   - [... in `main()`](#-in-main)
+  - [... diagnostic code URLs](#-diagnostic-code-urls)
   - [... snippets](#-snippets)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -42,6 +43,7 @@ diagnostic error code: ruget::api::bad_json
 
 - Generic [Diagnostic] protocol, compatible (and dependent on) `std::error::Error`.
 - Unique error codes on every [Diagnostic].
+- Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
 - Lightweight [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-style error wrapper type, [DiagnosticReport],
   which can be returned from `main`.
@@ -54,6 +56,7 @@ The `miette` crate also comes bundles with a default [DiagnosticReportPrinter] w
 - Screen reader/braille support, gated on [`NO_COLOR`](http://no-color.org/), and other heuristics.
 - Fully customizable graphical theming (or overriding the printers entirely).
 - Cause chain printing
+- Turns diagnostic codes into links in [supported terminals](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda).
 
 ## Installing
 
@@ -217,6 +220,55 @@ fn pretend_this_is_main() -> DiagnosticResult<()> {
     println!("{}", version);
     Ok(())
 }
+```
+
+### ... diagnostic code URLs
+
+`miette` supports providing a URL for individual diagnostics. This URL will be
+displayed as an actual link in supported terminals, like so:
+
+<img
+src="https://raw.githubusercontent.com/zkat/miette/main/images/code_linking.png"
+alt=" Example showing the graphical report printer for miette pretty-printing
+an error code. The code is underlined and followed by text saying to 'click
+here'. A hover tooltip shows a full-fledged URL that can be Ctrl+Clicked to
+open in a browser.
+\
+This feature is also available in the narratable printer. It will add a line after printing the error code showing a plain URL that you can visit.
+">
+
+To use this, you can add a `url()` sub-param to your `#[diagnostic]` attribute:
+
+```rust
+use miette::Diagnostic;
+use thiserror::Error;
+
+#[derive(Error, Diagnostic, Debug)]
+#[diagnostic(
+    code(my_app::my_error),
+    // You can do formatting!
+    url("https://my_website.com/error_codes#{}", self.code())
+)]
+struct MyErr;
+```
+
+Additionally, if you're developing a library and your error type is exported
+from your crate's top level, you can use a special `url(docsrs)` option
+instead of manually constructing the URL. This will automatically create a
+link to this diagnostic on `docs.rs`, so folks can just go straight to
+your (very high quality and detailed!) documentation on this diagnostic:
+
+```rust
+use miette::Diagnostic;
+use thiserror::Error;
+
+#[derive(Error, Diagnostic, Debug)]
+#[diagnostic(
+    code(my_app::my_error),
+    // Will link users to https://docs.rs/my_crate/0.0.0/my_crate/struct.MyErr.html
+    url(docsrs)
+)]
+struct MyErr;
 ```
 
 ### ... snippets

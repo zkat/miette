@@ -25,6 +25,7 @@ miette::set_printer(GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_n
 */
 #[derive(Debug, Clone)]
 pub struct GraphicalReportPrinter {
+    pub(crate) linkify_code: bool,
     pub(crate) theme: GraphicalTheme,
 }
 
@@ -33,13 +34,23 @@ impl GraphicalReportPrinter {
     /// [GraphicalTheme]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
+            linkify_code: true,
             theme: GraphicalTheme::default(),
         }
     }
 
     ///Create a new [GraphicalReportPrinter] with a given [GraphicalTheme].
     pub fn new_themed(theme: GraphicalTheme) -> Self {
-        Self { theme }
+        Self {
+            linkify_code: true,
+            theme,
+        }
+    }
+
+    /// Disables error code linkification using [Diagnostic::url].
+    pub fn without_code_linking(mut self) -> Self {
+        self.linkify_code = false;
+        self
     }
 }
 
@@ -79,14 +90,16 @@ impl GraphicalReportPrinter {
             Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
             Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
         };
-        let code = diagnostic.code();
-        writeln!(
-            f,
-            "{}[{}]{}",
-            self.theme.characters.hbar.to_string().repeat(4),
-            code.style(self.theme.styles.code),
-            self.theme.characters.hbar.to_string().repeat(20),
-        )?;
+        write!(f, "{}", self.theme.characters.hbar.to_string().repeat(4))?;
+        if self.linkify_code && diagnostic.url().is_some() {
+            let url = diagnostic.url().unwrap(); // safe
+            let code = format!("{} (click for details)", diagnostic.code());
+            let link = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", url, code);
+            write!(f, "[{}]", link.style(self.theme.styles.code))?;
+        } else {
+            write!(f, "[{}]", diagnostic.code().style(self.theme.styles.code))?;
+        }
+        writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
         writeln!(f)?;
         writeln!(
             f,
