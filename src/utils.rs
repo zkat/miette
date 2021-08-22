@@ -30,14 +30,17 @@ impl Diagnostic for DiagnosticError {
     }
 }
 
+/**
+Convenience trait that adds a `.into_diagnostic()` method that converts a type to a `Result<T, DiagnosticError>`.
+*/
 pub trait IntoDiagnostic<T, E> {
     /// Converts [Result]-like types that return regular errors into a
     /// `Result` that returns a [Diagnostic].
-    fn into_diagnostic(self, code: &(dyn fmt::Display)) -> Result<T, DiagnosticError>;
+    fn into_diagnostic(self, code: impl fmt::Display) -> Result<T, DiagnosticError>;
 }
 
 impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for Result<T, E> {
-    fn into_diagnostic(self, code: &(dyn fmt::Display)) -> Result<T, DiagnosticError> {
+    fn into_diagnostic(self, code: impl fmt::Display) -> Result<T, DiagnosticError> {
         self.map_err(|e| DiagnosticError {
             error: Box::new(e),
             code: format!("{}", code),
