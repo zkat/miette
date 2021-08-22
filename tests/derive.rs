@@ -92,7 +92,7 @@ fn path_code() {
 fn path_severity() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    #[diagnostic(code(foo::bar::baz), severity(Warning))]
+    #[diagnostic(code(foo::bar::baz), severity("warning"))]
     struct FooStruct;
 
     assert_eq!(Some(Severity::Warning), FooStruct.severity());

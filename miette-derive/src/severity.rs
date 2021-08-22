@@ -1,4 +1,4 @@
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::{
     parenthesized,
@@ -8,7 +8,7 @@ use syn::{
 
 use crate::diagnostic::DiagnosticVariant;
 
-pub struct Severity(pub syn::Path);
+pub struct Severity(pub syn::Ident);
 
 impl Parse for Severity {
     fn parse(input: ParseStream) -> syn::Result<Self> {
@@ -21,20 +21,40 @@ impl Parse for Severity {
                 let la = content.lookahead1();
                 if la.peek(syn::LitStr) {
                     let str = content.parse::<syn::LitStr>()?;
-                    Ok(Severity(str.parse()?))
+                    let sev = get_severity(&str.value(), str.span())?;
+                    Ok(Severity(syn::Ident::new(&sev, str.span())))
                 } else {
-                    let path = content.parse::<syn::Path>()?;
-                    Ok(Severity(path))
+                    let ident = content.parse::<syn::Ident>()?;
+                    let sev = get_severity(&ident.to_string(), ident.span())?;
+                    Ok(Severity(syn::Ident::new(&sev, ident.span())))
                 }
             } else {
                 input.parse::<Token![=]>()?;
-                Ok(Severity(input.parse::<syn::LitStr>()?.parse()?))
+                let str = input.parse::<syn::LitStr>()?;
+                let sev = get_severity(&str.value(), str.span())?;
+                Ok(Severity(syn::Ident::new(&sev, str.span())))
             }
         } else {
-            Err(syn::Error::new(ident.span(), "not a severity level."))
+            Err(syn::Error::new(
+                ident.span(),
+                "MIETTE BUG: not a severity option",
+            ))
         }
     }
 }
+
+fn get_severity(input: &str, span: Span) -> syn::Result<String> {
+    match input.to_lowercase().as_ref() {
+        "error" | "err" => Ok("Error".into()),
+        "warning" | "warn" => Ok("Warning".into()),
+        "advice" | "adv" | "info" => Ok("Advice".into()),
+        _ => Err(syn::Error::new(
+            span,
+            "Invalid severity level. Only Error, Warning, and Advice are supported.",
+        )),
+    }
+}
+
 impl Severity {
     pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
         let sev_pairs = variants
@@ -42,10 +62,15 @@ impl Severity {
             .filter(|v| v.severity.is_some())
             .map(
                 |DiagnosticVariant {
-                     ident, severity, ..
+                     ident, severity, fields, ..
                  }| {
                      let severity = &severity.as_ref().unwrap().0;
-                     quote! { Self::#ident => std::option::Option::Some(miette::Severity::#severity), }
+                     let fields = match fields {
+                        syn::Fields::Named(_) => quote! { { .. } },
+                        syn::Fields::Unnamed(_) => quote! { (..) },
+                        syn::Fields::Unit => quote!{},
+                    };
+                     quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), }
                 },
             )
             .collect::<Vec<_>>();

@@ -10,6 +10,7 @@ mod fmt;
 mod help;
 mod severity;
 mod snippets;
+mod utils;
 
 #[proc_macro_derive(Diagnostic, attributes(diagnostic, snippet, highlight))]
 pub fn derive_diagnostic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
