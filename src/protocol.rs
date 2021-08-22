@@ -85,7 +85,7 @@ impl DiagnosticReport {
 
 impl std::fmt::Debug for DiagnosticReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crate::get_reporter().debug(&*self.diagnostic, f)
+        crate::get_printer().debug(&*self.diagnostic, f)
     }
 }
 
