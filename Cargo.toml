@@ -9,6 +9,7 @@ documentation = "https://docs.rs/miette"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
+exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
 thiserror = "1.0.26"
