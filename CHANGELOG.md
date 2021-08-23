@@ -1,3 +1,41 @@
+<a name="1.0.0"></a>
+## 1.0.0 (2021-08-23)
+
+...you know what? I'm just gonna tag 1.0.0, because I don't want sub-1.0
+versions anymore, but the Cargo ecosystem buries pre-releases pretty
+thoroughly. Integers are cheap!
+
+So here we are! We made it to 1.0, and with some _really_ nice goodies to boot.
+
+Most fun is the fact that the default printer now has *clickabble url linking*
+support. A new `Diagnostic::url()` method has been added to the protocol that,
+is used to figure out what URL to send folks to! This should work on most
+"modern" terminals, but more thorough support checking will be done in the
+future. And of course, the narrated reporter prints them out too.
+
+I also took the time to completely redo how messages, labels, and filenames
+are handled in the system, and this is a pretty big change you might run into.
+Godspeed!
+
+Last but not least, we got our first external contribution! Thank you to
+[@martica](https://github.com/martica) for the bug fix!
+
+Anyway, here's to 1.0, and to many more after that. Enjoy! :)
+
+#### Breaking Changes
+
+* **snippets:**  Overhauled how snippets handle labels, sources, and messages, including the derive macro ([61283e9e](https://github.com/zkat/miette/commit/61283e9efe2825425c41027b3dbb5f4f9c9d83fb)
+
+#### Features
+
+* **links:**  added URL linking support and automatic docs.rs link generation ([7e76e2de](https://github.com/zkat/miette/commit/7e76e2dea4adf0e4a1349e049495c1f5a0bdab87))
+* **theme:**  Add an initial `rgb` style with nicer colors ([3546dcec](https://github.com/zkat/miette/commit/3546dcec988ea40cc6aa8dd94c29432830cef662)) - [@martica](https://github.com/martica)
+
+#### Bug Fixes
+
+* **printer:**  clamp highlight length to at least 1 (#32) ([9d601599](https://github.com/zkat/miette/commit/9d6015996bf3010b573b9bb5d0e48cb85f290460))
+
+
 <a name="1.0.0-beta.1"></a>
 ## 1.0.0-beta.1 (2021-08-22)
 
