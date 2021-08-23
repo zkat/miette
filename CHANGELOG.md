@@ -1,3 +1,17 @@
+<a name="1.0.1"></a>
+## 1.0.1 (2021-08-23)
+
+This is a (literally) small release. I noticed that the crate's size had
+increased significantly before I realized cargo was including the `images/`
+folder. This is not needed, as these images are just hosted on GitHub.
+
+`miette` should be smaller now, I hope :)
+
+#### Bug Fixes
+
+* **crate:**  reduce crate size by removing images ([5f74da67](https://github.com/zkat/miette/commit/5f74da671f2444efc4840c11492773a46cecf7e9))
+
+
 <a name="1.0.0"></a>
 ## 1.0.0 (2021-08-23)
 
