@@ -212,7 +212,7 @@ fn test_snippet_named_struct() {
         //   / [my_snippet]: hi this is where the thing went wrong.
         // 1 | hello
         // 2 |     world
-        #[snippet(src, "hi this is where the thing went wrong")]
+        #[snippet(src, message("hi this is where the thing went wrong"))]
         snip: SourceSpan, // Defines filename using `label`
 
         // "Highlights" are the specific highlights _inside_ the snippet.
@@ -230,13 +230,7 @@ fn test_snippet_named_struct() {
         var1: SourceSpan,
         #[highlight(snip)]
         // Anything that's Clone + Into<SourceSpan> can be used here.
-        var2: (String, usize, usize),
-
-        // Now with member source names
-        filename: String,
-        second_message: String,
-        #[snippet(src, filename, second_message)]
-        snip2: SourceSpan,
+        var2: (usize, usize),
     }
 }
 
@@ -247,12 +241,12 @@ fn test_snippet_unnamed_struct() {
     #[diagnostic(code(foo::bar::baz))]
     struct Foo(
         String,
-        #[snippet(0, "hi")] SourceSpan,
+        #[snippet(0, message("hi"))] SourceSpan,
         #[highlight(1)] SourceSpan,
         #[highlight(1)] SourceSpan,
         // referenced source name
         String,
-        #[snippet(0, 4)] SourceSpan,
+        #[snippet(0, message("{}", self.4))] SourceSpan,
         #[highlight(5)] SourceSpan,
         #[highlight(5)] SourceSpan,
     );
@@ -267,29 +261,23 @@ fn test_snippet_enum() {
         #[diagnostic(code(foo::a))]
         A {
             src: String,
-            #[snippet(src, "hi this is where the thing went wrong")]
+            #[snippet(src, message("hi this is where the thing went wrong"))]
             snip: SourceSpan,
             #[highlight(snip)]
             var1: SourceSpan,
             #[highlight(snip)]
             var2: SourceSpan,
-            filename: String,
-            second_message: String,
-            #[snippet(src, filename, second_message)]
-            snip2: SourceSpan,
         },
         #[diagnostic(code(foo::b))]
         B(
             String,
-            #[snippet(0, "hi")] SourceSpan,
+            #[snippet(0, message("hi"))] SourceSpan,
             #[highlight(1)] SourceSpan,
-            #[highlight(1, "var 2")] SourceSpan,
+            #[highlight(1, label("var 2"))] SourceSpan,
             // referenced source name
-            String,
-            String,
-            #[snippet(0, 4, 5)] SourceSpan,
-            #[highlight(6)] SourceSpan,
-            #[highlight(6)] SourceSpan,
+            #[snippet(0)] SourceSpan,
+            #[highlight(4)] SourceSpan,
+            #[highlight(4)] SourceSpan,
         ),
     }
 }

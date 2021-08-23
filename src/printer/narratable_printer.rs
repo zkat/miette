@@ -90,7 +90,7 @@ impl NarratableReportPrinter {
         let (contents, lines) = self.get_lines(snippet)?;
 
         write!(f, "Begin snippet")?;
-        if let Some(filename) = snippet.context.label() {
+        if let Some(filename) = snippet.source.name() {
             write!(f, " for {}", filename,)?;
         }
         writeln!(
@@ -106,13 +106,13 @@ impl NarratableReportPrinter {
         // gutter size.
         let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
         // sorting is your friend.
-        highlights.sort_unstable_by_key(|h| h.offset());
+        highlights.sort_unstable_by_key(|(_, h)| h.offset());
 
         // Now it's time for the fun part--actually rendering everything!
         for line in &lines {
             writeln!(f, "snippet line {}: {}", line.line_number, line.text)?;
-            let relevant = highlights.iter().filter(|hl| line.span_starts(hl));
-            for hl in relevant {
+            let relevant = highlights.iter().filter(|(_, hl)| line.span_starts(hl));
+            for (label, hl) in relevant {
                 let contents = snippet.source.read_span(hl).map_err(|_| fmt::Error)?;
                 if contents.line() + 1 == line.line_number {
                     write!(
@@ -121,7 +121,7 @@ impl NarratableReportPrinter {
                         contents.line() + 1,
                         contents.column() + 1
                     )?;
-                    if let Some(label) = hl.label() {
+                    if let Some(label) = label {
                         write!(f, ": {}", label)?;
                     }
                     writeln!(f)?;

@@ -1,5 +1,5 @@
 use miette::{
-    Diagnostic, DiagnosticReport, GraphicalReportPrinter, GraphicalTheme, MietteError,
+    Diagnostic, DiagnosticReport, GraphicalReportPrinter, GraphicalTheme, MietteError, NamedSource,
     NarratableReportPrinter, SourceSpan,
 };
 use thiserror::Error;
@@ -29,19 +29,19 @@ fn single_line_highlight() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight: ("this bit here", 9, 4).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -71,8 +71,8 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
         #[highlight(ctx)]
         highlight: SourceSpan,
@@ -81,8 +81,8 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -112,22 +112,22 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight1: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "also this bit")]
         highlight2: SourceSpan,
     }
 
     let src = "source\n  text text text text text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("this bit here", 9, 4).into(),
-        highlight2: ("also this bit", 14, 4).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -158,19 +158,19 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "these two lines")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight: ("these two lines", 9, 11).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (9, 11).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -199,12 +199,12 @@ fn multiline_highlight_flyby() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "block 1")]
         highlight1: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "block 2")]
         highlight2: SourceSpan,
     }
 
@@ -217,10 +217,10 @@ line5
     .to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("block 1", 0, len).into(),
-        highlight2: ("block 2", 10, 9).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (0, len).into(),
+        highlight2: (10, 9).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -252,10 +252,10 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "block 1")]
         highlight1: SourceSpan,
         #[highlight(ctx)]
         highlight2: SourceSpan,
@@ -270,9 +270,9 @@ line5
     .to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("block 1", 0, len).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (0, len).into(),
         highlight2: (10, 9).into(),
     };
     let out = fmt_report(err.into());
@@ -304,22 +304,22 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight1: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "also this bit")]
         highlight2: SourceSpan,
     }
 
     let src = "source\n  text\n    here\nmore here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("this bit here", 0, 10).into(),
-        highlight2: ("also this bit", 20, 6).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (0, 10).into(),
+        highlight2: (20, 6).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -354,22 +354,22 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight1: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "also this bit")]
         highlight2: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("this bit here", 0, 8).into(),
-        highlight2: ("also this bit", 9, 10).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (0, 8).into(),
+        highlight2: (9, 10).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
@@ -385,22 +385,22 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight1: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "also this bit")]
         highlight2: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight1: ("this bit here", 0, 8).into(),
-        highlight2: ("also this bit", 10, 10).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight1: (0, 8).into(),
+        highlight2: (10, 10).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);

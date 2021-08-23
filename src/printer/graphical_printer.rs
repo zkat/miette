@@ -159,11 +159,11 @@ impl GraphicalReportPrinter {
         // gutter size.
         let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
         // sorting is your friend.
-        highlights.sort_unstable_by_key(|h| h.offset());
+        highlights.sort_unstable_by_key(|(_, h)| h.offset());
         let highlights = highlights
             .into_iter()
             .zip(self.theme.styles.highlights.iter().cloned().cycle())
-            .map(|(hl, st)| FancySpan::new(hl, st))
+            .map(|((label, hl), st)| FancySpan::new(label, hl, st))
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -189,7 +189,7 @@ impl GraphicalReportPrinter {
             .len();
 
         // Header
-        if let Some(source_name) = snippet.context.label() {
+        if let Some(source_name) = snippet.source.name() {
             let source_name = source_name.style(self.theme.styles.filename);
             write!(
                 f,
@@ -558,13 +558,14 @@ impl Line {
 }
 
 struct FancySpan {
+    label: Option<String>,
     span: SourceSpan,
     style: Style,
 }
 
 impl FancySpan {
-    fn new(span: SourceSpan, style: Style) -> Self {
-        FancySpan { span, style }
+    fn new(label: Option<String>, span: SourceSpan, style: Style) -> Self {
+        FancySpan { label, span, style }
     }
 
     fn style(&self) -> Style {
@@ -572,7 +573,9 @@ impl FancySpan {
     }
 
     fn label(&self) -> Option<String> {
-        self.span.label().map(|l| l.style(self.style()).to_string())
+        self.label
+            .as_ref()
+            .map(|l| l.style(self.style()).to_string())
     }
 
     fn offset(&self) -> usize {

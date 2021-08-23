@@ -30,7 +30,7 @@ diagnostic error code: ruget::api::bad_json
 - [Features](#features)
 - [Installing](#installing)
 - [Example](#example)
-- [Usage](#usage)
+- [Using](#using)
   - [... in libraries](#-in-libraries)
   - [... in application code](#-in-application-code)
   - [... in `main()`](#-in-main)
@@ -85,11 +85,12 @@ use thiserror::Error;
 )]
 struct MyBad {
     // The Source that we're gonna be printing snippets out of.
-    src: String,
+    // This can be a String if you don't have or care about file names.
+    src: NamedSource,
     // Snippets and highlights can be included in the diagnostic!
-    #[snippet(src, "This is the part that broke")]
+    #[snippet(src, message("This is the part that broke"))]
     snip: SourceSpan,
-    #[highlight(snip)]
+    #[highlight(snip, label("This bit here"))]
     bad_bit: SourceSpan,
 }
 
@@ -100,7 +101,7 @@ Use this DiagnosticResult type (or its expanded version) as the return type
 throughout your app (but NOT your libraries! Those should always return concrete
 types!).
 */
-use miette::DiagnosticResult;
+use miette::{DiagnosticResult, NamedSource};
 fn this_fails() -> DiagnosticResult<()> {
     // You can use plain strings as a `Source`, or anything that implements
     // the one-method `Source` trait.
@@ -108,9 +109,9 @@ fn this_fails() -> DiagnosticResult<()> {
     let len = src.len();
 
     Err(MyBad {
-        src,
-        snip: ("bad_file.rs", 0, len).into(),
-        bad_bit: ("this bit here", 9, 4).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        snip: (0, len).into(),
+        bad_bit: (9, 4).into(),
     })?;
 
     Ok(())
@@ -149,7 +150,7 @@ diagnostic help: try doing it better next time?
 diagnostic error code: oops::my::bad
 ">
 
-## Usage
+## Using
 
 ### ... in libraries
 
@@ -244,6 +245,7 @@ use miette::Diagnostic;
 use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug)]
+#[error("kaboom")]
 #[diagnostic(
     code(my_app::my_error),
     // You can do formatting!
@@ -268,6 +270,7 @@ use thiserror::Error;
     // Will link users to https://docs.rs/my_crate/0.0.0/my_crate/struct.MyErr.html
     url(docsrs)
 )]
+#[error("kaboom")]
 struct MyErr;
 ```
 
@@ -297,17 +300,25 @@ pub struct MyErrorType {
     // The `Source` that miette will use.
     src: String,
 
-    // A snippet that points to `src`, our `Source`. The filename can be
-    // provided at the callsite.
-    #[snippet(src, "This is the snippet")]
+    // A snippet that points to `src`, our `Source`.
+    #[snippet(
+        src,
+        message("This is the snippet")
+    )]
     snip: SourceSpan,
 
     // A highlight for the `snip` snippet we defined above. This will
     // underline/mark the specific code inside the larger snippet context.
-    //
-    // The label is provided using `SourceSpan`'s label.
-    #[highlight(snip)]
+    #[highlight(snip, label("This is the highlight"))]
     err_span: SourceSpan,
+
+    // You can add as many snippets as you want against the same Source.
+    // They'll be rendered sequentially.
+    #[snippet(
+        src,
+        message("This is a warning")
+    )]
+    snip2: SourceSpan,
 }
 ```
 

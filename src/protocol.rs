@@ -45,7 +45,7 @@ pub trait Diagnostic: std::error::Error {
 
     /// Additional contextual snippets. This is typically used for adding
     /// marked-up source file output the way compilers often do.
-    fn snippets(&self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'_>> + '_>> {
+    fn snippets<'a>(&'a self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'a>> + 'a>> {
         None
     }
 }
@@ -157,6 +157,11 @@ pub trait Source: std::fmt::Debug + Send + Sync {
         &'a self,
         span: &SourceSpan,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
+
+    /// Optional name, usually a filename, for this source.
+    fn name(&self) -> Option<String> {
+        None
+    }
 }
 
 /**
@@ -212,7 +217,7 @@ A snippet from a [Source] to be displayed with a message and possibly some highl
 #[derive(Clone, Debug)]
 pub struct DiagnosticSnippet<'a> {
     /// Explanation of this specific diagnostic snippet.
-    pub message: Option<&'a str>,
+    pub message: Option<String>,
     /// A [Source] that can be used to read the actual text of a source.
     pub source: &'a (dyn Source),
     /// The primary [SourceSpan] where this diagnostic is located.
@@ -220,7 +225,7 @@ pub struct DiagnosticSnippet<'a> {
     /// Additional [SourceSpan]s that mark specific sections of the span, for
     /// example, to underline specific text within the larger span. They're
     /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<SourceSpan>>,
+    pub highlights: Option<Vec<(Option<String>, SourceSpan)>>,
 }
 
 /**
@@ -228,9 +233,6 @@ Span within a [Source] with an associated message.
 */
 #[derive(Clone, Debug)]
 pub struct SourceSpan {
-    /// An optional label for this span. Rendered differently depending on
-    /// context.
-    label: Option<String>,
     /// The start of the span.
     offset: SourceOffset,
     /// The total length of the span. Think of this as an offset from `start`.
@@ -241,16 +243,6 @@ impl SourceSpan {
     /// Create a new [SourceSpan].
     pub fn new(start: SourceOffset, length: SourceOffset) -> Self {
         Self {
-            label: None,
-            offset: start,
-            length,
-        }
-    }
-
-    /// Create a new [SourceSpan] with a label.
-    pub fn new_labeled(label: impl AsRef<str>, start: SourceOffset, length: SourceOffset) -> Self {
-        Self {
-            label: Some(label.as_ref().into()),
             offset: start,
             length,
         }
@@ -259,15 +251,6 @@ impl SourceSpan {
     /// The absolute offset, in bytes, from the beginning of a [Source].
     pub fn offset(&self) -> usize {
         self.offset.offset()
-    }
-
-    /// Returns a reference to this [SourceSpan]'s label. This label may be
-    /// used for different things in different contexts. In highlights, it
-    /// will be interpreted as the text on the other end of an underscored
-    /// section of text. In snippet spans, this will be treated as the source
-    /// name.
-    pub fn label(&self) -> Option<&str> {
-        self.label.as_ref().map(|x| &x[..])
     }
 
     /// Total length of the [SourceSpan], in bytes.
@@ -285,17 +268,6 @@ impl SourceSpan {
 impl From<(ByteOffset, ByteOffset)> for SourceSpan {
     fn from((start, len): (ByteOffset, ByteOffset)) -> Self {
         Self {
-            label: None,
-            offset: start.into(),
-            length: len.into(),
-        }
-    }
-}
-
-impl<T: AsRef<str>> From<(T, ByteOffset, ByteOffset)> for SourceSpan {
-    fn from((label, start, len): (T, ByteOffset, ByteOffset)) -> Self {
-        Self {
-            label: Some(label.as_ref().into()),
             offset: start.into(),
             length: len.into(),
         }
@@ -305,17 +277,6 @@ impl<T: AsRef<str>> From<(T, ByteOffset, ByteOffset)> for SourceSpan {
 impl From<(SourceOffset, SourceOffset)> for SourceSpan {
     fn from((start, len): (SourceOffset, SourceOffset)) -> Self {
         Self {
-            label: None,
-            offset: start,
-            length: len,
-        }
-    }
-}
-
-impl<T: AsRef<str>> From<(T, SourceOffset, SourceOffset)> for SourceSpan {
-    fn from((label, start, len): (T, SourceOffset, SourceOffset)) -> Self {
-        Self {
-            label: Some(label.as_ref().into()),
             offset: start,
             length: len,
         }

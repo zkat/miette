@@ -166,7 +166,7 @@ impl Diagnostic {
                 let code_body = code.gen_struct();
                 let help_body = help.as_ref().and_then(|x| x.gen_struct(fields));
                 let sev_body = severity.as_ref().and_then(|x| x.gen_struct());
-                let snip_body = snippets.as_ref().and_then(|x| x.gen_struct());
+                let snip_body = snippets.as_ref().and_then(|x| x.gen_struct(fields));
                 let url_body = url.as_ref().and_then(|x| x.gen_struct(ident, fields));
 
                 quote! {
