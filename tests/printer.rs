@@ -71,19 +71,19 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
-        src: String,
-        #[snippet(src, "This is the part that broke")]
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
-        #[highlight(ctx)]
+        #[highlight(ctx, label = "this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
-        src,
-        ctx: ("bad_file.rs", 0, len).into(),
-        highlight: ("this bit here", 9, 0).into(),
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (9, 0).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);
