@@ -49,7 +49,7 @@ diagnostic error code: ruget::api::bad_json
   which can be returned from `main`.
 - Generic support for arbitrary [Source]s for snippet data, with default support for `String`s included.
 
-The `miette` crate also comes bundles with a default [DiagnosticReportPrinter] with the following features:
+The `miette` crate also comes bundled with a default [DiagnosticReportPrinter] with the following features:
 
 - Fancy graphical [diagnostic output](#about), using ANSI/Unicode text
 - single- and multi-line highlighting support
