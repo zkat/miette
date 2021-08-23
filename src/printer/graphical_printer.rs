@@ -382,12 +382,13 @@ impl GraphicalReportPrinter {
         let mut highest = 0;
         let chars = &self.theme.characters;
         for hl in single_liners {
+            let hl_len = std::cmp::max(1, hl.len());
             let local_offset = hl.offset() - line.offset;
-            let vbar_offset = local_offset + (hl.len() / 2);
+            let vbar_offset = local_offset + (hl_len / 2);
             let num_left = vbar_offset - local_offset;
-            let num_right = local_offset + hl.len() - vbar_offset - 1;
+            let num_right = local_offset + hl_len - vbar_offset - 1;
             let start = std::cmp::max(local_offset, highest);
-            let end = local_offset + hl.len();
+            let end = local_offset + hl_len;
             if start < end {
                 underlines.push_str(
                     &format!(
@@ -414,9 +415,10 @@ impl GraphicalReportPrinter {
             if let Some(label) = hl.label() {
                 self.write_no_linum(f, linum_width)?;
                 self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
+                let hl_len = std::cmp::max(1, hl.len());
                 let local_offset = hl.offset() - line.offset;
-                let vbar_offset = local_offset + (hl.len() / 2);
-                let num_right = local_offset + hl.len() - vbar_offset - 1;
+                let vbar_offset = local_offset + (hl_len / 2);
+                let num_right = local_offset + hl_len - vbar_offset - 1;
                 let lines = format!(
                     "{:width$}{}{} {}",
                     " ",
