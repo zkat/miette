@@ -91,7 +91,7 @@ impl Severity {
                fn severity(&self) -> std::option::Option<miette::Severity> {
                    match self {
                         #(#sev_pairs)*
-                        _ => None,
+                        _ => std::option::Option::None,
                    }
                }
             })

@@ -45,11 +45,11 @@ diagnostic error code: ruget::api::bad_json
 - Unique error codes on every [Diagnostic].
 - Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
-- Lightweight [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-style error wrapper type, [DiagnosticReport],
+- [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-compatible error wrapper type, [Report],
   which can be returned from `main`.
 - Generic support for arbitrary [Source]s for snippet data, with default support for `String`s included.
 
-The `miette` crate also comes bundled with a default [DiagnosticReportPrinter] with the following features:
+The `miette` crate also comes bundled with a default [ReportHandler] with the following features:
 
 - Fancy graphical [diagnostic output](#about), using ANSI/Unicode text
 - single- and multi-line highlighting support
@@ -191,7 +191,7 @@ Application code tends to work a little differently than libraries. You don't
 always need or care to define dedicated error wrappers for errors coming from
 external libraries and tools.
 
-For this situation, `miette` includes two tools: [DiagnosticReport] and
+For this situation, `miette` includes two tools: [Report] and
 [IntoDiagnostic]. They work in tandem to make it easy to convert regular
 `std::error::Error`s into [Diagnostic]s. Additionally, there's a
 [DiagnosticResult] type alias that you can use to be more terse:
@@ -330,7 +330,7 @@ pub struct MyErrorType {
   [`color-eyre`](https://crates.io/crates/color-eyre): these two enormously
   influential error handling libraries have pushed forward the experience of
   application-level error handling and error reporting. `miette`'s
-  `DiagnosticReport` type is an attempt at a very very rough version of their
+  `Report` type is an attempt at a very very rough version of their
   `Report` types.
 - [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
   for library-level error definitions, and for being the inspiration behind

@@ -5,16 +5,18 @@
 pub use miette_derive::*;
 
 pub use error::*;
+pub use eyreish::*;
+pub use named_source::*;
 pub use printer::*;
 pub use protocol::*;
-pub use utils::*;
 
 mod chain;
 mod error;
+mod eyreish;
+mod named_source;
 mod printer;
 mod protocol;
 mod source_impls;
-mod utils;
 
 #[cfg(doctest)]
 mod compile_test;

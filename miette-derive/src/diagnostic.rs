@@ -35,7 +35,7 @@ pub enum DiagnosticDefArgs {
 }
 
 pub struct DiagnosticConcreteArgs {
-    pub code: Code,
+    pub code: Option<Code>,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
     pub snippets: Option<Snippets>,
@@ -44,7 +44,7 @@ pub struct DiagnosticConcreteArgs {
 
 impl DiagnosticConcreteArgs {
     fn parse(
-        ident: &syn::Ident,
+        _ident: &syn::Ident,
         fields: &syn::Fields,
         attr: &syn::Attribute,
         args: impl Iterator<Item = DiagnosticArg>,
@@ -75,8 +75,7 @@ impl DiagnosticConcreteArgs {
         }
         let snippets = Snippets::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
-            code: code
-                .ok_or_else(|| syn::Error::new(ident.span(), "Diagnostic code is required."))?,
+            code,
             help,
             severity,
             snippets,
@@ -206,7 +205,7 @@ impl Diagnostic {
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
-                                fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
+                                fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
                                     #matcher
                                     #field_name.code()
                                 }
@@ -230,7 +229,7 @@ impl Diagnostic {
                         }
                     }
                     DiagnosticDefArgs::Concrete(concrete) => {
-                        let code_body = concrete.code.gen_struct();
+                        let code_body = concrete.code.as_ref().and_then(|x| x.gen_struct());
                         let help_body = concrete.help.as_ref().and_then(|x| x.gen_struct(fields));
                         let sev_body = concrete.severity.as_ref().and_then(|x| x.gen_struct());
                         let snip_body = concrete

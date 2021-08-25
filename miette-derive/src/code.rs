@@ -56,29 +56,30 @@ impl Code {
              }| {
                 match args {
                     DiagnosticDefArgs::Transparent => {
-                        forward_to_single_field_variant(ident, fields, quote! { code() })
+                        Some(forward_to_single_field_variant(ident, fields, quote! { code() }))
                     }
                     DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { code, .. }) => {
-                        let code = &code.0;
-                        match fields {
+                        let code = &code.as_ref()?.0;
+                        Some(match fields {
                             syn::Fields::Named(_) => {
-                                quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
+                                quote! { Self::#ident { .. } => std::option::Option::Some(std::boxed::Box::new(#code)), }
                             }
                             syn::Fields::Unnamed(_) => {
-                                quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                                quote! { Self::#ident(..) => std::option::Option::Some(std::boxed::Box::new(#code)), }
                             }
                             syn::Fields::Unit => {
-                                quote! { Self::#ident => std::boxed::Box::new(#code), }
+                                quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(#code)), }
                             }
-                        }
+                        })
                     }
                 }
             },
         );
         Some(quote! {
-            fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
+            fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
                 match self {
                     #(#code_pairs)*
+                    _ => std::option::Option::None,
                 }
             }
         })
@@ -87,8 +88,8 @@ impl Code {
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let code = &self.0;
         Some(quote! {
-            fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
-                std::boxed::Box::new(#code)
+            fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                std::option::Option::Some(std::boxed::Box::new(#code))
             }
         })
     }

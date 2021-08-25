@@ -10,7 +10,7 @@ use ChainState::*;
 
 #[derive(Clone)]
 #[allow(missing_debug_implementations)]
-pub(crate) struct Chain<'a> {
+pub struct Chain<'a> {
     state: crate::chain::ChainState<'a>,
 }
 

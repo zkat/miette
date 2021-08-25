@@ -1,19 +1,19 @@
 use miette::{
-    Diagnostic, DiagnosticReport, GraphicalReportPrinter, GraphicalTheme, MietteError, NamedSource,
-    NarratableReportPrinter, SourceSpan,
+    Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
+    NarratableReportHandler, Report, SourceSpan,
 };
 use thiserror::Error;
 
-fn fmt_report(diag: DiagnosticReport) -> String {
+fn fmt_report(diag: Report) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
     if std::env::var("STYLE").is_ok() {
-        GraphicalReportPrinter::new_themed(GraphicalTheme::unicode())
-            .render_report(&mut out, diag.inner())
+        GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+            .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {
-        NarratableReportPrinter
-            .render_report(&mut out, diag.inner())
+        NarratableReportHandler
+            .render_report(&mut out, diag.as_ref())
             .unwrap();
     };
     out
@@ -53,7 +53,7 @@ snippet line 2:   text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -95,7 +95,7 @@ snippet line 2:   text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -141,7 +141,7 @@ snippet line 2:   text text text text text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -183,7 +183,7 @@ snippet line 2:   text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -237,7 +237,7 @@ snippet line 4: line4
 snippet line 6: line5
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -291,7 +291,7 @@ snippet line 4: line4
 snippet line 6: line5
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -338,7 +338,7 @@ snippet line 3:     here
 snippet line 4: more here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -386,7 +386,7 @@ snippet line 2:   text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();
@@ -434,7 +434,7 @@ snippet line 2:   text
 snippet line 3:     here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start()
     .to_string();

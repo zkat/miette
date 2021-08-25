@@ -13,14 +13,22 @@ exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
 thiserror = "1.0.26"
-miette-derive = { version = "=1.1.0", path = "miette-derive" }
+miette-derive = { path = "miette-derive" }
 once_cell = "1.8.0"
 owo-colors = "2.0.0"
 atty = "0.2.14"
 ci_info = "0.14.2"
+indenter = "0.3.0"
 
 [dev-dependencies]
 semver = "1.0.4"
+
+# Eyre devdeps
+futures = { version = "0.3", default-features = false }
+rustversion = "1.0"
+trybuild = { version = "1.0.19", features = ["diff"] }
+anyhow = "1.0.28"
+syn = { version = "1.0", features = ["full"] }
 
 [workspace]
 members = ["miette-derive"]

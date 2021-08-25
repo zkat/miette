@@ -10,10 +10,10 @@ use std::{
     panic::Location,
 };
 
-use crate::MietteError;
+use crate::{MietteError, Report};
 
 /**
-Adds rich metadata to your Error that can be used by [DiagnosticReportPrinter] to print
+Adds rich metadata to your Error that can be used by [ReportHandler] to print
 really nice and human-friendly error messages.
 */
 pub trait Diagnostic: std::error::Error {
@@ -22,9 +22,11 @@ pub trait Diagnostic: std::error::Error {
     /// the toplevel crate's documentation for easy searching. Rust path
     /// format (`foo::bar::baz`) is recommended, but more classic codes like
     /// `E0123` or Enums will work just fine.
-    fn code<'a>(&'a self) -> Box<dyn Display + 'a>;
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        None
+    }
 
-    /// Diagnostic severity. This may be used by [DiagnosticReportPrinter]s to change the
+    /// Diagnostic severity. This may be used by [ReportHandler]s to change the
     /// display format of this diagnostic.
     ///
     /// If `None`, reporters should treat this as [Severity::Error]
@@ -72,62 +74,72 @@ impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + 'st
     }
 }
 
-/**
-When used with `?`/`From`, this will wrap any Diagnostics and, when
-formatted with `Debug`, will fetch the current [DiagnosticReportPrinter] and
-use it to format the inner [Diagnostic].
-*/
-pub struct DiagnosticReport {
-    diagnostic: Box<dyn Diagnostic + Send + Sync + 'static>,
-}
-
-impl DiagnosticReport {
-    /// Return a reference to the inner [Diagnostic].
-    pub fn inner(&self) -> &(dyn Diagnostic + Send + Sync + 'static) {
-        &*self.diagnostic
+impl From<&str> for Box<dyn Diagnostic> {
+    fn from(s: &str) -> Self {
+        From::from(String::from(s))
     }
 }
 
-impl std::fmt::Debug for DiagnosticReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        crate::get_printer().debug(&*self.diagnostic, f)
+impl<'a> From<&str> for Box<dyn Diagnostic + Send + Sync + 'a> {
+    fn from(s: &str) -> Self {
+        From::from(String::from(s))
     }
 }
 
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for DiagnosticReport {
-    fn from(diagnostic: T) -> Self {
-        DiagnosticReport {
-            diagnostic: Box::new(diagnostic),
+impl From<String> for Box<dyn Diagnostic> {
+    fn from(s: String) -> Self {
+        let err1: Box<dyn Diagnostic + Send + Sync> = From::from(s);
+        let err2: Box<dyn Diagnostic> = err1;
+        err2
+    }
+}
+
+impl From<String> for Box<dyn Diagnostic + Send + Sync> {
+    fn from(s: String) -> Self {
+        struct StringError(String);
+
+        impl std::error::Error for StringError {}
+        impl Diagnostic for StringError {}
+
+        impl Display for StringError {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                Display::fmt(&self.0, f)
+            }
         }
+
+        // Purposefully skip printing "StringError(..)"
+        impl fmt::Debug for StringError {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Debug::fmt(&self.0, f)
+            }
+        }
+
+        Box::new(StringError(s))
     }
 }
 
-/**
-Protocol for [Diagnostic] handlers, which are responsible for actually printing out Diagnostics.
+impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Send + Sync> {
+    fn from(s: Box<dyn std::error::Error + Send + Sync>) -> Self {
+        #[derive(thiserror::Error)]
+        #[error(transparent)]
+        struct BoxedDiagnostic(Box<dyn std::error::Error + Send + Sync>);
+        impl fmt::Debug for BoxedDiagnostic {
+            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+                fmt::Debug::fmt(&self.0, f)
+            }
+        }
 
-Blatantly based on [EyreHandler](https://docs.rs/eyre/0.6.5/eyre/trait.EyreHandler.html) (thanks, Jane!)
-*/
-pub trait DiagnosticReportPrinter: core::any::Any + Send + Sync {
-    /// Define the report format.
-    fn debug(
-        &self,
-        diagnostic: &(dyn Diagnostic),
-        f: &mut core::fmt::Formatter<'_>,
-    ) -> core::fmt::Result;
+        impl Diagnostic for BoxedDiagnostic {}
 
-    /// Override for the `Display` format.
-    fn display(
-        &self,
-        diagnostic: &(dyn Diagnostic),
-        f: &mut core::fmt::Formatter<'_>,
-    ) -> core::fmt::Result {
-        write!(f, "{}", diagnostic)?;
-        Ok(())
+        Box::new(BoxedDiagnostic(s))
     }
 }
 
+/// Convenience alias. This is intended to be used as the return type for `main()`
+pub type DiagnosticResult<T> = Result<T, Report>;
+
 /**
-[Diagnostic] severity. Intended to be used by [DiagnosticReportPrinter]s to change the
+[Diagnostic] severity. Intended to be used by [ReportHandler]s to change the
 way different Diagnostics are displayed.
 */
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
