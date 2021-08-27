@@ -16,6 +16,8 @@ pub enum Diagnostic {
         fields: syn::Fields,
         // Nobody needs a transparent wrapper struct for another thing that already
         // implements diagnostic, surely.
+        //
+        // See miette::compile_test::TransparentCombinations;
         args: DiagnosticConcreteArgs,
     },
     Enum {
