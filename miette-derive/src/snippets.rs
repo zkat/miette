@@ -9,8 +9,13 @@ use syn::{
     Token,
 };
 
-use crate::fmt;
-use crate::{diagnostic::DiagnosticVariant, fmt::Display};
+use crate::{
+    diagnostic::DiagnosticConcreteArgs, fmt::Display, utils::forward_to_single_field_variant,
+};
+use crate::{
+    diagnostic::{DiagnosticDef, DiagnosticDefArgs},
+    fmt,
+};
 
 pub struct Snippets(Vec<Snippet>);
 
@@ -290,114 +295,127 @@ impl Snippets {
         })
     }
 
-    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         let variant_arms = variants.iter().map(|variant| {
-            variant.snippets.as_ref().map(|snippets| {
-                let variant_snippets = snippets.0.iter().map(|snippet| {
-                    // snippet message
-                    let msg = if let Some(display) = &snippet.message {
-                    let members: HashSet<syn::Member> = variant.fields.iter().enumerate().map(|(i, field)| {
-                        if let Some(ident) = field.ident.as_ref().cloned() {
-                            syn::Member::Named(ident)
-                        } else {
-                            syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
-                        }
-                    }).collect();
-                        let mut display = display.clone();
-                        display.expand_shorthand(&members);
-                        let Display { fmt, args, .. } = display;
-                        quote! {
-                            message: std::option::Option::Some(format!(#fmt, #args)),
-                        }
-                    } else {
-                        quote! {
-                            message: std::option::Option::None,
-                        }
-                    };
-                    // Source field
-                    let src_ident = match &snippet.source {
-                        syn::Member::Named(id) => id.clone(),
-                        syn::Member::Unnamed(syn::Index { index, .. }) => {
-                            format_ident!("_{}", index)
-                        }
-                    };
-                    let src_ident = quote! {
-                        // TODO: I don't like this. Think about it more and maybe improve protocol?
-                        source: #src_ident,
-                    };
-
-                    // Context
-                    let context = match &snippet.snippet {
-                        syn::Member::Named(id) => id.clone(),
-                        syn::Member::Unnamed(syn::Index { index, .. }) => {
-                            format_ident!("_{}", index)
-                        }
-                    };
-                    let context = quote! {
-                        context: #context.clone().into(),
-                    };
-
-                    // Highlights
-                    let highlights = snippet.highlights.iter().map(|highlight| {
-                        let Highlight { highlight, label } = highlight;
-                        let m = match highlight {
-                            syn::Member::Named(id) => id.clone(),
-                            syn::Member::Unnamed(syn::Index { index, .. }) => {
-                                format_ident!("_{}", index)
-                            }
-                        };
-                        if let Some(Display { fmt, args, ..}) = label {
-                            quote! {
-                                (
-                                    std::option::Option::Some(format!(#fmt, #args)),
-                                    #m.clone().into()
-                                )
-                            }
-                        } else {
-                            quote! {
-                                (std::option::Option::None, #m.clone().into())
-                            }
-                        }
-                    });
-                    let highlights = quote! {
-                        highlights: std::option::Option::Some(vec![
-                            #(#highlights),*
-                        ]),
-                    };
-
-                    // Generate the snippet itself
-                    quote! {
-                        miette::DiagnosticSnippet {
-                            #msg
-                            #src_ident
-                            #context
-                            #highlights
-                        }
-                    }
-                });
-                let variant_name = variant.ident.clone();
-                let members = variant.fields.iter().enumerate().map(|(i, field)| {
-                    field
-                        .ident
-                        .as_ref()
-                        .cloned()
-                        .unwrap_or_else(|| format_ident!("_{}", i))
-                });
-                match &variant.fields {
-                    syn::Fields::Unit => None,
-                    syn::Fields::Named(_) => Some(quote! {
-                        Self::#variant_name { #(#members),* } => std::option::Option::Some(std::boxed::Box::new(vec![
-                            #(#variant_snippets),*
-                        ].into_iter())),
-                    }),
-                    syn::Fields::Unnamed(_) => Some(quote! {
-                        Self::#variant_name(#(#members),*) => std::option::Option::Some(Box::new(vec![
-                            #(#variant_snippets),*
-                        ].into_iter())),
-                    }),
+            let DiagnosticDef { ident, fields, args: def_args } = variant;
+            match def_args {
+                DiagnosticDefArgs::Transparent => {
+                    Some(forward_to_single_field_variant(
+                        ident,
+                        fields,
+                        quote! { snippets() },
+                    ))
                 }
-            })
-        });
+                DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { snippets, .. }) => {
+                    snippets.as_ref().and_then(|snippets| {
+                        let variant_snippets = snippets.0.iter().map(|snippet| {
+                            // snippet message
+                            let msg = if let Some(display) = &snippet.message {
+                            let members: HashSet<syn::Member> = variant.fields.iter().enumerate().map(|(i, field)| {
+                                if let Some(ident) = field.ident.as_ref().cloned() {
+                                    syn::Member::Named(ident)
+                                } else {
+                                    syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
+                                }
+                            }).collect();
+                                let mut display = display.clone();
+                                display.expand_shorthand(&members);
+                                let Display { fmt, args, .. } = display;
+                                quote! {
+                                    message: std::option::Option::Some(format!(#fmt, #args)),
+                                }
+                            } else {
+                                quote! {
+                                    message: std::option::Option::None,
+                                }
+                            };
+                            // Source field
+                            let src_ident = match &snippet.source {
+                                syn::Member::Named(id) => id.clone(),
+                                syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                    format_ident!("_{}", index)
+                                }
+                            };
+                            let src_ident = quote! {
+                                // TODO: I don't like this. Think about it more and maybe improve protocol?
+                                source: #src_ident,
+                            };
+
+                            // Context
+                            let context = match &snippet.snippet {
+                                syn::Member::Named(id) => id.clone(),
+                                syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                    format_ident!("_{}", index)
+                                }
+                            };
+                            let context = quote! {
+                                context: #context.clone().into(),
+                            };
+
+                            // Highlights
+                            let highlights = snippet.highlights.iter().map(|highlight| {
+                                let Highlight { highlight, label } = highlight;
+                                let m = match highlight {
+                                    syn::Member::Named(id) => id.clone(),
+                                    syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                        format_ident!("_{}", index)
+                                    }
+                                };
+                                if let Some(Display { fmt, args, ..}) = label {
+                                    quote! {
+                                        (
+                                            std::option::Option::Some(format!(#fmt, #args)),
+                                            #m.clone().into()
+                                        )
+                                    }
+                                } else {
+                                    quote! {
+                                        (std::option::Option::None, #m.clone().into())
+                                    }
+                                }
+                            });
+                            let highlights = quote! {
+                                highlights: std::option::Option::Some(vec![
+                                    #(#highlights),*
+                                ]),
+                            };
+
+                            // Generate the snippet itself
+                            quote! {
+                                miette::DiagnosticSnippet {
+                                    #msg
+                                    #src_ident
+                                    #context
+                                    #highlights
+                                }
+                            }
+                        });
+                        let variant_name = variant.ident.clone();
+                        let members = variant.fields.iter().enumerate().map(|(i, field)| {
+                            field
+                                .ident
+                                .as_ref()
+                                .cloned()
+                                .unwrap_or_else(|| format_ident!("_{}", i))
+                        });
+                        match &variant.fields {
+                            syn::Fields::Unit => None,
+                            syn::Fields::Named(_) => Some(quote! {
+                                Self::#variant_name { #(#members),* } => std::option::Option::Some(std::boxed::Box::new(vec![
+                                    #(#variant_snippets),*
+                                ].into_iter())),
+                            }),
+                            syn::Fields::Unnamed(_) => Some(quote! {
+                                Self::#variant_name(#(#members),*) => std::option::Option::Some(Box::new(vec![
+                                    #(#variant_snippets),*
+                                ].into_iter())),
+                            }),
+                        }
+                    })
+                }
+            }
+        })
+        .filter_map(|x| x);
         Some(quote! {
             #[allow(unused_variables)]
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {

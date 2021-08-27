@@ -310,3 +310,124 @@ fn url_docsrs() {
         Foo {}.url().unwrap().to_string()
     );
 }
+
+#[test]
+fn test_transparent_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(
+        code(foo::bar::baz),
+        url("https://example.com"),
+        help("help"),
+        severity(Warning)
+    )]
+    struct Foo {
+        src: String,
+        #[snippet(src, message("snippet text"))]
+        snip: miette::SourceSpan,
+        #[highlight(snip, label("highlight text"))]
+        highlight: miette::SourceSpan,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("enum")]
+        #[diagnostic(transparent)]
+        FooVariant(#[from] Foo),
+    }
+
+    let text = "hello from miette";
+    let variant = Enum::FooVariant(Foo {
+        src: text.into(),
+        snip: SourceSpan::new(0.into(), text.len().into()),
+        highlight: SourceSpan::new(11.into(), 6.into()),
+    });
+    // check Diagnostic impl forwards all these methods
+    assert_eq!(variant.code().to_string(), "foo::bar::baz");
+    assert_eq!(variant.url().unwrap().to_string(), "https://example.com");
+    assert_eq!(variant.help().unwrap().to_string(), "help");
+    assert_eq!(variant.severity().unwrap(), miette::Severity::Warning);
+
+    // now we test the snippets... eww, but works
+    type Snip = (Option<String>, usize, usize);
+    let snips: Vec<(Snip, Vec<Snip>)> = variant
+        .snippets()
+        .unwrap()
+        .map(
+            |miette::DiagnosticSnippet {
+                 message,
+                 context,
+                 highlights,
+                 ..
+             }| {
+                (
+                    (message, context.offset(), context.len()),
+                    highlights
+                        .into_iter()
+                        .flatten()
+                        .map(|(msg, span)| (msg, span.offset(), span.len()))
+                        .collect(),
+                )
+            },
+        )
+        .collect();
+    assert_eq!(
+        &snips[..],
+        &[(
+            (Some("snippet text".into()), 0, text.len()),
+            vec![(Some("highlight text".into()), 11, 6)]
+        )]
+    );
+}
+
+#[test]
+fn test_transparent_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(
+        code(foo::bar::baz),
+        url("https://example.com"),
+        help("help"),
+        severity(Warning)
+    )]
+    struct Foo {
+        src: String,
+        #[snippet(src, message("snippet text"))]
+        snip: miette::SourceSpan,
+        #[highlight(snip, label("highlight text"))]
+        highlight: miette::SourceSpan,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("enum")]
+        #[diagnostic(transparent)]
+        FooVariant {
+            #[from]
+            single_field: Foo,
+        },
+
+        // add another one to check
+        #[error("foo")]
+        #[diagnostic(code(foo::bar::bar_variant))]
+        BarVariant,
+    }
+
+    let text = "hello from miette";
+    let variant = Enum::FooVariant {
+        single_field: Foo {
+            src: text.into(),
+            snip: SourceSpan::new(0.into(), text.len().into()),
+            highlight: SourceSpan::new(11.into(), 6.into()),
+        },
+    };
+    // check Diagnostic impl forwards all these methods
+    assert_eq!(variant.code().to_string(), "foo::bar::baz");
+    assert_eq!(variant.url().unwrap().to_string(), "https://example.com");
+    assert_eq!(variant.help().unwrap().to_string(), "help");
+    assert_eq!(variant.severity().unwrap(), miette::Severity::Warning);
+    // leave the snippets alone, assume unnamed test covers it
+
+    let bar_variant = Enum::BarVariant;
+    assert_eq!(bar_variant.code().to_string(), "foo::bar::bar_variant");
+}

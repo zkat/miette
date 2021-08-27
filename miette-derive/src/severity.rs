@@ -6,7 +6,10 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::DiagnosticVariant;
+use crate::{
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    utils::forward_to_single_field_variant,
+};
 
 pub struct Severity(pub syn::Ident);
 
@@ -56,23 +59,30 @@ fn get_severity(input: &str, span: Span) -> syn::Result<String> {
 }
 
 impl Severity {
-    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         let sev_pairs = variants
             .iter()
-            .filter(|v| v.severity.is_some())
             .map(
-                |DiagnosticVariant {
-                     ident, severity, fields, ..
+                |DiagnosticDef {
+                     ident, fields, args
                  }| {
-                     let severity = &severity.as_ref().unwrap().0;
-                     let fields = match fields {
-                        syn::Fields::Named(_) => quote! { { .. } },
-                        syn::Fields::Unnamed(_) => quote! { (..) },
-                        syn::Fields::Unit => quote!{},
-                    };
-                     quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), }
+                     match args {
+                         DiagnosticDefArgs::Transparent => {
+                             Some(forward_to_single_field_variant(ident, fields, quote!{ severity() }))
+                         }
+                         DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { severity, .. }) => {
+                             let severity = &severity.as_ref()?.0;
+                             let fields = match fields {
+                                 syn::Fields::Named(_) => quote! { { .. } },
+                                 syn::Fields::Unnamed(_) => quote! { (..) },
+                                 syn::Fields::Unit => quote!{},
+                             };
+                             Some(quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), })
+                         }
+                     }
                 },
             )
+            .filter_map(|x| x)
             .collect::<Vec<_>>();
         if sev_pairs.is_empty() {
             None

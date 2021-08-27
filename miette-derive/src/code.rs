@@ -6,7 +6,10 @@ use syn::{
     Token,
 };
 
-use crate::diagnostic::DiagnosticVariant;
+use crate::{
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    utils::forward_to_single_field_variant,
+};
 
 #[derive(Debug)]
 pub struct Code(pub String);
@@ -44,23 +47,31 @@ impl Parse for Code {
 }
 
 impl Code {
-    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         let code_pairs = variants.iter().map(
-            |DiagnosticVariant {
-                 ref ident,
-                 ref code,
-                 ref fields,
-                 ..
+            |DiagnosticDef {
+                 ident,
+                 fields,
+                 args,
              }| {
-                let code = &code.0;
-                match fields {
-                    syn::Fields::Named(_) => {
-                        quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
+                match args {
+                    DiagnosticDefArgs::Transparent => {
+                        forward_to_single_field_variant(ident, fields, quote! { code() })
                     }
-                    syn::Fields::Unnamed(_) => {
-                        quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                    DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { code, .. }) => {
+                        let code = &code.0;
+                        match fields {
+                            syn::Fields::Named(_) => {
+                                quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
+                            }
+                            syn::Fields::Unnamed(_) => {
+                                quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                            }
+                            syn::Fields::Unit => {
+                                quote! { Self::#ident => std::boxed::Box::new(#code), }
+                            }
+                        }
                     }
-                    syn::Fields::Unit => quote! { Self::#ident => std::boxed::Box::new(#code), },
                 }
             },
         );

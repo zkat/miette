@@ -9,8 +9,11 @@ use syn::{
     Fields, Token,
 };
 
-use crate::diagnostic::DiagnosticVariant;
 use crate::fmt::{self, Display};
+use crate::{
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    utils::forward_to_single_field_variant,
+};
 
 pub enum Url {
     Display(Display),
@@ -64,18 +67,19 @@ impl Parse for Url {
 impl Url {
     pub(crate) fn gen_enum(
         enum_name: &syn::Ident,
-        variants: &[DiagnosticVariant],
+        variants: &[DiagnosticDef],
     ) -> Option<TokenStream> {
-        let url_pairs = variants
-            .iter()
-            .filter(|v| v.url.is_some())
-            .map(
-                |DiagnosticVariant {
-                     ref ident,
-                     ref url,
-                     ref fields,
-                     ..
-                 }| {
+        let url_pairs = variants.iter().map(|variant| {
+            let DiagnosticDef { ident, fields, args: def_args } = variant;
+            match def_args {
+                DiagnosticDefArgs::Transparent => {
+                    Some(forward_to_single_field_variant(
+                        ident,
+                        fields,
+                        quote! { url() },
+                    ))
+                }
+                DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { ref url, .. }) => {
                     let member_idents = fields.iter().enumerate().map(|(i, field)| {
                         field
                             .ident
@@ -90,7 +94,8 @@ impl Url {
                             syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
                         }
                     }).collect();
-                    let (fmt, args) = match url.as_ref().expect("MIETTE BUG: we already checked for `Some`") {
+                    let (fmt, args) = match url.as_ref()? {
+                        // fall through to `_ => None` below
                         Url::Display(display) => {
                             let mut display = display.clone();
                             display.expand_shorthand(&members);
@@ -108,7 +113,7 @@ impl Url {
                             (fmt, args)
                         }
                     };
-                    match fields {
+                    Some(match fields {
                         syn::Fields::Named(_) => {
                             quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
                         }
@@ -117,10 +122,12 @@ impl Url {
                         }
                         syn::Fields::Unit =>
                             quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
-                    }
-                 },
-            )
-            .collect::<Vec<_>>();
+                    })
+                }
+            }
+         })
+        .filter_map(|x| x)
+        .collect::<Vec<_>>();
         if url_pairs.is_empty() {
             None
         } else {
