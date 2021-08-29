@@ -310,3 +310,132 @@ fn url_docsrs() {
         Foo {}.url().unwrap().to_string()
     );
 }
+
+const SNIPPET_TEXT: &str = "hello from miette";
+
+#[derive(Debug, Diagnostic, Error)]
+#[error("welp")]
+#[diagnostic(
+    code(foo::bar::baz),
+    url("https://example.com"),
+    help("help"),
+    severity(Warning)
+)]
+struct ForwardsTo {
+    src: String,
+    #[snippet(src, message("snippet text"))]
+    snip: miette::SourceSpan,
+    #[highlight(snip, label("highlight text"))]
+    highlight: miette::SourceSpan,
+}
+
+impl ForwardsTo {
+    fn new() -> Self {
+        ForwardsTo {
+            src: SNIPPET_TEXT.into(),
+            snip: SourceSpan::new(0.into(), SNIPPET_TEXT.len().into()),
+            highlight: SourceSpan::new(11.into(), 6.into()),
+        }
+    }
+}
+
+fn check_snippets(diag: &impl Diagnostic) {
+    // check Diagnostic impl forwards all these methods
+    assert_eq!(diag.code().to_string(), "foo::bar::baz");
+    assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
+    assert_eq!(diag.help().unwrap().to_string(), "help");
+    assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
+
+    type Snip = (Option<String>, usize, usize);
+    let snips: Vec<(Snip, Vec<Snip>)> = diag
+        .snippets()
+        .unwrap()
+        .map(
+            |miette::DiagnosticSnippet {
+                 message,
+                 context,
+                 highlights,
+                 ..
+             }| {
+                (
+                    (message, context.offset(), context.len()),
+                    highlights
+                        .into_iter()
+                        .flatten()
+                        .map(|(msg, span)| (msg, span.offset(), span.len()))
+                        .collect(),
+                )
+            },
+        )
+        .collect();
+    assert_eq!(
+        &snips[..],
+        &[(
+            (Some("snippet text".into()), 0, SNIPPET_TEXT.len()),
+            vec![(Some("highlight text".into()), 11, 6)]
+        )]
+    );
+}
+
+#[test]
+fn test_transparent_enum_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("enum")]
+        #[diagnostic(transparent)]
+        FooVariant(#[from] ForwardsTo),
+    }
+
+    let variant = Enum::FooVariant(ForwardsTo::new());
+
+    check_snippets(&variant);
+}
+
+#[test]
+fn test_transparent_enum_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("enum")]
+        #[diagnostic(transparent)]
+        FooVariant {
+            #[from]
+            single_field: ForwardsTo,
+        },
+        #[error("foo")]
+        #[diagnostic(code(foo::bar::bar_variant))]
+        BarVariant,
+    }
+
+    let variant = Enum::FooVariant {
+        single_field: ForwardsTo::new(),
+    };
+
+    check_snippets(&variant);
+
+    let bar_variant = Enum::BarVariant;
+    assert_eq!(bar_variant.code().to_string(), "foo::bar::bar_variant");
+}
+
+#[test]
+fn test_transparent_struct_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    struct Struct {
+        #[from]
+        single_field: ForwardsTo,
+    }
+    // Also check the From impl here
+    let variant: Struct = ForwardsTo::new().into();
+    check_snippets(&variant);
+}
+
+#[test]
+fn test_transparent_struct_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error(transparent)]
+    #[diagnostic(transparent)]
+    struct Struct(#[from] ForwardsTo);
+    let variant = Struct(ForwardsTo::new());
+    check_snippets(&variant);
+}

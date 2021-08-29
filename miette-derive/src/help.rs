@@ -9,8 +9,11 @@ use syn::{
     Fields, Token,
 };
 
-use crate::diagnostic::DiagnosticVariant;
 use crate::fmt::{self, Display};
+use crate::{
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    utils::forward_to_single_field_variant,
+};
 
 pub struct Help {
     pub display: Display,
@@ -54,46 +57,53 @@ impl Parse for Help {
 }
 
 impl Help {
-    pub(crate) fn gen_enum(variants: &[DiagnosticVariant]) -> Option<TokenStream> {
+    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         let help_pairs = variants
             .iter()
-            .filter(|v| v.help.is_some())
             .map(
-                |DiagnosticVariant {
-                     ref ident,
-                     ref help,
-                     ref fields,
+                |DiagnosticDef {
+                     ident,
+                     fields,
+                     args,
                      ..
                  }| {
-                    let mut display = help.as_ref().expect("already checked for Some").display.clone();
-                    let member_idents = fields.iter().enumerate().map(|(i, field)| {
-                        field
-                            .ident
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_else(|| format_ident!("_{}", i))
-                    });
-                    let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
-                        if let Some(ident) = field.ident.as_ref().cloned() {
-                            syn::Member::Named(ident)
-                        } else {
-                            syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
-                        }
-                    }).collect();
-                    display.expand_shorthand(&members);
-                    let Display { fmt, args, .. } = display;
-                    match fields {
-                        syn::Fields::Named(_) => {
-                            quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                        }
-                        syn::Fields::Unnamed(_) => {
-                            quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                        }
-                        syn::Fields::Unit =>
-                            quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
-                    }
+                     match args {
+                         DiagnosticDefArgs::Transparent => {
+                             Some(forward_to_single_field_variant(ident, fields, quote!{ help() } ))
+                         }
+                         DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { help, .. }) => {
+                             let mut display = help.as_ref()?.display.clone();
+                             let member_idents = fields.iter().enumerate().map(|(i, field)| {
+                                 field
+                                     .ident
+                                     .as_ref()
+                                     .cloned()
+                                     .unwrap_or_else(|| format_ident!("_{}", i))
+                             });
+                             let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
+                                 if let Some(ident) = field.ident.as_ref().cloned() {
+                                     syn::Member::Named(ident)
+                                 } else {
+                                     syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
+                                 }
+                             }).collect();
+                             display.expand_shorthand(&members);
+                             let Display { fmt, args, .. } = display;
+                             Some(match fields {
+                                 syn::Fields::Named(_) => {
+                                     quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                                 }
+                                 syn::Fields::Unnamed(_) => {
+                                     quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                                 }
+                                 syn::Fields::Unit =>
+                                     quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
+                             })
+                         }
+                     }
                  },
             )
+            .flatten()
             .collect::<Vec<_>>();
         if help_pairs.is_empty() {
             None

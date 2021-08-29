@@ -6,6 +6,7 @@ use crate::severity::Severity;
 use crate::url::Url;
 
 pub enum DiagnosticArg {
+    Transparent,
     Code(Code),
     Severity(Severity),
     Help(Help),
@@ -15,7 +16,11 @@ pub enum DiagnosticArg {
 impl Parse for DiagnosticArg {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let ident = input.fork().parse::<syn::Ident>()?;
-        if ident == "code" {
+        if ident == "transparent" {
+            // consume the token
+            let _: syn::Ident = input.parse()?;
+            Ok(DiagnosticArg::Transparent)
+        } else if ident == "code" {
             Ok(DiagnosticArg::Code(input.parse()?))
         } else if ident == "severity" {
             Ok(DiagnosticArg::Severity(input.parse()?))

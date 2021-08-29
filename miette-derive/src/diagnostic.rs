@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{punctuated::Punctuated, DeriveInput, Token};
 
 use crate::code::Code;
@@ -11,25 +11,30 @@ use crate::url::Url;
 
 pub enum Diagnostic {
     Struct {
-        fields: syn::Fields,
-        ident: syn::Ident,
         generics: syn::Generics,
-        code: Code,
-        severity: Option<Severity>,
-        help: Option<Help>,
-        snippets: Option<Snippets>,
-        url: Option<Url>,
+        ident: syn::Ident,
+        fields: syn::Fields,
+        args: DiagnosticDefArgs,
     },
     Enum {
         ident: syn::Ident,
         generics: syn::Generics,
-        variants: Vec<DiagnosticVariant>,
+        variants: Vec<DiagnosticDef>,
     },
 }
 
-pub struct DiagnosticVariant {
+pub struct DiagnosticDef {
     pub ident: syn::Ident,
     pub fields: syn::Fields,
+    pub args: DiagnosticDefArgs,
+}
+
+pub enum DiagnosticDefArgs {
+    Transparent,
+    Concrete(DiagnosticConcreteArgs),
+}
+
+pub struct DiagnosticConcreteArgs {
     pub code: Code,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
@@ -37,46 +42,94 @@ pub struct DiagnosticVariant {
     pub url: Option<Url>,
 }
 
+impl DiagnosticConcreteArgs {
+    fn parse(
+        ident: &syn::Ident,
+        fields: &syn::Fields,
+        attr: &syn::Attribute,
+        args: impl Iterator<Item = DiagnosticArg>,
+    ) -> Result<Self, syn::Error> {
+        let mut code = None;
+        let mut severity = None;
+        let mut help = None;
+        let mut url = None;
+        for arg in args {
+            match arg {
+                DiagnosticArg::Transparent => {
+                    return Err(syn::Error::new_spanned(attr, "transparent not allowed"));
+                }
+                DiagnosticArg::Code(new_code) => {
+                    // TODO: error on multiple?
+                    code = Some(new_code);
+                }
+                DiagnosticArg::Severity(sev) => {
+                    severity = Some(sev);
+                }
+                DiagnosticArg::Help(hl) => {
+                    help = Some(hl);
+                }
+                DiagnosticArg::Url(u) => {
+                    url = Some(u);
+                }
+            }
+        }
+        let snippets = Snippets::from_fields(fields)?;
+        let concrete = DiagnosticConcreteArgs {
+            code: code
+                .ok_or_else(|| syn::Error::new(ident.span(), "Diagnostic code is required."))?,
+            help,
+            severity,
+            snippets,
+            url,
+        };
+        Ok(concrete)
+    }
+}
+
+impl DiagnosticDefArgs {
+    fn parse(
+        ident: &syn::Ident,
+        fields: &syn::Fields,
+        attr: &syn::Attribute,
+        allow_transparent: bool,
+    ) -> Result<Self, syn::Error> {
+        let args =
+            attr.parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated)?;
+        if allow_transparent
+            && args.len() == 1
+            && matches!(args.first(), Some(DiagnosticArg::Transparent))
+        {
+            return Ok(Self::Transparent);
+        } else if args.iter().any(|x| matches!(x, DiagnosticArg::Transparent)) {
+            return Err(syn::Error::new_spanned(
+                attr,
+                if allow_transparent {
+                    "diagnostic(transparent) not allowed in combination with other args"
+                } else {
+                    "diagnostic(transparent) not allowed here"
+                },
+            ));
+        }
+        let args = args
+            .into_iter()
+            .filter(|x| !matches!(x, DiagnosticArg::Transparent));
+        let concrete = DiagnosticConcreteArgs::parse(ident, fields, attr, args)?;
+        Ok(DiagnosticDefArgs::Concrete(concrete))
+    }
+}
+
 impl Diagnostic {
     pub fn from_derive_input(input: DeriveInput) -> Result<Self, syn::Error> {
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
                 if let Some(attr) = input.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
-                    let args = attr.parse_args_with(
-                        Punctuated::<DiagnosticArg, Token![,]>::parse_terminated,
-                    )?;
-                    let mut code = None;
-                    let mut severity = None;
-                    let mut help = None;
-                    let mut url = None;
-                    for arg in args {
-                        match arg {
-                            DiagnosticArg::Code(new_code) => {
-                                // TODO: error on multiple?
-                                code = Some(new_code);
-                            }
-                            DiagnosticArg::Url(u) => {
-                                url = Some(u);
-                            }
-                            DiagnosticArg::Severity(sev) => {
-                                severity = Some(sev);
-                            }
-                            DiagnosticArg::Help(hl) => help = Some(hl),
-                        }
-                    }
-                    let snippets = Snippets::from_fields(&data_struct.fields)?;
-                    let ident = input.ident.clone();
+                    let args =
+                        DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?;
                     Diagnostic::Struct {
                         fields: data_struct.fields,
                         ident: input.ident,
                         generics: input.generics,
-                        code: code.ok_or_else(|| {
-                            syn::Error::new(ident.span(), "Diagnostic code is required.")
-                        })?,
-                        help,
-                        severity,
-                        snippets,
-                        url,
+                        args,
                     }
                 } else {
                     // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -90,42 +143,11 @@ impl Diagnostic {
                 let mut vars = Vec::new();
                 for var in variants {
                     if let Some(attr) = var.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
-                        let args = attr.parse_args_with(
-                            Punctuated::<DiagnosticArg, Token![,]>::parse_terminated,
-                        )?;
-                        let mut code = None;
-                        let mut severity = None;
-                        let mut help = None;
-                        let mut url = None;
-                        for arg in args {
-                            match arg {
-                                DiagnosticArg::Code(new_code) => {
-                                    // TODO: error on multiple?
-                                    code = Some(new_code);
-                                }
-                                DiagnosticArg::Severity(sev) => {
-                                    severity = Some(sev);
-                                }
-                                DiagnosticArg::Help(hl) => {
-                                    help = Some(hl);
-                                }
-                                DiagnosticArg::Url(u) => {
-                                    url = Some(u);
-                                }
-                            }
-                        }
-                        let snippets = Snippets::from_fields(&var.fields)?;
-                        let ident = input.ident.clone();
-                        vars.push(DiagnosticVariant {
+                        let args = DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?;
+                        vars.push(DiagnosticDef {
                             ident: var.ident,
                             fields: var.fields,
-                            code: code.ok_or_else(|| {
-                                syn::Error::new(ident.span(), "Diagnostic code is required.")
-                            })?,
-                            help,
-                            severity,
-                            snippets,
-                            url,
+                            args,
                         });
                     } else {
                         // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -153,29 +175,82 @@ impl Diagnostic {
     pub fn gen(&self) -> TokenStream {
         match self {
             Self::Struct {
-                fields,
                 ident,
+                fields,
                 generics,
-                code,
-                severity,
-                help,
-                snippets,
-                url,
+                args,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
-                let code_body = code.gen_struct();
-                let help_body = help.as_ref().and_then(|x| x.gen_struct(fields));
-                let sev_body = severity.as_ref().and_then(|x| x.gen_struct());
-                let snip_body = snippets.as_ref().and_then(|x| x.gen_struct(fields));
-                let url_body = url.as_ref().and_then(|x| x.gen_struct(ident, fields));
+                match args {
+                    DiagnosticDefArgs::Transparent => {
+                        if fields.iter().len() != 1 {
+                            return quote! {
+                                compile_error!("you can only use #[diagnostic(transparent)] on a struct with exactly one field");
+                            };
+                        }
+                        let field = fields
+                            .iter()
+                            .next()
+                            .expect("MIETTE BUG: thought we knew we had exactly one field");
+                        let field_name = field
+                            .ident
+                            .clone()
+                            .unwrap_or_else(|| format_ident!("unnamed"));
+                        let matcher = match fields {
+                            syn::Fields::Named(_) => quote! { let Self { #field_name } = self; },
+                            syn::Fields::Unnamed(_) => quote! { let Self(#field_name) = self; },
+                            syn::Fields::Unit => {
+                                unreachable!("MIETTE BUG: thought we knew we had exactly one field")
+                            }
+                        };
 
-                quote! {
-                    impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
-                        #code_body
-                        #help_body
-                        #sev_body
-                        #snip_body
-                        #url_body
+                        quote! {
+                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                                fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
+                                    #matcher
+                                    #field_name.code()
+                                }
+                                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                                    #matcher
+                                    #field_name.help()
+                                }
+                                fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                                    #matcher
+                                    #field_name.url()
+                                }
+                                fn severity(&self) -> std::option::Option<miette::Severity> {
+                                    #matcher
+                                    #field_name.severity()
+                                }
+                                fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
+                                    #matcher
+                                    #field_name.snippets()
+                                }
+                            }
+                        }
+                    }
+                    DiagnosticDefArgs::Concrete(concrete) => {
+                        let code_body = concrete.code.gen_struct();
+                        let help_body = concrete.help.as_ref().and_then(|x| x.gen_struct(fields));
+                        let sev_body = concrete.severity.as_ref().and_then(|x| x.gen_struct());
+                        let snip_body = concrete
+                            .snippets
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields));
+                        let url_body = concrete
+                            .url
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(ident, fields));
+
+                        quote! {
+                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                                #code_body
+                                #help_body
+                                #sev_body
+                                #snip_body
+                                #url_body
+                            }
+                        }
                     }
                 }
             }

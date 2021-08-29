@@ -15,3 +15,6 @@ mod printer;
 mod protocol;
 mod source_impls;
 mod utils;
+
+#[cfg(doctest)]
+mod compile_test;
