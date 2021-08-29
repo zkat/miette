@@ -227,17 +227,33 @@ impl Diagnostic {
                         }
                     }
                     DiagnosticDefArgs::Concrete(concrete) => {
+                        let forward = |which| {
+                            concrete
+                                .forward
+                                .as_ref()
+                                .map(|fwd| fwd.gen_struct_method(which))
+                        };
                         let code_body = concrete.code.gen_struct();
-                        let help_body = concrete.help.as_ref().and_then(|x| x.gen_struct(fields));
-                        let sev_body = concrete.severity.as_ref().and_then(|x| x.gen_struct());
+                        let help_body = concrete
+                            .help
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields))
+                            .or_else(|| forward(WhichFn::Help));
+                        let sev_body = concrete
+                            .severity
+                            .as_ref()
+                            .and_then(|x| x.gen_struct())
+                            .or_else(|| forward(WhichFn::Severity));
                         let snip_body = concrete
                             .snippets
                             .as_ref()
-                            .and_then(|x| x.gen_struct(fields));
+                            .and_then(|x| x.gen_struct(fields))
+                            .or_else(|| forward(WhichFn::Snippets));
                         let url_body = concrete
                             .url
                             .as_ref()
-                            .and_then(|x| x.gen_struct(ident, fields));
+                            .and_then(|x| x.gen_struct(ident, fields))
+                            .or_else(|| forward(WhichFn::Url));
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
