@@ -1,9 +1,10 @@
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{punctuated::Punctuated, DeriveInput, Token};
 
 use crate::code::Code;
 use crate::diagnostic_arg::DiagnosticArg;
+use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
 use crate::severity::Severity;
 use crate::snippets::Snippets;
@@ -40,6 +41,7 @@ pub struct DiagnosticConcreteArgs {
     pub help: Option<Help>,
     pub snippets: Option<Snippets>,
     pub url: Option<Url>,
+    pub forward: Option<Forward>,
 }
 
 impl DiagnosticConcreteArgs {
@@ -53,10 +55,14 @@ impl DiagnosticConcreteArgs {
         let mut severity = None;
         let mut help = None;
         let mut url = None;
+        let mut forward = None;
         for arg in args {
             match arg {
                 DiagnosticArg::Transparent => {
                     return Err(syn::Error::new_spanned(attr, "transparent not allowed"));
+                }
+                DiagnosticArg::Forward(to_field) => {
+                    forward = Some(to_field);
                 }
                 DiagnosticArg::Code(new_code) => {
                     // TODO: error on multiple?
@@ -81,6 +87,7 @@ impl DiagnosticConcreteArgs {
             severity,
             snippets,
             url,
+            forward,
         };
         Ok(concrete)
     }
@@ -183,49 +190,20 @@ impl Diagnostic {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 match args {
                     DiagnosticDefArgs::Transparent => {
-                        if fields.iter().len() != 1 {
-                            return quote! {
-                                compile_error!("you can only use #[diagnostic(transparent)] on a struct with exactly one field");
-                            };
-                        }
-                        let field = fields
-                            .iter()
-                            .next()
-                            .expect("MIETTE BUG: thought we knew we had exactly one field");
-                        let field_name = field
-                            .ident
-                            .clone()
-                            .unwrap_or_else(|| format_ident!("unnamed"));
-                        let matcher = match fields {
-                            syn::Fields::Named(_) => quote! { let Self { #field_name } = self; },
-                            syn::Fields::Unnamed(_) => quote! { let Self(#field_name) = self; },
-                            syn::Fields::Unit => {
-                                unreachable!("MIETTE BUG: thought we knew we had exactly one field")
-                            }
-                        };
+                        let forward = Forward::for_transparent_field(fields)?;
+                        let code_method = forward.gen_struct_method(WhichFn::Code);
+                        let help_method = forward.gen_struct_method(WhichFn::Help);
+                        let url_method = forward.gen_struct_method(WhichFn::Url);
+                        let severity_method = forward.gen_struct_method(WhichFn::Severity);
+                        let snippets_method = forward.gen_struct_method(WhichFn::Snippets);
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
-                                fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
-                                    #matcher
-                                    #field_name.code()
-                                }
-                                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                                    #matcher
-                                    #field_name.help()
-                                }
-                                fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                                    #matcher
-                                    #field_name.url()
-                                }
-                                fn severity(&self) -> std::option::Option<miette::Severity> {
-                                    #matcher
-                                    #field_name.severity()
-                                }
-                                fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
-                                    #matcher
-                                    #field_name.snippets()
-                                }
+                                #code_method
+                                #help_method
+                                #url_method
+                                #severity_method
+                                #snippets_method
                             }
                         }
                     }

@@ -339,13 +339,15 @@ impl ForwardsTo {
     }
 }
 
-fn check_snippets(diag: &impl Diagnostic) {
+fn check_all(diag: &impl Diagnostic) {
     // check Diagnostic impl forwards all these methods
     assert_eq!(diag.code().to_string(), "foo::bar::baz");
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
+}
 
+fn check_snippets(diag: &impl Diagnostic) {
     type Snip = (Option<String>, usize, usize);
     let snips: Vec<(Snip, Vec<Snip>)> = diag
         .snippets()
@@ -388,7 +390,7 @@ fn test_transparent_enum_unnamed() {
 
     let variant = Enum::FooVariant(ForwardsTo::new());
 
-    check_snippets(&variant);
+    check_all(&variant);
 }
 
 #[test]
@@ -410,7 +412,7 @@ fn test_transparent_enum_named() {
         single_field: ForwardsTo::new(),
     };
 
-    check_snippets(&variant);
+    check_all(&variant);
 
     let bar_variant = Enum::BarVariant;
     assert_eq!(bar_variant.code().to_string(), "foo::bar::bar_variant");
@@ -427,7 +429,7 @@ fn test_transparent_struct_named() {
     }
     // Also check the From impl here
     let variant: Struct = ForwardsTo::new().into();
-    check_snippets(&variant);
+    check_all(&variant);
 }
 
 #[test]
@@ -437,5 +439,19 @@ fn test_transparent_struct_unnamed() {
     #[diagnostic(transparent)]
     struct Struct(#[from] ForwardsTo);
     let variant = Struct(ForwardsTo::new());
+    check_all(&variant);
+}
+
+#[test]
+fn test_forward_struct_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error(transparent)]
+    #[diagnostic(code(foo::bar::baz), forward(single_field))]
+    struct Struct {
+        #[from]
+        single_field: ForwardsTo,
+    }
+    // Also check the From impl here
+    let variant: Struct = ForwardsTo::new().into();
     check_snippets(&variant);
 }
