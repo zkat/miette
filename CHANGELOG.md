@@ -1,3 +1,25 @@
+# `miette` Release Changelog
+
+<a name="1.1.0"></a>
+## 1.1.0 (2021-08-29)
+
+This is a small release of patches entirely not my own!
+
+The exciting new feature is the ability to do `thiserror`-style
+`#[diagnostic(transparent)]` when using the derive macro, which will defer
+diagnostics to a Diagnostic referred to by the struct/enum!
+
+Big thanks to [@cormacrelf](https://github.com/cormacrelf) and
+[@felipesere](https://github.com/felipesere) for your contributions!
+
+### Features
+
+* **derive:** Add `#[diagnostic(transparent,forward)]` (#36) ([53f5d6d1](https://github.com/zkat/miette/commit/53f5d6d1d62845b52e590fed5ce91a643b6e11f3))
+
+### Bug Fixes
+
+* **reporter:** Only inc the line count if we haven't already done so with '\n' or '\r\n' (#37) ([5a474370](https://github.com/zkat/miette/commit/5a474370ddda92a3a92b6b84cd561ecaf4d6d858))
+
 <a name="1.0.1"></a>
 ## 1.0.1 (2021-08-23)
 
