@@ -450,7 +450,7 @@ fn test_forward_struct_named() {
     #[diagnostic(
         code(foo::bar::overridden),
         severity(Advice),
-        help("{}", help),
+        help("{help}"),
         forward(span)
     )]
     struct Struct {
@@ -470,11 +470,10 @@ fn test_forward_struct_named() {
 }
 
 #[test]
-#[ignore = "HashSet usage in Url.gen_struct/gen_enum makes this very flaky"]
 fn test_forward_struct_unnamed() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("display")]
-    #[diagnostic(code(foo::bar::overridden), url("{}", _1), forward(0))]
+    #[diagnostic(code(foo::bar::overridden), url("{1}"), forward(0))]
     struct Struct(ForwardsTo, &'static str);
 
     // Also check the From impl here
@@ -490,7 +489,7 @@ fn test_forward_enum_named() {
     #[derive(Debug, Diagnostic, Error)]
     enum Enum {
         #[error("help: {help_text}")]
-        #[diagnostic(code(foo::bar::overridden), help("{}", help_text), forward(span))]
+        #[diagnostic(code(foo::bar::overridden), help("{help_text}"), forward(span))]
         Variant {
             span: ForwardsTo,
             help_text: &'static str,
@@ -511,12 +510,11 @@ fn test_forward_enum_named() {
 }
 
 #[test]
-#[ignore = "HashSet usage in Help.gen_struct/gen_enum makes this very flaky"]
 fn test_forward_enum_unnamed() {
     #[derive(Debug, Diagnostic, Error)]
     enum ForwardEnumUnnamed {
         #[error("help: {1}")]
-        #[diagnostic(code(foo::bar::overridden), help("{}", _1), forward(0))]
+        #[diagnostic(code(foo::bar::overridden), help("{1}"), forward(0))]
         Variant(ForwardsTo, &'static str),
     }
     // Also check the From impl here
@@ -528,4 +526,24 @@ fn test_forward_enum_unnamed() {
     );
     // this comes from <ForwardsTo as Diagnostic>::snippets()
     check_snippets(&variant);
+}
+
+#[test]
+fn test_unit_struct_display() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("unit only")]
+    #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
+    struct UnitOnly;
+    assert_eq!(UnitOnly.help().unwrap().to_string(), "hello from unit help")
+}
+
+#[test]
+fn test_unit_enum_display() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("unit only")]
+        #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
+        UnitVariant
+    }
+    assert_eq!(Enum::UnitVariant.help().unwrap().to_string(), "hello from unit help")
 }

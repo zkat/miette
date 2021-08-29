@@ -1,17 +1,14 @@
-use std::collections::HashSet;
-
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
-    spanned::Spanned,
     Fields, Token,
 };
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
-    utils::gen_all_variants_with,
+    utils::{gen_all_variants_with, gen_display_fields_pat, gen_unused_pat},
 };
 use crate::{
     fmt::{self, Display},
@@ -36,7 +33,6 @@ impl Parse for Url {
                     let args = if content.is_empty() {
                         TokenStream::new()
                     } else {
-                        content.parse::<Token![,]>()?;
                         fmt::parse_token_expr(&content, false)?
                     };
                     let display = Display {
@@ -76,58 +72,32 @@ impl Url {
             variants,
             WhichFn::Url,
             |ident, fields, DiagnosticConcreteArgs { url, .. }| {
-                let member_idents = fields.iter().enumerate().map(|(i, field)| {
-                    field
-                        .ident
-                        .as_ref()
-                        .cloned()
-                        .unwrap_or_else(|| format_ident!("_{}", i))
-                });
-                let members: HashSet<syn::Member> = fields
-                    .iter()
-                    .enumerate()
-                    .map(|(i, field)| {
-                        if let Some(ident) = field.ident.as_ref().cloned() {
-                            syn::Member::Named(ident)
-                        } else {
-                            syn::Member::Unnamed(syn::Index {
-                                index: i as u32,
-                                span: field.span(),
-                            })
-                        }
-                    })
-                    .collect();
-                let (fmt, args) = match url.as_ref()? {
+                let (pat, fmt, args) = match url.as_ref()? {
                     // fall through to `_ => None` below
                     Url::Display(display) => {
                         let mut display = display.clone();
-                        display.expand_shorthand(&members);
+                        let pat = gen_display_fields_pat(&mut display, fields);
                         let Display { fmt, args, .. } = display;
-                        (fmt.value(), args)
+                        (pat, fmt.value(), args)
                     }
                     Url::DocsRs => {
+                        let pat = gen_unused_pat(fields);
                         let fmt =
                             "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}"
                                 .into();
                         let item_path = format!("enum.{}.html#variant.{}", enum_name, ident);
                         let args = quote! {
+                            ,
                             crate_name=env!("CARGO_PKG_NAME"),
                             crate_version=env!("CARGO_PKG_VERSION"),
                             item_path=#item_path
                         };
-                        (fmt, args)
+                        (pat, fmt, args)
                     }
                 };
-                Some(match fields {
-                    syn::Fields::Named(_) => {
-                        quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                    }
-                    syn::Fields::Unnamed(_) => {
-                        quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                    }
-                    syn::Fields::Unit => {
-                        quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                    }
+                Some(quote! {
+                    Self::#ident #pat
+                        => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
                 })
             },
         )
@@ -138,63 +108,32 @@ impl Url {
         struct_name: &syn::Ident,
         fields: &Fields,
     ) -> Option<TokenStream> {
-        let members: HashSet<syn::Member> = fields
-            .iter()
-            .enumerate()
-            .map(|(i, field)| {
-                if let Some(ident) = field.ident.as_ref().cloned() {
-                    syn::Member::Named(ident)
-                } else {
-                    syn::Member::Unnamed(syn::Index {
-                        index: i as u32,
-                        span: field.span(),
-                    })
-                }
-            })
-            .collect();
-        let (fmt, args) = match self {
+        let (pat, fmt, args) = match self {
             Url::Display(display) => {
                 let mut display = display.clone();
-                display.expand_shorthand(&members);
+                let pat = gen_display_fields_pat(&mut display, fields);
                 let Display { fmt, args, .. } = display;
-                (fmt.value(), args)
+                (pat, fmt.value(), args)
             }
             Url::DocsRs => {
+                let pat = gen_unused_pat(fields);
                 let fmt =
                     "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}".into();
                 let item_path = format!("struct.{}.html", struct_name);
                 let args = quote! {
+                    ,
                     crate_name=env!("CARGO_PKG_NAME"),
                     crate_version=env!("CARGO_PKG_VERSION"),
                     item_path=#item_path
                 };
-                (fmt, args)
+                (pat, fmt, args)
             }
-        };
-        let members = members.iter();
-        let fields_pat = match fields {
-            Fields::Named(_) => quote! {
-                let Self { #(#members),* } = self;
-            },
-            Fields::Unnamed(_) => {
-                let vars = members.map(|member| {
-                    if let syn::Member::Unnamed(member) = member {
-                        format_ident!("_{}", member)
-                    } else {
-                        unreachable!()
-                    }
-                });
-                quote! {
-                    let Self(#(#vars),*) = self;
-                }
-            }
-            Fields::Unit => quote! {},
         };
         Some(quote! {
             fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
                 #[allow(unused_variables, deprecated)]
-                #fields_pat
-                std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args)))
+                let Self #pat = self;
+                std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
             }
         })
     }
