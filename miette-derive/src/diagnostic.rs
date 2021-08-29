@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{punctuated::Punctuated, DeriveInput, Token};
 
 use crate::code::Code;
@@ -14,11 +14,7 @@ pub enum Diagnostic {
         generics: syn::Generics,
         ident: syn::Ident,
         fields: syn::Fields,
-        // Nobody needs a transparent wrapper struct for another thing that already
-        // implements diagnostic, surely.
-        //
-        // See miette::compile_test::TransparentCombinations;
-        args: DiagnosticConcreteArgs,
+        args: DiagnosticDefArgs,
     },
     Enum {
         ident: syn::Ident,
@@ -127,20 +123,13 @@ impl Diagnostic {
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
                 if let Some(attr) = input.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
-                    let args = attr.parse_args_with(
-                        Punctuated::<DiagnosticArg, Token![,]>::parse_terminated,
-                    )?;
-                    let concrete = DiagnosticConcreteArgs::parse(
-                        &input.ident,
-                        &data_struct.fields,
-                        attr,
-                        args.into_iter(),
-                    )?;
+                    let args =
+                        DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, &attr, true)?;
                     Diagnostic::Struct {
                         fields: data_struct.fields,
                         ident: input.ident,
                         generics: input.generics,
-                        args: concrete,
+                        args,
                     }
                 } else {
                     // Also handle when there's multiple `#[diagnostic]` attrs?
@@ -192,19 +181,76 @@ impl Diagnostic {
                 args,
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
-                let code_body = args.code.gen_struct();
-                let help_body = args.help.as_ref().and_then(|x| x.gen_struct(fields));
-                let sev_body = args.severity.as_ref().and_then(|x| x.gen_struct());
-                let snip_body = args.snippets.as_ref().and_then(|x| x.gen_struct(fields));
-                let url_body = args.url.as_ref().and_then(|x| x.gen_struct(ident, fields));
+                match args {
+                    DiagnosticDefArgs::Transparent => {
+                        if fields.iter().len() != 1 {
+                            return quote! {
+                                compile_error!("you can only use #[diagnostic(transparent)] on a struct with exactly one field");
+                            };
+                        }
+                        let field = fields
+                            .iter()
+                            .nth(0)
+                            .expect("MIETTE BUG: thought we knew we had exactly one field");
+                        let field_name = field
+                            .ident
+                            .clone()
+                            .unwrap_or_else(|| format_ident!("unnamed"));
+                        let matcher = match fields {
+                            syn::Fields::Named(_) => quote! { let Self { #field_name } = self; },
+                            syn::Fields::Unnamed(_) => quote! { let Self(#field_name) = self; },
+                            syn::Fields::Unit => {
+                                unreachable!("MIETTE BUG: thought we knew we had exactly one field")
+                            }
+                        };
 
-                quote! {
-                    impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
-                        #code_body
-                        #help_body
-                        #sev_body
-                        #snip_body
-                        #url_body
+                        quote! {
+                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                                fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
+                                    #matcher
+                                    #field_name.code()
+                                }
+                                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                                    #matcher
+                                    #field_name.help()
+                                }
+                                fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                                    #matcher
+                                    #field_name.url()
+                                }
+                                fn severity(&self) -> std::option::Option<miette::Severity> {
+                                    #matcher
+                                    #field_name.severity()
+                                }
+                                fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
+                                    #matcher
+                                    #field_name.snippets()
+                                }
+                            }
+                        }
+                    }
+                    DiagnosticDefArgs::Concrete(concrete) => {
+                        let code_body = concrete.code.gen_struct();
+                        let help_body = concrete.help.as_ref().and_then(|x| x.gen_struct(fields));
+                        let sev_body = concrete.severity.as_ref().and_then(|x| x.gen_struct());
+                        let snip_body = concrete
+                            .snippets
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields));
+                        let url_body = concrete
+                            .url
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(ident, fields));
+
+                        quote! {
+                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                                #code_body
+                                #help_body
+                                #sev_body
+                                #snip_body
+                                #url_body
+                            }
+                        }
                     }
                 }
             }

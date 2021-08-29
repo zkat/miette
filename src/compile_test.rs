@@ -56,7 +56,7 @@
 #[doc(hidden)]
 struct SingleFieldTests;
 
-/// Directly on a struct
+/// Directly on a struct with any other arg
 ///
 /// ```compile_fail
 /// use thiserror::Error;
@@ -67,7 +67,7 @@ struct SingleFieldTests;
 /// struct Foo {}
 /// #[derive(Debug, Diagnostic, Error)]
 /// #[error("welp")]
-/// #[diagnostic(transparent)]
+/// #[diagnostic(transparent, code(invalid::combo))]
 /// struct Bar(Foo);
 /// ```
 ///
