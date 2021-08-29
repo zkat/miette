@@ -446,30 +446,86 @@ fn test_transparent_struct_unnamed() {
 #[test]
 fn test_forward_struct_named() {
     #[derive(Debug, Diagnostic, Error)]
-    #[error(transparent)]
-    #[diagnostic(code(foo::bar::baz), forward(single_field))]
+    #[error("display")]
+    #[diagnostic(
+        code(foo::bar::overridden),
+        severity(Advice),
+        help("{}", help),
+        forward(span)
+    )]
     struct Struct {
-        #[from]
-        single_field: ForwardsTo,
+        span: ForwardsTo,
+        help: &'static str,
     }
     // Also check the From impl here
-    let variant: Struct = ForwardsTo::new().into();
-    assert_eq!(variant.help().unwrap().to_string(), "help");
+    let diag = Struct {
+        span: ForwardsTo::new(),
+        help: "overridden help please",
+    };
+    assert_eq!(diag.code().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.help().unwrap().to_string(), "overridden help please");
+    assert_eq!(diag.severity(), Some(Severity::Advice));
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&diag);
+}
+
+#[test]
+#[ignore = "HashSet usage in Url.gen_struct/gen_enum makes this very flaky"]
+fn test_forward_struct_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("display")]
+    #[diagnostic(code(foo::bar::overridden), url("{}", _1), forward(0))]
+    struct Struct(ForwardsTo, &'static str);
+
+    // Also check the From impl here
+    let diag = Struct(ForwardsTo::new(), "url here");
+    assert_eq!(diag.code().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.url().unwrap().to_string(), "url here");
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&diag);
 }
 
 #[test]
 fn test_forward_enum_named() {
     #[derive(Debug, Diagnostic, Error)]
-    #[error(transparent)]
     enum Enum {
-        #[diagnostic(code(foo::bar::overridden), forward(single_field))]
+        #[error("help: {help_text}")]
+        #[diagnostic(code(foo::bar::overridden), help("{}", help_text), forward(span))]
         Variant {
-            #[from]
-            single_field: ForwardsTo,
+            span: ForwardsTo,
+            help_text: &'static str,
         },
     }
     // Also check the From impl here
-    let variant: Enum = ForwardsTo::new().into();
+    let variant: Enum = Enum::Variant {
+        span: ForwardsTo::new(),
+        help_text: "overridden help please",
+    };
     assert_eq!(variant.code().to_string(), "foo::bar::overridden");
-    assert_eq!(variant.help().unwrap().to_string(), "help");
+    assert_eq!(
+        variant.help().unwrap().to_string(),
+        "overridden help please"
+    );
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&variant);
+}
+
+#[test]
+#[ignore = "HashSet usage in Help.gen_struct/gen_enum makes this very flaky"]
+fn test_forward_enum_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum ForwardEnumUnnamed {
+        #[error("help: {1}")]
+        #[diagnostic(code(foo::bar::overridden), help("{}", _1), forward(0))]
+        Variant(ForwardsTo, &'static str),
+    }
+    // Also check the From impl here
+    let variant = ForwardEnumUnnamed::Variant(ForwardsTo::new(), "overridden help please");
+    assert_eq!(variant.code().to_string(), "foo::bar::overridden");
+    assert_eq!(
+        variant.help().unwrap().to_string(),
+        "overridden help please"
+    );
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&variant);
 }

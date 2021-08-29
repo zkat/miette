@@ -92,3 +92,38 @@ struct SingleFieldTests;
 #[allow(dead_code)]
 #[doc(hidden)]
 struct TransparentCombinations;
+
+/// Forwarding without overriding the code (struct)
+///
+/// ```compile_fail
+/// use thiserror::Error;
+/// use miette_derive::Diagnostic;
+/// #[derive(Debug, Diagnostic, Error)]
+/// #[error("welp")]
+/// #[diagnostic(code(foo::bar::baz))]
+/// struct Foo {}
+/// #[derive(Debug, Diagnostic, Error)]
+/// #[error("welp")]
+/// #[diagnostic(forward(0))]
+/// struct Bar(Foo);
+/// ```
+///
+/// Forwarding without overriding the code (enum)
+///
+/// ```compile_fail
+/// use thiserror::Error;
+/// use miette_derive::Diagnostic;
+/// #[derive(Debug, Diagnostic, Error)]
+/// #[error("welp")]
+/// #[diagnostic(code(foo::bar::baz))]
+/// struct Foo {}
+/// #[derive(Debug, Diagnostic, Error)]
+/// enum Enum {
+/// #[error("welp")]
+/// #[diagnostic(forward(0))]
+/// Bar(Foo) }
+/// ```
+///
+#[allow(dead_code)]
+#[doc(hidden)]
+struct ForwardWithoutCode;
