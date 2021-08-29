@@ -415,7 +415,7 @@ impl Snippets {
                 }
             }
         })
-        .filter_map(|x| x);
+        .flatten();
         Some(quote! {
             #[allow(unused_variables)]
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {

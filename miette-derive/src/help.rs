@@ -103,7 +103,7 @@ impl Help {
                      }
                  },
             )
-            .filter_map(|x| x)
+            .flatten()
             .collect::<Vec<_>>();
         if help_pairs.is_empty() {
             None

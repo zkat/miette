@@ -126,7 +126,7 @@ impl Url {
                 }
             }
          })
-        .filter_map(|x| x)
+        .flatten()
         .collect::<Vec<_>>();
         if url_pairs.is_empty() {
             None

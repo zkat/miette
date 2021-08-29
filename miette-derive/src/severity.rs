@@ -82,7 +82,7 @@ impl Severity {
                      }
                 },
             )
-            .filter_map(|x| x)
+            .flatten()
             .collect::<Vec<_>>();
         if sev_pairs.is_empty() {
             None

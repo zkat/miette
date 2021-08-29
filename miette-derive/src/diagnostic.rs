@@ -43,7 +43,7 @@ pub struct DiagnosticConcreteArgs {
 }
 
 impl DiagnosticConcreteArgs {
-    fn parse<'a>(
+    fn parse(
         ident: &syn::Ident,
         fields: &syn::Fields,
         attr: &syn::Attribute,
@@ -73,7 +73,7 @@ impl DiagnosticConcreteArgs {
                 }
             }
         }
-        let snippets = Snippets::from_fields(&fields)?;
+        let snippets = Snippets::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code: code
                 .ok_or_else(|| syn::Error::new(ident.span(), "Diagnostic code is required."))?,
@@ -124,7 +124,7 @@ impl Diagnostic {
             syn::Data::Struct(data_struct) => {
                 if let Some(attr) = input.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
                     let args =
-                        DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, &attr, true)?;
+                        DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?;
                     Diagnostic::Struct {
                         fields: data_struct.fields,
                         ident: input.ident,
@@ -143,7 +143,7 @@ impl Diagnostic {
                 let mut vars = Vec::new();
                 for var in variants {
                     if let Some(attr) = var.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
-                        let args = DiagnosticDefArgs::parse(&var.ident, &var.fields, &attr, true)?;
+                        let args = DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?;
                         vars.push(DiagnosticDef {
                             ident: var.ident,
                             fields: var.fields,
@@ -190,7 +190,7 @@ impl Diagnostic {
                         }
                         let field = fields
                             .iter()
-                            .nth(0)
+                            .next()
                             .expect("MIETTE BUG: thought we knew we had exactly one field");
                         let field_name = field
                             .ident
