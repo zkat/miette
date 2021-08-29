@@ -277,7 +277,7 @@ line5
  3 │ ││   line3
  4 │ │├─▶ line4
    · │╰──── block 2
- 6 │ ├──▶ line5
+ 5 │ ├──▶ line5
    · ╰───── block 1
 
     ‽ try doing it better next time?
@@ -329,7 +329,7 @@ line5
  2 │ │╭─▶ line2
  3 │ ││   line3
  4 │ │╰─▶ line4
- 6 │ ├──▶ line5
+ 5 │ ├──▶ line5
    · ╰───── block 1
 
     ‽ try doing it better next time?

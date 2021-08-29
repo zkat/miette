@@ -461,6 +461,7 @@ impl GraphicalReportPrinter {
         let mut lines = Vec::new();
         while let Some(char) = iter.next() {
             offset += char.len_utf8();
+            let mut at_end_of_file = false;
             match char {
                 '\r' => {
                     if iter.next_if_eq(&'\n').is_some() {
@@ -471,8 +472,10 @@ impl GraphicalReportPrinter {
                         line_str.push(char);
                         column += 1;
                     }
+                    at_end_of_file = iter.peek().is_none();
                 }
                 '\n' => {
+                    at_end_of_file = iter.peek().is_none();
                     line += 1;
                     column = 0;
                 }
@@ -481,7 +484,8 @@ impl GraphicalReportPrinter {
                     column += 1;
                 }
             }
-            if iter.peek().is_none() {
+
+            if iter.peek().is_none() && !at_end_of_file {
                 line += 1;
             }
 
