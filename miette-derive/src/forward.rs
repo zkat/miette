@@ -29,6 +29,7 @@ impl Parse for Forward {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 pub enum WhichFn {
     Code,
     Help,
@@ -65,6 +66,14 @@ impl WhichFn {
             Self::Snippets => quote! {
                 fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>>
             },
+        }
+    }
+
+    pub fn catchall_arm(&self) -> TokenStream {
+        match self {
+            // required, hence method can't return None
+            Self::Code => quote! {},
+            _ => quote! { _ => None, },
         }
     }
 }

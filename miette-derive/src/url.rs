@@ -9,9 +9,13 @@ use syn::{
     Fields, Token,
 };
 
-use crate::{fmt::{self, Display}, forward::WhichFn};
 use crate::{
-    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
+    utils::gen_all_variants_with,
+};
+use crate::{
+    fmt::{self, Display},
+    forward::WhichFn,
 };
 
 pub enum Url {
@@ -68,74 +72,65 @@ impl Url {
         enum_name: &syn::Ident,
         variants: &[DiagnosticDef],
     ) -> Option<TokenStream> {
-        let url_pairs = variants.iter().map(|variant| {
-            let DiagnosticDef { ident, fields, args: def_args } = variant;
-            match def_args {
-                DiagnosticDefArgs::Transparent(forward) => {
-                    Some(forward.gen_enum_match_arm(ident, WhichFn::Url))
-                }
-                DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { ref url, .. }) => {
-                    let member_idents = fields.iter().enumerate().map(|(i, field)| {
-                        field
-                            .ident
-                            .as_ref()
-                            .cloned()
-                            .unwrap_or_else(|| format_ident!("_{}", i))
-                    });
-                    let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
+        gen_all_variants_with(
+            variants,
+            WhichFn::Url,
+            |ident, fields, DiagnosticConcreteArgs { url, .. }| {
+                let member_idents = fields.iter().enumerate().map(|(i, field)| {
+                    field
+                        .ident
+                        .as_ref()
+                        .cloned()
+                        .unwrap_or_else(|| format_ident!("_{}", i))
+                });
+                let members: HashSet<syn::Member> = fields
+                    .iter()
+                    .enumerate()
+                    .map(|(i, field)| {
                         if let Some(ident) = field.ident.as_ref().cloned() {
                             syn::Member::Named(ident)
                         } else {
-                            syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
+                            syn::Member::Unnamed(syn::Index {
+                                index: i as u32,
+                                span: field.span(),
+                            })
                         }
-                    }).collect();
-                    let (fmt, args) = match url.as_ref()? {
-                        // fall through to `_ => None` below
-                        Url::Display(display) => {
-                            let mut display = display.clone();
-                            display.expand_shorthand(&members);
-                            let Display { fmt, args, .. } = display;
-                            (fmt.value(), args)
-                        }
-                        Url::DocsRs => {
-                            let fmt = "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}".into();
-                            let item_path = format!("enum.{}.html#variant.{}", enum_name, ident);
-                            let args = quote! {
-                                crate_name=env!("CARGO_PKG_NAME"),
-                                crate_version=env!("CARGO_PKG_VERSION"),
-                                item_path=#item_path
-                            };
-                            (fmt, args)
-                        }
-                    };
-                    Some(match fields {
-                        syn::Fields::Named(_) => {
-                            quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                        }
-                        syn::Fields::Unnamed(_) => {
-                            quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                        }
-                        syn::Fields::Unit =>
-                            quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
                     })
-                }
-            }
-         })
-        .flatten()
-        .collect::<Vec<_>>();
-        if url_pairs.is_empty() {
-            None
-        } else {
-            Some(quote! {
-                fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                    #[allow(unused_variables, deprecated)]
-                    match self {
-                        #(#url_pairs)*
-                        _ => None,
+                    .collect();
+                let (fmt, args) = match url.as_ref()? {
+                    // fall through to `_ => None` below
+                    Url::Display(display) => {
+                        let mut display = display.clone();
+                        display.expand_shorthand(&members);
+                        let Display { fmt, args, .. } = display;
+                        (fmt.value(), args)
                     }
-                }
-            })
-        }
+                    Url::DocsRs => {
+                        let fmt =
+                            "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}"
+                                .into();
+                        let item_path = format!("enum.{}.html#variant.{}", enum_name, ident);
+                        let args = quote! {
+                            crate_name=env!("CARGO_PKG_NAME"),
+                            crate_version=env!("CARGO_PKG_VERSION"),
+                            item_path=#item_path
+                        };
+                        (fmt, args)
+                    }
+                };
+                Some(match fields {
+                    syn::Fields::Named(_) => {
+                        quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                    }
+                    syn::Fields::Unnamed(_) => {
+                        quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                    }
+                    syn::Fields::Unit => {
+                        quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                    }
+                })
+            },
+        )
     }
 
     pub(crate) fn gen_struct(

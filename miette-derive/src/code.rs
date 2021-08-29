@@ -7,8 +7,9 @@ use syn::{
 };
 
 use crate::{
-    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
+    utils::gen_all_variants_with,
 };
 
 #[derive(Debug)]
@@ -47,43 +48,25 @@ impl Parse for Code {
 }
 
 impl Code {
-    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> TokenStream {
-        let code_pairs = variants
-            .iter()
-            .map(
-                |DiagnosticDef {
-                     ident,
-                     fields,
-                     args,
-                 }| {
-                    match args {
-                        DiagnosticDefArgs::Transparent(forward) => {
-                            forward.gen_enum_match_arm(ident, WhichFn::Code)
-                        }
-                        DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { code, .. }) => {
-                            let code = &code.0;
-                            match fields {
-                                syn::Fields::Named(_) => {
-                                    quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
-                                }
-                                syn::Fields::Unnamed(_) => {
-                                    quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
-                                }
-                                syn::Fields::Unit => {
-                                    quote! { Self::#ident => std::boxed::Box::new(#code), }
-                                }
-                            }
-                        }
+    pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
+        gen_all_variants_with(
+            variants,
+            WhichFn::Code,
+            |ident, fields, DiagnosticConcreteArgs { code, .. }| {
+                let code = &code.0;
+                Some(match fields {
+                    syn::Fields::Named(_) => {
+                        quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
                     }
-                },
-            );
-        quote! {
-            fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
-                match self {
-                    #(#code_pairs)*
-                }
-            }
-        }
+                    syn::Fields::Unnamed(_) => {
+                        quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                    }
+                    syn::Fields::Unit => {
+                        quote! { Self::#ident => std::boxed::Box::new(#code), }
+                    }
+                })
+            },
+        )
     }
 
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {

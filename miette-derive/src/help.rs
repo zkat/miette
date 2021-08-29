@@ -9,9 +9,13 @@ use syn::{
     Fields, Token,
 };
 
-use crate::{fmt::{self, Display}, forward::WhichFn};
 use crate::{
-    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
+    utils::gen_all_variants_with,
+};
+use crate::{
+    fmt::{self, Display},
+    forward::WhichFn,
 };
 
 pub struct Help {
@@ -57,66 +61,47 @@ impl Parse for Help {
 
 impl Help {
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
-        let help_pairs = variants
-            .iter()
-            .map(
-                |DiagnosticDef {
-                     ident,
-                     fields,
-                     args,
-                     ..
-                 }| {
-                     match args {
-                         DiagnosticDefArgs::Transparent(forward) => {
-                             Some(forward.gen_enum_match_arm(ident, WhichFn::Help))
-                         }
-                         DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { help, .. }) => {
-                             let mut display = help.as_ref()?.display.clone();
-                             let member_idents = fields.iter().enumerate().map(|(i, field)| {
-                                 field
-                                     .ident
-                                     .as_ref()
-                                     .cloned()
-                                     .unwrap_or_else(|| format_ident!("_{}", i))
-                             });
-                             let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
-                                 if let Some(ident) = field.ident.as_ref().cloned() {
-                                     syn::Member::Named(ident)
-                                 } else {
-                                     syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
-                                 }
-                             }).collect();
-                             display.expand_shorthand(&members);
-                             let Display { fmt, args, .. } = display;
-                             Some(match fields {
-                                 syn::Fields::Named(_) => {
-                                     quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                                 }
-                                 syn::Fields::Unnamed(_) => {
-                                     quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                                 }
-                                 syn::Fields::Unit =>
-                                     quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
-                             })
-                         }
-                     }
-                 },
-            )
-            .flatten()
-            .collect::<Vec<_>>();
-        if help_pairs.is_empty() {
-            None
-        } else {
-            Some(quote! {
-                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                    #[allow(unused_variables, deprecated)]
-                    match self {
-                        #(#help_pairs)*
-                        _ => None,
+        gen_all_variants_with(
+            variants,
+            WhichFn::Help,
+            |ident, fields, DiagnosticConcreteArgs { help, .. }| {
+                let mut display = help.as_ref()?.display.clone();
+                let member_idents = fields.iter().enumerate().map(|(i, field)| {
+                    field
+                        .ident
+                        .as_ref()
+                        .cloned()
+                        .unwrap_or_else(|| format_ident!("_{}", i))
+                });
+                let members: HashSet<syn::Member> = fields
+                    .iter()
+                    .enumerate()
+                    .map(|(i, field)| {
+                        if let Some(ident) = field.ident.as_ref().cloned() {
+                            syn::Member::Named(ident)
+                        } else {
+                            syn::Member::Unnamed(syn::Index {
+                                index: i as u32,
+                                span: field.span(),
+                            })
+                        }
+                    })
+                    .collect();
+                display.expand_shorthand(&members);
+                let Display { fmt, args, .. } = display;
+                Some(match fields {
+                    syn::Fields::Named(_) => {
+                        quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
                     }
-                }
-            })
-        }
+                    syn::Fields::Unnamed(_) => {
+                        quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                    }
+                    syn::Fields::Unit => {
+                        quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
+                    }
+                })
+            },
+        )
     }
 
     pub(crate) fn gen_struct(&self, fields: &Fields) -> Option<TokenStream> {

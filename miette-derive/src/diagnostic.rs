@@ -35,6 +35,25 @@ pub enum DiagnosticDefArgs {
     Concrete(DiagnosticConcreteArgs),
 }
 
+impl DiagnosticDefArgs {
+    pub(crate) fn forward_or_override_enum(
+        &self,
+        variant: &syn::Ident,
+        which_fn: WhichFn,
+        mut f: impl FnMut(&DiagnosticConcreteArgs) -> Option<TokenStream>,
+    ) -> Option<TokenStream> {
+        match self {
+            Self::Transparent(forward) => Some(forward.gen_enum_match_arm(variant, which_fn)),
+            Self::Concrete(concrete) => f(concrete).or_else(|| {
+                concrete
+                    .forward
+                    .as_ref()
+                    .map(|forward| forward.gen_enum_match_arm(variant, which_fn))
+            }),
+        }
+    }
+}
+
 pub struct DiagnosticConcreteArgs {
     pub code: Code,
     pub severity: Option<Severity>,

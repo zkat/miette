@@ -9,10 +9,11 @@ use syn::{
     Token,
 };
 
-use crate::{diagnostic::DiagnosticConcreteArgs, fmt::Display, forward::WhichFn};
 use crate::{
-    diagnostic::{DiagnosticDef, DiagnosticDefArgs},
-    fmt,
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
+    fmt::{self, Display},
+    forward::WhichFn,
+    utils::gen_all_variants_with,
 };
 
 pub struct Snippets(Vec<Snippet>);
@@ -294,18 +295,15 @@ impl Snippets {
     }
 
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
-        let variant_arms = variants.iter().map(|variant| {
-            let DiagnosticDef { ident, args: def_args, .. } = variant;
-            match def_args {
-                DiagnosticDefArgs::Transparent(forward) => {
-                    Some(forward.gen_enum_match_arm(ident, WhichFn::Snippets))
-                }
-                DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { snippets, .. }) => {
-                    snippets.as_ref().and_then(|snippets| {
+        gen_all_variants_with(
+            variants,
+            WhichFn::Snippets,
+            |ident, fields, DiagnosticConcreteArgs { snippets, .. }| {
+                snippets.as_ref().and_then(|snippets| {
                         let variant_snippets = snippets.0.iter().map(|snippet| {
                             // snippet message
                             let msg = if let Some(display) = &snippet.message {
-                            let members: HashSet<syn::Member> = variant.fields.iter().enumerate().map(|(i, field)| {
+                            let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
                                 if let Some(ident) = field.ident.as_ref().cloned() {
                                     syn::Member::Named(ident)
                                 } else {
@@ -384,15 +382,15 @@ impl Snippets {
                                 }
                             }
                         });
-                        let variant_name = variant.ident.clone();
-                        let members = variant.fields.iter().enumerate().map(|(i, field)| {
+                        let variant_name = ident.clone();
+                        let members = fields.iter().enumerate().map(|(i, field)| {
                             field
                                 .ident
                                 .as_ref()
                                 .cloned()
                                 .unwrap_or_else(|| format_ident!("_{}", i))
                         });
-                        match &variant.fields {
+                        match &fields {
                             syn::Fields::Unit => None,
                             syn::Fields::Named(_) => Some(quote! {
                                 Self::#variant_name { #(#members),* } => std::option::Option::Some(std::boxed::Box::new(vec![
@@ -406,18 +404,7 @@ impl Snippets {
                             }),
                         }
                     })
-                }
-            }
-        })
-        .flatten();
-        Some(quote! {
-            #[allow(unused_variables)]
-            fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
-                match self {
-                    #(#variant_arms)*
-                    _ => std::option::Option::None,
-                }
-            }
-        })
+            },
+        )
     }
 }

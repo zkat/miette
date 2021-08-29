@@ -345,6 +345,7 @@ fn check_all(diag: &impl Diagnostic) {
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
+    check_snippets(diag);
 }
 
 fn check_snippets(diag: &impl Diagnostic) {
@@ -453,5 +454,22 @@ fn test_forward_struct_named() {
     }
     // Also check the From impl here
     let variant: Struct = ForwardsTo::new().into();
-    check_snippets(&variant);
+    assert_eq!(variant.help().unwrap().to_string(), "help");
+}
+
+#[test]
+fn test_forward_enum_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error(transparent)]
+    enum Enum {
+        #[diagnostic(code(foo::bar::overridden), forward(single_field))]
+        Variant {
+            #[from]
+            single_field: ForwardsTo,
+        },
+    }
+    // Also check the From impl here
+    let variant: Enum = ForwardsTo::new().into();
+    assert_eq!(variant.code().to_string(), "foo::bar::overridden");
+    assert_eq!(variant.help().unwrap().to_string(), "help");
 }

@@ -6,7 +6,11 @@ use syn::{
     Token,
 };
 
-use crate::{diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs}, forward::WhichFn};
+use crate::{
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
+    forward::WhichFn,
+    utils::gen_all_variants_with,
+};
 
 pub struct Severity(pub syn::Ident);
 
@@ -57,42 +61,21 @@ fn get_severity(input: &str, span: Span) -> syn::Result<String> {
 
 impl Severity {
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
-        let sev_pairs = variants
-            .iter()
-            .map(
-                |DiagnosticDef {
-                     ident, fields, args
-                 }| {
-                     match args {
-                         DiagnosticDefArgs::Transparent(forward) => {
-                             Some(forward.gen_enum_match_arm(ident, WhichFn::Severity))
-                         }
-                         DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { severity, .. }) => {
-                             let severity = &severity.as_ref()?.0;
-                             let fields = match fields {
-                                 syn::Fields::Named(_) => quote! { { .. } },
-                                 syn::Fields::Unnamed(_) => quote! { (..) },
-                                 syn::Fields::Unit => quote!{},
-                             };
-                             Some(quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), })
-                         }
-                     }
-                },
-            )
-            .flatten()
-            .collect::<Vec<_>>();
-        if sev_pairs.is_empty() {
-            None
-        } else {
-            Some(quote! {
-               fn severity(&self) -> std::option::Option<miette::Severity> {
-                   match self {
-                        #(#sev_pairs)*
-                        _ => None,
-                   }
-               }
-            })
-        }
+        gen_all_variants_with(
+            variants,
+            WhichFn::Severity,
+            |ident, fields, DiagnosticConcreteArgs { severity, .. }| {
+                let severity = &severity.as_ref()?.0;
+                let fields = match fields {
+                    syn::Fields::Named(_) => quote! { { .. } },
+                    syn::Fields::Unnamed(_) => quote! { (..) },
+                    syn::Fields::Unit => quote! {},
+                };
+                Some(
+                    quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), },
+                )
+            },
+        )
     }
 
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
