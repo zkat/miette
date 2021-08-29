@@ -9,9 +9,7 @@ use syn::{
     Token,
 };
 
-use crate::{
-    diagnostic::DiagnosticConcreteArgs, fmt::Display, utils::forward_to_single_field_variant,
-};
+use crate::{diagnostic::DiagnosticConcreteArgs, fmt::Display, forward::WhichFn};
 use crate::{
     diagnostic::{DiagnosticDef, DiagnosticDefArgs},
     fmt,
@@ -297,14 +295,10 @@ impl Snippets {
 
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         let variant_arms = variants.iter().map(|variant| {
-            let DiagnosticDef { ident, fields, args: def_args } = variant;
+            let DiagnosticDef { ident, args: def_args, .. } = variant;
             match def_args {
-                DiagnosticDefArgs::Transparent => {
-                    Some(forward_to_single_field_variant(
-                        ident,
-                        fields,
-                        quote! { snippets() },
-                    ))
+                DiagnosticDefArgs::Transparent(forward) => {
+                    Some(forward.gen_enum_match_arm(ident, WhichFn::Snippets))
                 }
                 DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { snippets, .. }) => {
                     snippets.as_ref().and_then(|snippets| {

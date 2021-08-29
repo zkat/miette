@@ -6,10 +6,7 @@ use syn::{
     Token,
 };
 
-use crate::{
-    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
-    utils::forward_to_single_field_variant,
-};
+use crate::{diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs}, forward::WhichFn};
 
 pub struct Severity(pub syn::Ident);
 
@@ -67,8 +64,8 @@ impl Severity {
                      ident, fields, args
                  }| {
                      match args {
-                         DiagnosticDefArgs::Transparent => {
-                             Some(forward_to_single_field_variant(ident, fields, quote!{ severity() }))
+                         DiagnosticDefArgs::Transparent(forward) => {
+                             Some(forward.gen_enum_match_arm(ident, WhichFn::Severity))
                          }
                          DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { severity, .. }) => {
                              let severity = &severity.as_ref()?.0;

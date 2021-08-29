@@ -9,10 +9,9 @@ use syn::{
     Fields, Token,
 };
 
-use crate::fmt::{self, Display};
+use crate::{fmt::{self, Display}, forward::WhichFn};
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
-    utils::forward_to_single_field_variant,
 };
 
 pub enum Url {
@@ -72,12 +71,8 @@ impl Url {
         let url_pairs = variants.iter().map(|variant| {
             let DiagnosticDef { ident, fields, args: def_args } = variant;
             match def_args {
-                DiagnosticDefArgs::Transparent => {
-                    Some(forward_to_single_field_variant(
-                        ident,
-                        fields,
-                        quote! { url() },
-                    ))
+                DiagnosticDefArgs::Transparent(forward) => {
+                    Some(forward.gen_enum_match_arm(ident, WhichFn::Url))
                 }
                 DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { ref url, .. }) => {
                     let member_idents = fields.iter().enumerate().map(|(i, field)| {

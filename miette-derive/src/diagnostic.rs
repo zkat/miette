@@ -31,7 +31,7 @@ pub struct DiagnosticDef {
 }
 
 pub enum DiagnosticDefArgs {
-    Transparent,
+    Transparent(Forward),
     Concrete(DiagnosticConcreteArgs),
 }
 
@@ -99,14 +99,15 @@ impl DiagnosticDefArgs {
         fields: &syn::Fields,
         attr: &syn::Attribute,
         allow_transparent: bool,
-    ) -> Result<Self, syn::Error> {
+    ) -> syn::Result<Self> {
         let args =
             attr.parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated)?;
         if allow_transparent
             && args.len() == 1
             && matches!(args.first(), Some(DiagnosticArg::Transparent))
         {
-            return Ok(Self::Transparent);
+            let forward = Forward::for_transparent_field(fields)?;
+            return Ok(Self::Transparent(forward));
         } else if args.iter().any(|x| matches!(x, DiagnosticArg::Transparent)) {
             return Err(syn::Error::new_spanned(
                 attr,
@@ -189,8 +190,7 @@ impl Diagnostic {
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 match args {
-                    DiagnosticDefArgs::Transparent => {
-                        let forward = Forward::for_transparent_field(fields)?;
+                    DiagnosticDefArgs::Transparent(forward) => {
                         let code_method = forward.gen_struct_method(WhichFn::Code);
                         let help_method = forward.gen_struct_method(WhichFn::Help);
                         let url_method = forward.gen_struct_method(WhichFn::Url);

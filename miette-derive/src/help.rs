@@ -9,10 +9,9 @@ use syn::{
     Fields, Token,
 };
 
-use crate::fmt::{self, Display};
+use crate::{fmt::{self, Display}, forward::WhichFn};
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
-    utils::forward_to_single_field_variant,
 };
 
 pub struct Help {
@@ -68,8 +67,8 @@ impl Help {
                      ..
                  }| {
                      match args {
-                         DiagnosticDefArgs::Transparent => {
-                             Some(forward_to_single_field_variant(ident, fields, quote!{ help() } ))
+                         DiagnosticDefArgs::Transparent(forward) => {
+                             Some(forward.gen_enum_match_arm(ident, WhichFn::Help))
                          }
                          DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { help, .. }) => {
                              let mut display = help.as_ref()?.display.clone();
