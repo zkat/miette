@@ -206,12 +206,7 @@ impl GraphicalReportPrinter {
                 contents.column() + 1
             )?;
         } else {
-            write!(
-                f,
-                "[{}:{}]",
-                contents.line() + 1,
-                contents.column() + 1
-            )?;
+            write!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
         }
         if let Some(msg) = &snippet.message {
             write!(f, " {}:", msg)?;

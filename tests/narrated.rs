@@ -470,6 +470,7 @@ snippet line 1: source_text_here
 
 diagnostic help: try doing it better next time?
 diagnostic error code: oops::my::bad
-"#.trim_start();
+"#
+    .trim_start();
     assert_eq!(out, expected);
 }
