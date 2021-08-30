@@ -1,7 +1,11 @@
 /*!
 Default trait implementations for [Source].
 */
-use std::{borrow::{Cow, ToOwned}, fmt::Debug, sync::Arc};
+use std::{
+    borrow::{Cow, ToOwned},
+    fmt::Debug,
+    sync::Arc,
+};
 
 use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
 
