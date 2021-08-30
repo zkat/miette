@@ -80,10 +80,12 @@ impl WhichFn {
 
 impl Forward {
     pub fn for_transparent_field(fields: &syn::Fields) -> syn::Result<Self> {
-        let make_err = || syn::Error::new(
-            fields.span(),
-            "you can only use #[diagnostic(transparent)] with exactly one field",
-        );
+        let make_err = || {
+            syn::Error::new(
+                fields.span(),
+                "you can only use #[diagnostic(transparent)] with exactly one field",
+            )
+        };
         match fields {
             syn::Fields::Named(named) => {
                 let mut iter = named.named.iter();

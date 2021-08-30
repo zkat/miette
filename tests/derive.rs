@@ -543,7 +543,10 @@ fn test_unit_enum_display() {
     enum Enum {
         #[error("unit only")]
         #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
-        UnitVariant
+        UnitVariant,
     }
-    assert_eq!(Enum::UnitVariant.help().unwrap().to_string(), "hello from unit help")
+    assert_eq!(
+        Enum::UnitVariant.help().unwrap().to_string(),
+        "hello from unit help"
+    )
 }
