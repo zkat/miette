@@ -1,7 +1,7 @@
 /*!
 Default trait implementations for [Source].
 */
-use std::{borrow::Cow, sync::Arc};
+use std::{borrow::{Cow, ToOwned}, fmt::Debug, sync::Arc};
 
 use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
 
@@ -84,7 +84,12 @@ impl<T: Source> Source for Arc<T> {
     }
 }
 
-impl<T: Source + Clone> Source for Cow<'_, T> {
+impl<T: ?Sized + Source + ToOwned> Source for Cow<'_, T>
+where
+    // The minimal bounds are used here. `T::Owned` need not be `Source`, because `&T` can always
+    // be obtained from `Cow<'_, T>`.
+    T::Owned: Debug + Send + Sync,
+{
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
