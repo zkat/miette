@@ -510,5 +510,16 @@ fn unnamed_snippet_shows_message() {
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    assert!(out.contains("This is the part that broke"));
+    let expected = r#"
+────[oops::my::bad]────────────────────
+
+    × oops!
+
+   ╭───[1:1] This is the part that broke:
+ 1 │ source_text_here
+
+    ‽ try doing it better next time?
+"#
+    .trim_start();
+    assert_eq!(out, expected);
 }
