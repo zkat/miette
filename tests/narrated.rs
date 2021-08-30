@@ -45,7 +45,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
 snippet line 2:   text
@@ -87,7 +87,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
 snippet line 2:   text
@@ -132,7 +132,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
 snippet line 2:   text text text text text
@@ -175,7 +175,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
 snippet line 2:   text
@@ -226,7 +226,7 @@ line5
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: line1
     highlight starting at line 1, column 1: block 1
@@ -280,7 +280,7 @@ line5
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: line1
     highlight starting at line 1, column 1: block 1
@@ -328,7 +328,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
     highlight starting at line 1, column 1: this bit here
@@ -377,7 +377,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
 oops!
     Diagnostic severity: error
 
-Begin snippet for bad_file.rs starting at line 1, column 1
+Begin snippet for bad_file.rs starting at line 1, column 1: This is the part that broke
 
 snippet line 1: source
     highlight starting at line 1, column 1: this bit here
