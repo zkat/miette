@@ -8,7 +8,7 @@ use syn::{
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
-    utils::{gen_all_variants_with, gen_display_fields_pat, gen_unused_pat},
+    utils::{display_pat_members, gen_all_variants_with, gen_unused_pat},
 };
 use crate::{
     fmt::{self, Display},
@@ -75,10 +75,9 @@ impl Url {
                 let (pat, fmt, args) = match url.as_ref()? {
                     // fall through to `_ => None` below
                     Url::Display(display) => {
-                        let mut display = display.clone();
-                        let pat = gen_display_fields_pat(&mut display, fields);
-                        let Display { fmt, args, .. } = display;
-                        (pat, fmt.value(), args)
+                        let (display_pat, display_members) = display_pat_members(fields);
+                        let (fmt, args) = display.expand_shorthand_cloned(&display_members);
+                        (display_pat, fmt.value(), args)
                     }
                     Url::DocsRs => {
                         let pat = gen_unused_pat(fields);
@@ -96,8 +95,7 @@ impl Url {
                     }
                 };
                 Some(quote! {
-                    Self::#ident #pat
-                        => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
+                    Self::#ident #pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
                 })
             },
         )
@@ -110,10 +108,9 @@ impl Url {
     ) -> Option<TokenStream> {
         let (pat, fmt, args) = match self {
             Url::Display(display) => {
-                let mut display = display.clone();
-                let pat = gen_display_fields_pat(&mut display, fields);
-                let Display { fmt, args, .. } = display;
-                (pat, fmt.value(), args)
+                let (display_pat, display_members) = display_pat_members(fields);
+                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
+                (display_pat, fmt.value(), args)
             }
             Url::DocsRs => {
                 let pat = gen_unused_pat(fields);

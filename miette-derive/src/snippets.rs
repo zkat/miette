@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
@@ -13,7 +13,7 @@ use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     fmt::{self, Display},
     forward::WhichFn,
-    utils::gen_all_variants_with,
+    utils::{display_pat_members, gen_all_variants_with},
 };
 
 pub struct Snippets(Vec<Snippet>);
@@ -56,7 +56,6 @@ impl Parse for SnippetAttr {
                         let args = if content.is_empty() {
                             TokenStream::new()
                         } else {
-                            content.parse::<Token![,]>()?;
                             fmt::parse_token_expr(&content, false)?
                         };
                         let display = Display {
@@ -105,7 +104,6 @@ impl Parse for HighlightAttr {
                         let args = if content.is_empty() {
                             TokenStream::new()
                         } else {
-                            content.parse::<Token![,]>()?;
                             fmt::parse_token_expr(&content, false)?
                         };
                         let display = Display {
@@ -209,28 +207,15 @@ impl Snippets {
     }
 
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
+        let (display_pat, display_members) = display_pat_members(fields);
         let snippets = self.0.iter().map(|snippet| {
             // snippet message
             let msg = if let Some(display) = &snippet.message {
-                let members: HashSet<syn::Member> = fields
-                    .iter()
-                    .enumerate()
-                    .map(|(i, field)| {
-                        if let Some(ident) = field.ident.as_ref().cloned() {
-                            syn::Member::Named(ident)
-                        } else {
-                            syn::Member::Unnamed(syn::Index {
-                                index: i as u32,
-                                span: field.span(),
-                            })
-                        }
-                    })
-                    .collect();
-                let mut display = display.clone();
-                display.expand_shorthand(&members);
-                let Display { fmt, args, .. } = display;
+                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                 quote! {
-                    message: std::option::Option::Some(format!(#fmt, #args)),
+                    message: {
+                        std::option::Option::Some(format!(#fmt #args))
+                    },
                 }
             } else {
                 quote! {
@@ -253,12 +238,11 @@ impl Snippets {
             // Highlights
             let highlights = snippet.highlights.iter().map(|highlight| {
                 let Highlight { highlight, label } = highlight;
-                if let Some(Display { fmt, args, .. }) = label {
+                if let Some(display) = label {
+                    let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                     quote! {
                         (
-                            std::option::Option::Some(
-                                format!(#fmt, #args)
-                            ),
+                            std::option::Option::Some(format!(#fmt #args)),
                             self.#highlight.clone().into()
                         )
                     }
@@ -287,6 +271,7 @@ impl Snippets {
         Some(quote! {
             #[allow(unused_variables)]
             fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>> {
+                let Self #display_pat = self;
                 Some(Box::new(vec![
                     #(#snippets),*
                 ].into_iter()))
@@ -299,20 +284,12 @@ impl Snippets {
             variants,
             WhichFn::Snippets,
             |ident, fields, DiagnosticConcreteArgs { snippets, .. }| {
+                let (display_pat, display_members) = display_pat_members(fields);
                 snippets.as_ref().and_then(|snippets| {
                         let variant_snippets = snippets.0.iter().map(|snippet| {
                             // snippet message
                             let msg = if let Some(display) = &snippet.message {
-                            let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
-                                if let Some(ident) = field.ident.as_ref().cloned() {
-                                    syn::Member::Named(ident)
-                                } else {
-                                    syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
-                                }
-                            }).collect();
-                                let mut display = display.clone();
-                                display.expand_shorthand(&members);
-                                let Display { fmt, args, .. } = display;
+                                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                                 quote! {
                                     message: std::option::Option::Some(format!(#fmt, #args)),
                                 }
@@ -383,22 +360,10 @@ impl Snippets {
                             }
                         });
                         let variant_name = ident.clone();
-                        let members = fields.iter().enumerate().map(|(i, field)| {
-                            field
-                                .ident
-                                .as_ref()
-                                .cloned()
-                                .unwrap_or_else(|| format_ident!("_{}", i))
-                        });
                         match &fields {
                             syn::Fields::Unit => None,
-                            syn::Fields::Named(_) => Some(quote! {
-                                Self::#variant_name { #(#members),* } => std::option::Option::Some(std::boxed::Box::new(vec![
-                                    #(#variant_snippets),*
-                                ].into_iter())),
-                            }),
-                            syn::Fields::Unnamed(_) => Some(quote! {
-                                Self::#variant_name(#(#members),*) => std::option::Option::Some(Box::new(vec![
+                            _ => Some(quote! {
+                                Self::#variant_name #display_pat => std::option::Option::Some(std::boxed::Box::new(vec![
                                     #(#variant_snippets),*
                                 ].into_iter())),
                             }),

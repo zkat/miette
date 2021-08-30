@@ -83,24 +83,8 @@ pub(crate) fn gen_unused_pat(fields: &syn::Fields) -> TokenStream {
     }
 }
 
-pub(crate) fn gen_display_fields_pat(display: &mut Display, fields: &syn::Fields) -> TokenStream {
-    let members: HashSet<syn::Member> = fields
-        .iter()
-        .enumerate()
-        .map(|(i, field)| {
-            if let Some(ident) = field.ident.as_ref().cloned() {
-                syn::Member::Named(ident)
-            } else {
-                syn::Member::Unnamed(syn::Index {
-                    index: i as u32,
-                    span: field.span(),
-                })
-            }
-        })
-        .collect();
-
-    display.expand_shorthand(&members);
-
+/// Goes in the slot `let Self #pat = self;` or `match self { Self #pat => ... }`.
+fn gen_fields_pat(fields: &syn::Fields) -> TokenStream {
     let member_idents = fields.iter().enumerate().map(|(i, field)| {
         field
             .ident
@@ -116,5 +100,39 @@ pub(crate) fn gen_display_fields_pat(display: &mut Display, fields: &syn::Fields
             ( #(#member_idents),* )
         },
         syn::Fields::Unit => quote! {},
+    }
+}
+
+/// The returned tokens go in the slot `let Self #pat = self;` or `match self { Self #pat => ... }`.
+/// The members can be passed to `Display::expand_shorthand[_cloned]`.
+pub(crate) fn display_pat_members(fields: &syn::Fields) -> (TokenStream, HashSet<syn::Member>) {
+    let pat = gen_fields_pat(fields);
+    let members: HashSet<syn::Member> = fields
+        .iter()
+        .enumerate()
+        .map(|(i, field)| {
+            if let Some(ident) = field.ident.as_ref().cloned() {
+                syn::Member::Named(ident)
+            } else {
+                syn::Member::Unnamed(syn::Index {
+                    index: i as u32,
+                    span: field.span(),
+                })
+            }
+        })
+        .collect();
+    (pat, members)
+}
+
+impl Display {
+    /// Returns `(fmt, args)` which must be passed to some kind of format macro without tokens in between, i.e. `format!(#fmt #args)`.
+    pub(crate) fn expand_shorthand_cloned(
+        &self,
+        members: &HashSet<syn::Member>,
+    ) -> (syn::LitStr, TokenStream) {
+        let mut display = self.clone();
+        display.expand_shorthand(members);
+        let Display { fmt, args, .. } = display;
+        (fmt, args)
     }
 }
