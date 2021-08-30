@@ -93,12 +93,16 @@ impl NarratableReportPrinter {
         if let Some(filename) = snippet.source.name() {
             write!(f, " for {}", filename,)?;
         }
-        writeln!(
+        write!(
             f,
             " starting at line {}, column {}",
             contents.line() + 1,
             contents.column() + 1
         )?;
+        if let Some(message) = snippet.message.as_deref() {
+            write!(f, ": {}", message)?;
+        }
+        writeln!(f)?;
         writeln!(f)?;
 
         // Highlights are the bits we're going to underline in our overall

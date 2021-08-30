@@ -189,23 +189,34 @@ impl GraphicalReportPrinter {
             .len();
 
         // Header
+        write!(
+            f,
+            "{}{}{}",
+            " ".repeat(linum_width + 2),
+            self.theme.characters.ltop,
+            self.theme.characters.hbar.to_string().repeat(3),
+        )?;
         if let Some(source_name) = snippet.source.name() {
             let source_name = source_name.style(self.theme.styles.filename);
             write!(
                 f,
-                "{}{}{}[{}:{}:{}]",
-                " ".repeat(linum_width + 2),
-                self.theme.characters.ltop,
-                self.theme.characters.hbar.to_string().repeat(3),
+                "[{}:{}:{}]",
                 source_name,
                 contents.line() + 1,
                 contents.column() + 1
             )?;
-            if let Some(msg) = &snippet.message {
-                write!(f, " {}:", msg)?;
-            }
-            writeln!(f)?;
+        } else {
+            write!(
+                f,
+                "[{}:{}]",
+                contents.line() + 1,
+                contents.column() + 1
+            )?;
         }
+        if let Some(msg) = &snippet.message {
+            write!(f, " {}:", msg)?;
+        }
+        writeln!(f)?;
 
         // Now it's time for the fun part--actually rendering everything!
         for line in &lines {
