@@ -194,7 +194,10 @@ external libraries and tools.
 For this situation, `miette` includes two tools: [Report] and
 [IntoDiagnostic]. They work in tandem to make it easy to convert regular
 `std::error::Error`s into [Diagnostic]s. Additionally, there's a
-[DiagnosticResult] type alias that you can use to be more terse:
+[DiagnosticResult] type alias that you can use to be more terse.
+
+When dealing with non-`Diagnostic` types, you'll want to `.into_diagnostic()`
+them:
 
 ```rust
 // my_app/lib/my_internal_file.rs
@@ -202,7 +205,21 @@ use miette::{IntoDiagnostic, DiagnosticResult};
 use semver::Version;
 
 pub fn some_tool() -> DiagnosticResult<Version> {
-    Ok("1.2.x".parse().into_diagnostic("my_app::semver::parse_error")?)
+    Ok("1.2.x".parse().into_diagnostic()?)
+}
+```
+
+`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` trait that
+you can import to add ad-hoc context messages to your `Diagnostic`s, as well,
+though you'll still need to use `.into_diagnostic()` to make use of it:
+
+```rust
+// my_app/lib/my_internal_file.rs
+use miette::{IntoDiagnostic, DiagnosticResult, WrapErr};
+use semver::Version;
+
+pub fn some_tool() -> DiagnosticResult<Version> {
+    Ok("1.2.x".parse().into_diagnostic().wrap_err("Parsing this tool's semver version failed.")?)
 }
 ```
 
@@ -217,7 +234,7 @@ use miette::{DiagnosticResult, IntoDiagnostic};
 use semver::Version;
 
 fn pretend_this_is_main() -> DiagnosticResult<()> {
-    let version: Version = "1.2.x".parse().into_diagnostic("my_app::semver::parse_error")?;
+    let version: Version = "1.2.x".parse().into_diagnostic()?;
     println!("{}", version);
     Ok(())
 }
@@ -249,7 +266,7 @@ use thiserror::Error;
 #[diagnostic(
     code(my_app::my_error),
     // You can do formatting!
-    url("https://my_website.com/error_codes#{}", self.code())
+    url("https://my_website.com/error_codes#{}", self.code().unwrap())
 )]
 struct MyErr;
 ```

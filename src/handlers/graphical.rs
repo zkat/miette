@@ -8,20 +8,15 @@ use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
 use crate::{ReportHandler, SourceSpan, SpanContents};
 
 /**
-A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical way, using terminal colors, unicode drawing characters, and other such things.
+A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
+way, using terminal colors, unicode drawing characters, and other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a [GraphicalTheme] of your own creation (or using one of its own defaults!)
+This printer can be customized by using `new_themed()` and handing it a
+[GraphicalTheme] of your own creation (or using one of its own defaults!)
 
-See [crate::set_printer] for more details on customizing your global printer.
-
-## Example
-
-```
-use miette::{GraphicalReportHandler, GraphicalTheme};
-miette::set_printer(GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor()));
-```
+See [crate::set_hook] for more details on customizing your global printer.
 */
 #[derive(Debug, Clone)]
 pub struct GraphicalReportHandler {
