@@ -34,6 +34,7 @@ pub enum DiagnosticDefArgs {
     Concrete(DiagnosticConcreteArgs),
 }
 
+#[derive(Default)]
 pub struct DiagnosticConcreteArgs {
     pub code: Option<Code>,
     pub severity: Option<Severity>,
@@ -131,11 +132,12 @@ impl Diagnostic {
                         args,
                     }
                 } else {
-                    // Also handle when there's multiple `#[diagnostic]` attrs?
-                    return Err(syn::Error::new(
-                        input.ident.span(),
-                        "#[diagnostic] attribute is required when deriving Diagnostic.",
-                    ));
+                    Diagnostic::Struct {
+                        fields: data_struct.fields,
+                        ident: input.ident,
+                        generics: input.generics,
+                        args: DiagnosticDefArgs::Concrete(Default::default()),
+                    }
                 }
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
