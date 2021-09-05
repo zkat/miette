@@ -5,7 +5,7 @@
 /// # Example
 ///
 /// ```
-/// # use eyre::{bail, Result};
+/// # use miette::{bail, Result};
 /// #
 /// # fn has_permission(user: usize, resource: usize) -> bool {
 /// #     true
@@ -23,7 +23,7 @@
 /// ```
 ///
 /// ```
-/// # use eyre::{bail, Result};
+/// # use miette::{bail, Result};
 /// # use thiserror::Error;
 /// #
 /// # const MAX_DEPTH: usize = 1;
@@ -51,13 +51,13 @@
 #[macro_export]
 macro_rules! bail {
     ($msg:literal $(,)?) => {
-        return $crate::private::Err($crate::eyre!($msg));
+        return $crate::private::Err($crate::miette!($msg));
     };
     ($err:expr $(,)?) => {
-        return $crate::private::Err($crate::eyre!($err));
+        return $crate::private::Err($crate::miette!($err));
     };
     ($fmt:expr, $($arg:tt)*) => {
-        return $crate::private::Err($crate::eyre!($fmt, $($arg)*));
+        return $crate::private::Err($crate::miette!($fmt, $($arg)*));
     };
 }
 
@@ -72,7 +72,7 @@ macro_rules! bail {
 /// # Example
 ///
 /// ```
-/// # use eyre::{ensure, Result};
+/// # use miette::{ensure, Result};
 /// #
 /// # fn main() -> Result<()> {
 /// #     let user = 0;
@@ -83,7 +83,7 @@ macro_rules! bail {
 /// ```
 ///
 /// ```
-/// # use eyre::{ensure, Result};
+/// # use miette::{ensure, Result};
 /// # use thiserror::Error;
 /// #
 /// # const MAX_DEPTH: usize = 1;
@@ -109,17 +109,17 @@ macro_rules! bail {
 macro_rules! ensure {
     ($cond:expr, $msg:literal $(,)?) => {
         if !$cond {
-            return $crate::private::Err($crate::eyre!($msg));
+            return $crate::private::Err($crate::miette!($msg));
         }
     };
     ($cond:expr, $err:expr $(,)?) => {
         if !$cond {
-            return $crate::private::Err($crate::eyre!($err));
+            return $crate::private::Err($crate::miette!($err));
         }
     };
     ($cond:expr, $fmt:expr, $($arg:tt)*) => {
         if !$cond {
-            return $crate::private::Err($crate::eyre!($fmt, $($arg)*));
+            return $crate::private::Err($crate::miette!($fmt, $($arg)*));
         }
     };
 }
@@ -135,50 +135,11 @@ macro_rules! ensure {
 /// ```
 /// # type V = ();
 /// #
-/// use eyre::{eyre, Result};
+/// use miette::{miette, Result};
 ///
 /// fn lookup(key: &str) -> Result<V> {
 ///     if key.len() != 16 {
-///         return Err(eyre!("key length must be 16 characters, got {:?}", key));
-///     }
-///
-///     // ...
-///     # Ok(())
-/// }
-/// ```
-#[macro_export]
-macro_rules! eyre {
-    ($msg:literal $(,)?) => {
-        // Handle $:literal as a special case to make cargo-expanded code more
-        // concise in the common case.
-        $crate::private::new_adhoc($msg)
-    };
-    ($err:expr $(,)?) => ({
-        use $crate::private::kind::*;
-        let error = $err;
-        (&error).eyre_kind().new(error)
-    });
-    ($fmt:expr, $($arg:tt)*) => {
-        $crate::private::new_adhoc(format!($fmt, $($arg)*))
-    };
-}
-
-/// Construct an ad-hoc error from a string.
-///
-/// This evaluates to an `Error`. It can take either just a string, or a format
-/// string with arguments. It also can take any custom type which implements
-/// `Debug` and `Display`.
-///
-/// # Example
-///
-/// ```
-/// # type V = ();
-/// #
-/// use eyre::{eyre, Result};
-///
-/// fn lookup(key: &str) -> Result<V> {
-///     if key.len() != 16 {
-///         return Err(eyre!("key length must be 16 characters, got {:?}", key));
+///         return Err(miette!("key length must be 16 characters, got {:?}", key));
 ///     }
 ///
 ///     // ...
@@ -195,7 +156,7 @@ macro_rules! miette {
     ($err:expr $(,)?) => ({
         use $crate::private::kind::*;
         let error = $err;
-        (&error).eyre_kind().new(error)
+        (&error).miette_kind().new(error)
     });
     ($fmt:expr, $($arg:tt)*) => {
         $crate::private::new_adhoc(format!($fmt, $($arg)*))

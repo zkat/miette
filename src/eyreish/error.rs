@@ -4,8 +4,8 @@ use core::mem::{self, ManuallyDrop};
 use core::ptr::{self, NonNull};
 use std::error::Error as StdError;
 
-use super::ReportHandler;
 use super::Report;
+use super::ReportHandler;
 use crate::chain::Chain;
 use crate::Diagnostic;
 use core::ops::{Deref, DerefMut};
@@ -31,10 +31,10 @@ impl Report {
     /// If the argument implements std::error::Error, prefer `Report::new`
     /// instead which preserves the underlying error's cause chain and
     /// backtrace. If the argument may or may not implement std::error::Error
-    /// now or in the future, use `eyre!(err)` which handles either way
+    /// now or in the future, use `miette!(err)` which handles either way
     /// correctly.
     ///
-    /// `Report::msg("...")` is equivalent to `eyre!("...")` but occasionally
+    /// `Report::msg("...")` is equivalent to `miette!("...")` but occasionally
     /// convenient in places where a function is preferable over a macro, such
     /// as iterator or stream combinators:
     ///
@@ -49,7 +49,7 @@ impl Report {
     /// #
     /// # use ffi::{Input, Output};
     /// #
-    /// use eyre::{Report, Result};
+    /// use miette::{Report, Result};
     /// use futures::stream::{Stream, StreamExt, TryStreamExt};
     ///
     /// async fn demo<S>(stream: S) -> Result<Vec<Output>>
@@ -193,56 +193,12 @@ impl Report {
     /// Create a new error from an error message to wrap the existing error.
     ///
     /// For attaching a higher level error message to a `Result` as it is propagated, the
-    /// [`WrapErr`][crate::WrapErr] extension trait may be more convenient than this function.
+    /// [crate::WrapErr] extension trait may be more convenient than this function.
     ///
     /// The primary reason to use `error.wrap_err(...)` instead of `result.wrap_err(...)` via the
     /// `WrapErr` trait would be if the message needs to depend on some data held by the underlying
     /// error:
     ///
-    /// ```
-    /// # use std::fmt::{self, Debug, Display};
-    /// #
-    /// # type T = ();
-    /// #
-    /// # impl std::error::Error for ParseError {}
-    /// # impl Debug for ParseError {
-    /// #     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-    /// #         unimplemented!()
-    /// #     }
-    /// # }
-    /// # impl Display for ParseError {
-    /// #     fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-    /// #         unimplemented!()
-    /// #     }
-    /// # }
-    /// #
-    /// use eyre::Result;
-    /// use std::fs::File;
-    /// use std::path::Path;
-    ///
-    /// struct ParseError {
-    ///     line: usize,
-    ///     column: usize,
-    /// }
-    ///
-    /// fn parse_impl(file: File) -> Result<T, ParseError> {
-    ///     # const IGNORE: &str = stringify! {
-    ///     ...
-    ///     # };
-    ///     # unimplemented!()
-    /// }
-    ///
-    /// pub fn parse(path: impl AsRef<Path>) -> Result<T> {
-    ///     let file = File::open(&path)?;
-    ///     parse_impl(file).map_err(|error| {
-    ///         let message = format!(
-    ///             "only the first {} lines of {} are valid",
-    ///             error.line, path.as_ref().display(),
-    ///         );
-    ///         eyre::Report::new(error).wrap_err(message)
-    ///     })
-    /// }
-    /// ```
     pub fn wrap_err<D>(mut self, msg: D) -> Self
     where
         D: Display + Send + Sync + 'static,
@@ -273,7 +229,7 @@ impl Report {
     /// # Example
     ///
     /// ```
-    /// use eyre::Report;
+    /// use miette::Report;
     /// use std::io;
     ///
     /// pub fn underlying_io_error_kind(error: &Report) -> Option<io::ErrorKind> {
@@ -355,7 +311,7 @@ impl Report {
     /// # Example
     ///
     /// ```
-    /// # use eyre::{Report, eyre};
+    /// # use miette::{Report, miette};
     /// # use std::fmt::{self, Display};
     /// # use std::task::Poll;
     /// #
@@ -374,7 +330,7 @@ impl Report {
     /// #
     /// # const REDACTED_CONTENT: () = ();
     /// #
-    /// # let error: Report = eyre!("...");
+    /// # let error: Report = miette!("...");
     /// # let root_cause = &error;
     /// #
     /// # let ret =

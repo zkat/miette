@@ -1,7 +1,7 @@
 #![allow(missing_debug_implementations, missing_docs)]
-// Tagged dispatch mechanism for resolving the behavior of `eyre!($expr)`.
+// Tagged dispatch mechanism for resolving the behavior of `miette!($expr)`.
 //
-// When eyre! is given a single expr argument to turn into eyre::Report, we
+// When miette! is given a single expr argument to turn into miette::Report, we
 // want the resulting Report to pick up the input's implementation of source()
 // and backtrace() if it has a std::error::Error impl, otherwise require nothing
 // more than Display and Debug.
@@ -32,18 +32,18 @@
 //
 // Since specialization is not stable yet, instead we rely on autoref behavior
 // of method resolution to perform tagged dispatch. Here we have two traits
-// AdhocKind and TraitKind that both have an eyre_kind() method. AdhocKind is
+// AdhocKind and TraitKind that both have an miette_kind() method. AdhocKind is
 // implemented whether or not the caller's type has a std error impl, while
 // TraitKind is implemented only when a std error impl does exist. The ambiguity
 // is resolved by AdhocKind requiring an extra autoref so that it has lower
 // precedence.
 //
-// The eyre! macro will set up the call in this form:
+// The miette! macro will set up the call in this form:
 //
 //     #[allow(unused_imports)]
 //     use $crate::private::{AdhocKind, TraitKind};
 //     let error = $msg;
-//     (&error).eyre_kind().new(error)
+//     (&error).miette_kind().new(error)
 
 use super::Report;
 use core::fmt::{Debug, Display};
@@ -54,7 +54,7 @@ pub struct Adhoc;
 
 pub trait AdhocKind: Sized {
     #[inline]
-    fn eyre_kind(&self) -> Adhoc {
+    fn miette_kind(&self) -> Adhoc {
         Adhoc
     }
 }
@@ -75,7 +75,7 @@ pub struct Trait;
 
 pub trait TraitKind: Sized {
     #[inline]
-    fn eyre_kind(&self) -> Trait {
+    fn miette_kind(&self) -> Trait {
         Trait
     }
 }
@@ -96,7 +96,7 @@ pub struct Boxed;
 
 pub trait BoxedKind: Sized {
     #[inline]
-    fn eyre_kind(&self) -> Boxed {
+    fn miette_kind(&self) -> Boxed {
         Boxed
     }
 }

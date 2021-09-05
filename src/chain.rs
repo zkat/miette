@@ -25,7 +25,7 @@ pub(crate) enum ChainState<'a> {
 }
 
 impl<'a> Chain<'a> {
-    pub(crate) fn new(head: &'a (dyn StdError + 'static)) -> Self {
+    pub fn new(head: &'a (dyn StdError + 'static)) -> Self {
         Chain {
             state: ChainState::Linked { next: Some(head) },
         }
