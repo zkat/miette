@@ -1,5 +1,42 @@
 # `miette` Release Changelog
 
+<a name="2.0.0"></a>
+## 2.0.0 (2021-09-05)
+
+This release overhauls the toplevel/main experience for `miette`. It adds a
+new `Report` type based on `eyre::Report` and overhauls various types to fit
+into this model, as well as prepare for some [future changes in
+Rust](https://github.com/nrc/rfcs/pull/1) that will make it possible to
+integrate `miette` directly with crates like `eyre` instead of having to use
+this specific `Report`.
+
+On top of that, it includes a couple of nice new features, such as
+`#[diagnostic(transparent)]`, which should be super useful when wrapping other
+diagnostics with your own types!
+
+### Breaking Changes
+
+* **report:** anyhow-ify DiagnosticReport (#35) ([3f9da04b](https://github.com/zkat/miette/commit/3f9da04b866f3fd90f88e7e60f9fb7a322aef568))
+    * `DiagnosticReport` is now just `Report`, and is a different, `eyre::Report`-like type.
+    * `DiagnosticResult` is now just `Result`.
+    * `.into_diagnostic()` now just transforms the error into a `Report`.
+    * `DiagnosticReportPrinter` has been replaced with `ReportHandler`
+    * `set_printer` has been replaced by `set_hook`
+    * `code` is now optional.
+    * `.into_diagnostic()` no longer takes a `code` argument.
+    * `#[diagnostic]` is now optional when deriving `Diagnostic`.
+
+### Features
+
+* **derive:** Add `#[diagnostic(transparent,forward)]` (#36) ([53f5d6d1](https://github.com/zkat/miette/commit/53f5d6d1d62845b52e590fed5ce91a643b6e11f3))
+* **Source:** impl Source for str, &str (make &'static str usable for testing) (#40) ([50c7a883](https://github.com/zkat/miette/commit/50c7a88360dc7cef815af2dbb9dc18ede0d1fdb4))
+* **source:** Remove bound `T: Clone` from `Source` implementation for `Cow`. (#42) ([0427c9f9](https://github.com/zkat/miette/commit/0427c9f9666222084cb4494aabbd3e7dc5cdb789))
+
+### Bug Fixes
+
+* **reporter:** Only inc the line count if we haven't already done so with '\n' or '\r\n' (#37) ([5a474370](https://github.com/zkat/miette/commit/5a474370ddda92a3a92b6b84cd561ecaf4d6d858))
+* **printer:** Show snippet message for unnamed sources (#39) ([84219f6c](https://github.com/zkat/miette/commit/84219f6c80c2c432fbeb4c40a591380285de8767))
+
 <a name="1.1.0"></a>
 ## 1.1.0 (2021-08-29)
 
