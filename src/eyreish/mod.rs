@@ -75,15 +75,16 @@ pub fn set_hook(hook: ErrorHook) -> Result<(), InstallError> {
 fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> {
     let hook = HOOK.get_or_init(|| Box::new(get_default_printer)).as_ref();
 
-    let mut handler = hook(error);
-
     #[cfg(track_caller)]
     {
-        handler.track_caller(std::panic::Location::caller())
+        let mut handler = hook(error);
+        handler.track_caller(std::panic::Location::caller());
+        handler
     }
-
-    #[allow(clippy::let_and_return)]
-    handler
+    #[cfg(not(track_caller))]
+    {
+        hook(error)
+    }
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
