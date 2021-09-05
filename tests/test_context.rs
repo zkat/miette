@@ -1,7 +1,7 @@
 mod drop;
 
 use crate::drop::{DetectDrop, Flag};
-use miette::{Diagnostic, DiagnosticResult as Result, IntoDiagnostic, Report, WrapErr};
+use miette::{Diagnostic, IntoDiagnostic, Report, Result, WrapErr};
 use std::fmt::{self, Display};
 use thiserror::Error;
 

@@ -10,10 +10,10 @@ use std::{
     panic::Location,
 };
 
-use crate::{MietteError, Report};
+use crate::MietteError;
 
 /**
-Adds rich metadata to your Error that can be used by [ReportHandler] to print
+Adds rich metadata to your Error that can be used by [Report] to print
 really nice and human-friendly error messages.
 */
 pub trait Diagnostic: std::error::Error {
@@ -134,9 +134,6 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
         Box::new(BoxedDiagnostic(s))
     }
 }
-
-/// Convenience alias. This is intended to be used as the return type for `main()`
-pub type DiagnosticResult<T> = Result<T, Report>;
 
 /**
 [Diagnostic] severity. Intended to be used by [ReportHandler]s to change the

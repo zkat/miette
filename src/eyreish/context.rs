@@ -1,5 +1,5 @@
 use super::error::ContextError;
-use super::{ContextCompat, Report, WrapErr};
+use super::{Report, WrapErr};
 use core::fmt::{self, Debug, Display, Write};
 
 use std::error::Error as StdError;
@@ -76,44 +76,6 @@ where
         F: FnOnce() -> D,
     {
         self.wrap_err_with(msg)
-    }
-}
-
-impl<T> ContextCompat<T> for Option<T> {
-    fn wrap_err<D>(self, msg: D) -> Result<T, Report>
-    where
-        D: Display + Send + Sync + 'static,
-    {
-        self.context(msg)
-    }
-
-    fn wrap_err_with<D, F>(self, msg: F) -> Result<T, Report>
-    where
-        D: Display + Send + Sync + 'static,
-        F: FnOnce() -> D,
-    {
-        self.with_context(msg)
-    }
-
-    fn context<D>(self, msg: D) -> Result<T, Report>
-    where
-        D: Display + Send + Sync + 'static,
-    {
-        match self {
-            Some(t) => Ok(t),
-            None => Err(Report::from_display(msg)),
-        }
-    }
-
-    fn with_context<D, F>(self, msg: F) -> Result<T, Report>
-    where
-        D: Display + Send + Sync + 'static,
-        F: FnOnce() -> D,
-    {
-        match self {
-            Some(t) => Ok(t),
-            None => Err(Report::from_display(msg())),
-        }
     }
 }
 

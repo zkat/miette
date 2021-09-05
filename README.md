@@ -97,12 +97,12 @@ struct MyBad {
 /*
 Now let's define a function!
 
-Use this DiagnosticResult type (or its expanded version) as the return type
+Use this Result type (or its expanded version) as the return type
 throughout your app (but NOT your libraries! Those should always return concrete
 types!).
 */
-use miette::{DiagnosticResult, NamedSource};
-fn this_fails() -> DiagnosticResult<()> {
+use miette::{Result, NamedSource};
+fn this_fails() -> Result<()> {
     // You can use plain strings as a `Source`, or anything that implements
     // the one-method `Source` trait.
     let src = "source\n  text\n    here".to_string();
@@ -118,12 +118,12 @@ fn this_fails() -> DiagnosticResult<()> {
 }
 
 /*
-Now to get everything printed nicely, just return a DiagnosticResult<()>
+Now to get everything printed nicely, just return a Result<()>
 and you're all set!
 
 Note: You can swap out the default reporter for a custom one using `miette::set_reporter()`
 */
-fn pretend_this_is_main() -> DiagnosticResult<()> {
+fn pretend_this_is_main() -> Result<()> {
     // kaboom~
     this_fails()?;
 
@@ -194,17 +194,17 @@ external libraries and tools.
 For this situation, `miette` includes two tools: [Report] and
 [IntoDiagnostic]. They work in tandem to make it easy to convert regular
 `std::error::Error`s into [Diagnostic]s. Additionally, there's a
-[DiagnosticResult] type alias that you can use to be more terse.
+[Result] type alias that you can use to be more terse.
 
 When dealing with non-`Diagnostic` types, you'll want to `.into_diagnostic()`
 them:
 
 ```rust
 // my_app/lib/my_internal_file.rs
-use miette::{IntoDiagnostic, DiagnosticResult};
+use miette::{IntoDiagnostic, Result};
 use semver::Version;
 
-pub fn some_tool() -> DiagnosticResult<Version> {
+pub fn some_tool() -> Result<Version> {
     Ok("1.2.x".parse().into_diagnostic()?)
 }
 ```
@@ -215,10 +215,10 @@ though you'll still need to use `.into_diagnostic()` to make use of it:
 
 ```rust
 // my_app/lib/my_internal_file.rs
-use miette::{IntoDiagnostic, DiagnosticResult, WrapErr};
+use miette::{IntoDiagnostic, Result, WrapErr};
 use semver::Version;
 
-pub fn some_tool() -> DiagnosticResult<Version> {
+pub fn some_tool() -> Result<Version> {
     Ok("1.2.x".parse().into_diagnostic().wrap_err("Parsing this tool's semver version failed.")?)
 }
 ```
@@ -226,14 +226,14 @@ pub fn some_tool() -> DiagnosticResult<Version> {
 ### ... in `main()`
 
 `main()` is just like any other part of your application-internal code. Use
-`DiagnosticResult` as your return value, and it will pretty-print your
+`Result` as your return value, and it will pretty-print your
 diagnostics automatically.
 
 ```rust
-use miette::{DiagnosticResult, IntoDiagnostic};
+use miette::{Result, IntoDiagnostic};
 use semver::Version;
 
-fn pretend_this_is_main() -> DiagnosticResult<()> {
+fn pretend_this_is_main() -> Result<()> {
     let version: Version = "1.2.x".parse().into_diagnostic()?;
     println!("{}", version);
     Ok(())

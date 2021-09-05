@@ -117,30 +117,6 @@ impl Report {
     }
 
     #[cfg_attr(track_caller, track_caller)]
-    pub(crate) fn from_display<M>(message: M) -> Self
-    where
-        M: Display + Send + Sync + 'static,
-    {
-        use super::wrapper::{DisplayError, NoneError};
-        let error: DisplayError<M> = DisplayError(message);
-        let vtable = &ErrorVTable {
-            object_drop: object_drop::<DisplayError<M>>,
-            object_ref: object_ref::<DisplayError<M>>,
-            object_mut: object_mut::<DisplayError<M>>,
-            object_ref_stderr: object_ref_stderr::<DisplayError<M>>,
-            object_boxed: object_boxed::<DisplayError<M>>,
-            object_downcast: object_downcast::<M>,
-            object_drop_rest: object_drop_front::<M>,
-        };
-
-        // Safety: DisplayError is repr(transparent) so it is okay for the
-        // vtable to allow casting the DisplayError<M> to M.
-        let handler = Some(super::capture_handler(&NoneError));
-
-        unsafe { Report::construct(error, vtable, handler) }
-    }
-
-    #[cfg_attr(track_caller, track_caller)]
     pub(crate) fn from_msg<D, E>(msg: D, error: E) -> Self
     where
         D: Display + Send + Sync + 'static,
