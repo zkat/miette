@@ -469,7 +469,7 @@ Begin snippet starting at line 1, column 1: This is the part that broke
 snippet line 1: source_text_here
 
 diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
+diagnostic code: oops::my::bad
 "#
     .trim_start();
     assert_eq!(out, expected);

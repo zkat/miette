@@ -3,7 +3,7 @@ use std::fmt;
 use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
-use crate::printer::theme::*;
+use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
 use crate::{ReportHandler, SourceSpan, SpanContents};
 

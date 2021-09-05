@@ -7,14 +7,14 @@ pub use miette_derive::*;
 pub use error::*;
 pub use eyreish::*;
 pub use named_source::*;
-pub use printer::*;
+pub use handlers::*;
 pub use protocol::*;
 
 mod chain;
 mod error;
 mod eyreish;
 mod named_source;
-mod printer;
+mod handlers;
 mod protocol;
 mod source_impls;
 

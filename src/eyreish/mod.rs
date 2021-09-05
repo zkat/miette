@@ -13,13 +13,18 @@ use atty::Stream;
 use once_cell::sync::OnceCell;
 
 #[doc(hidden)]
+#[allow(unreachable_pub)]
 pub use ReportHandler as EyreContext;
 #[doc(hidden)]
+#[allow(unreachable_pub)]
 pub use Report as ErrReport;
 /// Compatibility re-export of `Report` for interop with `anyhow`
+#[allow(unreachable_pub)]
 pub use Report as Error;
 /// Compatibility re-export of `WrapErr` for interop with `anyhow`
+#[allow(unreachable_pub)]
 pub use WrapErr as Context;
+#[allow(unreachable_pub)]
 pub use into_diagnostic::*;
 
 use error::ErrorImpl;

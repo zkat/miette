@@ -3,12 +3,12 @@ Reporters included with `miette`.
 */
 
 #[allow(unreachable_pub)]
-pub use graphical_printer::*;
+pub use graphical::*;
 #[allow(unreachable_pub)]
-pub use narratable_printer::*;
+pub use narratable::*;
 #[allow(unreachable_pub)]
 pub use theme::*;
 
-mod graphical_printer;
-mod narratable_printer;
+mod graphical;
+mod narratable;
 mod theme;
