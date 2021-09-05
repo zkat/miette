@@ -183,7 +183,7 @@ pub enum MyLibError {
 
 Then, return this error type from all your fallible public APIs. It's a best
 practice to wrap any "external" error types in your error `enum` instead of
-using something like [eyre](https://docs.rs/eyre) in a library.
+using something like [Report] in a library.
 
 ### ... in application code
 
@@ -209,7 +209,7 @@ pub fn some_tool() -> Result<Version> {
 }
 ```
 
-`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` trait that
+`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` traits that
 you can import to add ad-hoc context messages to your `Diagnostic`s, as well,
 though you'll still need to use `.into_diagnostic()` to make use of it:
 
@@ -361,7 +361,7 @@ pub struct MyErrorType {
 
 `miette` is released to the Rust community under the [Apache license 2.0](./LICENSE).
 
-It also includes some code taken from [`eyre`](https://github.com/yaahc/eyre),
+It also includes code taken from [`eyre`](https://github.com/yaahc/eyre),
 and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
 the Apache License. Some code is taken from
 [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
