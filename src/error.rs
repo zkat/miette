@@ -24,9 +24,9 @@ pub enum MietteError {
     )]
     OutOfBounds,
 
-    /// Returned when installing a [crate::DiagnosticReportPrinter] failed.
+    /// Returned when installing a [crate::ReportHandler] failed.
     /// Typically, this will be because [crate::set_printer] was called twice.
-    #[error("Failed to install DiagnosticReportPrinter")]
+    #[error("Failed to install ReportHandler")]
     #[diagnostic(code(miette::set_printer_failed), url(docsrs))]
     SetPrinterFailure,
 }

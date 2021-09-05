@@ -8,4 +8,4 @@ args = ["--prepend", "CHANGELOG.md", "-u", "--tag", "${@}"]
 workspace=false
 install_crate="cargo-release"
 command = "cargo"
-args = ["release", "--tag-prefix", "", "--workspace", "${@}"]
+args = ["release", "--workspace", "${@}"]

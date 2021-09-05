@@ -45,11 +45,11 @@ diagnostic error code: ruget::api::bad_json
 - Unique error codes on every [Diagnostic].
 - Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
-- Lightweight [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-style error wrapper type, [DiagnosticReport],
+- [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-compatible error wrapper type, [Report],
   which can be returned from `main`.
 - Generic support for arbitrary [Source]s for snippet data, with default support for `String`s included.
 
-The `miette` crate also comes bundled with a default [DiagnosticReportPrinter] with the following features:
+The `miette` crate also comes bundled with a default [ReportHandler] with the following features:
 
 - Fancy graphical [diagnostic output](#about), using ANSI/Unicode text
 - single- and multi-line highlighting support
@@ -97,12 +97,12 @@ struct MyBad {
 /*
 Now let's define a function!
 
-Use this DiagnosticResult type (or its expanded version) as the return type
+Use this Result type (or its expanded version) as the return type
 throughout your app (but NOT your libraries! Those should always return concrete
 types!).
 */
-use miette::{DiagnosticResult, NamedSource};
-fn this_fails() -> DiagnosticResult<()> {
+use miette::{Result, NamedSource};
+fn this_fails() -> Result<()> {
     // You can use plain strings as a `Source`, or anything that implements
     // the one-method `Source` trait.
     let src = "source\n  text\n    here".to_string();
@@ -118,12 +118,12 @@ fn this_fails() -> DiagnosticResult<()> {
 }
 
 /*
-Now to get everything printed nicely, just return a DiagnosticResult<()>
+Now to get everything printed nicely, just return a Result<()>
 and you're all set!
 
 Note: You can swap out the default reporter for a custom one using `miette::set_reporter()`
 */
-fn pretend_this_is_main() -> DiagnosticResult<()> {
+fn pretend_this_is_main() -> Result<()> {
     // kaboom~
     this_fails()?;
 
@@ -183,7 +183,7 @@ pub enum MyLibError {
 
 Then, return this error type from all your fallible public APIs. It's a best
 practice to wrap any "external" error types in your error `enum` instead of
-using something like [eyre](https://docs.rs/eyre) in a library.
+using something like [Report] in a library.
 
 ### ... in application code
 
@@ -191,33 +191,50 @@ Application code tends to work a little differently than libraries. You don't
 always need or care to define dedicated error wrappers for errors coming from
 external libraries and tools.
 
-For this situation, `miette` includes two tools: [DiagnosticReport] and
+For this situation, `miette` includes two tools: [Report] and
 [IntoDiagnostic]. They work in tandem to make it easy to convert regular
 `std::error::Error`s into [Diagnostic]s. Additionally, there's a
-[DiagnosticResult] type alias that you can use to be more terse:
+[Result] type alias that you can use to be more terse.
+
+When dealing with non-`Diagnostic` types, you'll want to `.into_diagnostic()`
+them:
 
 ```rust
 // my_app/lib/my_internal_file.rs
-use miette::{IntoDiagnostic, DiagnosticResult};
+use miette::{IntoDiagnostic, Result};
 use semver::Version;
 
-pub fn some_tool() -> DiagnosticResult<Version> {
-    Ok("1.2.x".parse().into_diagnostic("my_app::semver::parse_error")?)
+pub fn some_tool() -> Result<Version> {
+    Ok("1.2.x".parse().into_diagnostic()?)
+}
+```
+
+`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` traits that
+you can import to add ad-hoc context messages to your `Diagnostic`s, as well,
+though you'll still need to use `.into_diagnostic()` to make use of it:
+
+```rust
+// my_app/lib/my_internal_file.rs
+use miette::{IntoDiagnostic, Result, WrapErr};
+use semver::Version;
+
+pub fn some_tool() -> Result<Version> {
+    Ok("1.2.x".parse().into_diagnostic().wrap_err("Parsing this tool's semver version failed.")?)
 }
 ```
 
 ### ... in `main()`
 
 `main()` is just like any other part of your application-internal code. Use
-`DiagnosticResult` as your return value, and it will pretty-print your
+`Result` as your return value, and it will pretty-print your
 diagnostics automatically.
 
 ```rust
-use miette::{DiagnosticResult, IntoDiagnostic};
+use miette::{Result, IntoDiagnostic};
 use semver::Version;
 
-fn pretend_this_is_main() -> DiagnosticResult<()> {
-    let version: Version = "1.2.x".parse().into_diagnostic("my_app::semver::parse_error")?;
+fn pretend_this_is_main() -> Result<()> {
+    let version: Version = "1.2.x".parse().into_diagnostic()?;
     println!("{}", version);
     Ok(())
 }
@@ -249,7 +266,7 @@ use thiserror::Error;
 #[diagnostic(
     code(my_app::my_error),
     // You can do formatting!
-    url("https://my_website.com/error_codes#{}", self.code())
+    url("https://my_website.com/error_codes#{}", self.code().unwrap())
 )]
 struct MyErr;
 ```
@@ -330,7 +347,7 @@ pub struct MyErrorType {
   [`color-eyre`](https://crates.io/crates/color-eyre): these two enormously
   influential error handling libraries have pushed forward the experience of
   application-level error handling and error reporting. `miette`'s
-  `DiagnosticReport` type is an attempt at a very very rough version of their
+  `Report` type is an attempt at a very very rough version of their
   `Report` types.
 - [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
   for library-level error definitions, and for being the inspiration behind
@@ -344,7 +361,7 @@ pub struct MyErrorType {
 
 `miette` is released to the Rust community under the [Apache license 2.0](./LICENSE).
 
-It also includes some code taken from [`eyre`](https://github.com/yaahc/eyre),
+It also includes code taken from [`eyre`](https://github.com/yaahc/eyre),
 and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
 the Apache License. Some code is taken from
 [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.

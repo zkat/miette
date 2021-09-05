@@ -3,34 +3,29 @@ use std::fmt;
 use owo_colors::{OwoColorize, Style};
 
 use crate::chain::Chain;
-use crate::printer::theme::*;
-use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::{SourceSpan, SpanContents};
+use crate::handlers::theme::*;
+use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
+use crate::{ReportHandler, SourceSpan, SpanContents};
 
 /**
-A [DiagnosticReportPrinter] that displays a given [crate::DiagnosticReport] in a quasi-graphical way, using terminal colors, unicode drawing characters, and other such things.
+A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
+way, using terminal colors, unicode drawing characters, and other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a [GraphicalTheme] of your own creation (or using one of its own defaults!)
+This printer can be customized by using `new_themed()` and handing it a
+[GraphicalTheme] of your own creation (or using one of its own defaults!)
 
-See [crate::set_printer] for more details on customizing your global printer.
-
-## Example
-
-```
-use miette::{GraphicalReportPrinter, GraphicalTheme};
-miette::set_printer(GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor()));
-```
+See [crate::set_hook] for more details on customizing your global printer.
 */
 #[derive(Debug, Clone)]
-pub struct GraphicalReportPrinter {
+pub struct GraphicalReportHandler {
     pub(crate) linkify_code: bool,
     pub(crate) theme: GraphicalTheme,
 }
 
-impl GraphicalReportPrinter {
-    /// Create a new [GraphicalReportPrinter] with the default
+impl GraphicalReportHandler {
+    /// Create a new [GraphicalReportHandler] with the default
     /// [GraphicalTheme]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
@@ -39,7 +34,7 @@ impl GraphicalReportPrinter {
         }
     }
 
-    ///Create a new [GraphicalReportPrinter] with a given [GraphicalTheme].
+    ///Create a new [GraphicalReportHandler] with a given [GraphicalTheme].
     pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self {
             linkify_code: true,
@@ -54,15 +49,15 @@ impl GraphicalReportPrinter {
     }
 }
 
-impl Default for GraphicalReportPrinter {
+impl Default for GraphicalReportHandler {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl GraphicalReportPrinter {
+impl GraphicalReportHandler {
     /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [DiagnosticReportPrinter] handler, but is
+    /// be called by the toplevel [ReportHandler] handler, but is
     /// made public to make it easier (possible) to test in isolation from
     /// global state.
     pub fn render_report(
@@ -91,13 +86,18 @@ impl GraphicalReportPrinter {
             Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
         };
         write!(f, "{}", self.theme.characters.hbar.to_string().repeat(4))?;
-        if self.linkify_code && diagnostic.url().is_some() {
+        if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
-            let code = format!("{} (click for details)", diagnostic.code());
+            let code = format!(
+                "{} (click for details)",
+                diagnostic
+                    .code()
+                    .expect("MIETTE BUG: already got checked for None")
+            );
             let link = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", url, code);
             write!(f, "[{}]", link.style(self.theme.styles.code))?;
-        } else {
-            write!(f, "[{}]", diagnostic.code().style(self.theme.styles.code))?;
+        } else if let Some(code) = diagnostic.code() {
+            write!(f, "[{}]", code.style(self.theme.styles.code))?;
         }
         writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
         writeln!(f)?;
@@ -510,7 +510,7 @@ impl GraphicalReportPrinter {
     }
 }
 
-impl DiagnosticReportPrinter for GraphicalReportPrinter {
+impl ReportHandler for GraphicalReportHandler {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
