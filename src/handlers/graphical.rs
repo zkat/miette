@@ -401,7 +401,9 @@ impl GraphicalReportHandler {
                         "{:width$}{}{}{}",
                         "",
                         chars.underline.to_string().repeat(num_left),
-                        if hl.label().is_some() {
+                        if hl.len() == 0 {
+                            chars.uarrow
+                        } else if hl.label().is_some() {
                             chars.underbar
                         } else {
                             chars.underline
@@ -427,7 +429,7 @@ impl GraphicalReportHandler {
                 let num_right = local_offset + hl_len - vbar_offset - 1;
                 let lines = format!(
                     "{:width$}{}{} {}",
-                    " ",
+                    "",
                     chars.lbot,
                     chars.hbar.to_string().repeat(num_right + 1),
                     label,
