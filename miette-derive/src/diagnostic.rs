@@ -150,12 +150,6 @@ impl Diagnostic {
                             fields: var.fields,
                             args,
                         });
-                    } else {
-                        // Also handle when there's multiple `#[diagnostic]` attrs?
-                        return Err(syn::Error::new(
-                            var.ident.span(),
-                            "#[diagnostic] attribute is required on all enum variants when deriving Diagnostic.",
-                        ));
                     }
                 }
                 Diagnostic::Enum {
