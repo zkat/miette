@@ -1,5 +1,15 @@
 # `miette` Release Changelog
 
+<a name="2.1.0"></a>
+## 2.1.0 (2021-09-08)
+
+This is a small release with a handful of quality of life improvements (and a small bugfix).
+
+### Features
+
+* **printer:** use uparrow for empty highlights and fix 0-offset display bug ([824cd8be](https://github.com/zkat/miette/commit/824cd8bebea2ae43a29d9d744d0386d00cc943e0))
+* **derive:** make #[diagnostic] optional for enums, too ([ffe1b558](https://github.com/zkat/miette/commit/ffe1b558d0d7284e39fcb38c4f410cddb4cdb4bd))
+
 <a name="2.0.0"></a>
 ## 2.0.0 (2021-09-05)
 
