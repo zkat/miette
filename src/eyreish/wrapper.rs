@@ -4,6 +4,8 @@ use std::error::Error as StdError;
 
 use crate::Diagnostic;
 
+use crate as miette;
+
 #[repr(transparent)]
 pub(crate) struct DisplayError<M>(pub(crate) M);
 
@@ -69,7 +71,9 @@ impl Display for NoneError {
 impl StdError for NoneError {}
 impl Diagnostic for NoneError {}
 
+#[derive(miette_derive::Diagnostic)]
 #[repr(transparent)]
+#[diagnostic(transparent)]
 pub(crate) struct BoxedError(pub(crate) Box<dyn Diagnostic + Send + Sync>);
 
 impl Debug for BoxedError {
@@ -85,4 +89,3 @@ impl Display for BoxedError {
 }
 
 impl StdError for BoxedError {}
-impl Diagnostic for BoxedError {}

@@ -125,9 +125,55 @@ where
     D: Display,
     E: Diagnostic + 'static,
 {
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.code()
+    }
+
+    fn severity(&self) -> Option<crate::Severity> {
+        self.error.severity()
+    }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.help()
+    }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.url()
+    }
+
+    fn snippets<'a>(
+        &'a self,
+    ) -> Option<Box<dyn Iterator<Item = crate::DiagnosticSnippet<'a>> + 'a>> {
+        self.error.snippets()
+    }
 }
 
-impl<D> Diagnostic for ContextError<D, Report> where D: Display {}
+impl<D> Diagnostic for ContextError<D, Report>
+where
+    D: Display,
+{
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.inner.diagnostic().code()
+    }
+
+    fn severity(&self) -> Option<crate::Severity> {
+        self.error.inner.diagnostic().severity()
+    }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.inner.diagnostic().help()
+    }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.error.inner.diagnostic().url()
+    }
+
+    fn snippets<'a>(
+        &'a self,
+    ) -> Option<Box<dyn Iterator<Item = crate::DiagnosticSnippet<'a>> + 'a>> {
+        self.error.inner.diagnostic().snippets()
+    }
+}
 
 struct Quoted<D>(D);
 
