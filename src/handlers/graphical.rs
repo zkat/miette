@@ -105,7 +105,7 @@ impl GraphicalReportHandler {
             f,
             "    {} {}",
             severity_icon.style(severity_style),
-            diagnostic.style(severity_style)
+            diagnostic,
         )?;
         Ok(())
     }
@@ -125,13 +125,13 @@ impl GraphicalReportHandler {
                 } else {
                     self.theme.characters.lbot
                 };
-                let msg = format!(
-                    "    {}{}{} {}",
-                    char, self.theme.characters.hbar, self.theme.characters.rarrow, error
+                let prefix = format!(
+                    "    {}{}{}",
+                    char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
                 .style(severity_style)
                 .to_string();
-                writeln!(f, "{}", msg)?;
+                writeln!(f, "{} {}", prefix, error)?;
             }
         }
 
