@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="2.1.1"></a>
+## 2.1.1 (2021-09-09)
+
+This is a small, but visually-noticeable bug fix. I spent some time playing
+with colors and styling and made some fixes that will improve where people's
+eyes are drawn to, and also take into account color visibility issues a bit
+more.
+
+### Bug Fixes
+
+* **report:** don't color error message text to draw eyes back to it ([6422f821](https://github.com/zkat/miette/commit/6422f8217495aeef38af4eb00feeb73ced36f7bf))
+* **reporter:** improve color situation and style things a little nicer ([533ff5f3](https://github.com/zkat/miette/commit/533ff5f348324132044bd2782a17fd6c81c08259))
+
 <a name="2.1.0"></a>
 ## 2.1.0 (2021-09-08)
 
