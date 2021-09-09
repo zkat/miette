@@ -48,7 +48,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -56,6 +56,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
    ·   ──┬─
    ·     ╰── this bit here
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -90,7 +91,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -98,6 +99,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
    · ╰─ this bit here
  2 │   text
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -132,7 +134,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -140,6 +142,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
    ·   ▲
    ·   ╰─ this bit here
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -174,13 +177,14 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
  2 │   text
    ·   ────
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -218,7 +222,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -227,6 +231,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
    ·     ╰── this bit here
    ·          ╰── also this bit
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -261,13 +266,14 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │     source
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -311,7 +317,7 @@ line5
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭──▶ line1
@@ -321,6 +327,7 @@ line5
    · │╰──── block 2
  5 │ ├──▶ line5
    · ╰───── block 1
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -375,7 +382,9 @@ line5
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ┬─▶ wtf?!
+      ├─▶ something went wrong
+      ╰─▶ very much went wrong
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭──▶ line1
@@ -384,6 +393,7 @@ line5
  4 │ │╰─▶ line4
  5 │ ├──▶ line5
    · ╰───── block 1
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -421,7 +431,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭─▶ source
@@ -430,6 +440,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
  3 │ ╭─▶     here
  4 │ ├─▶ more here
    · ╰──── also this bit
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -566,10 +577,11 @@ fn unnamed_snippet_shows_message() {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × oops!
+    × ──▶ oops!
 
    ╭───[1:1] This is the part that broke:
  1 │ source_text_here
+   ╰───
 
     ‽ try doing it better next time?
 "#

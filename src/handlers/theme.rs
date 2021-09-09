@@ -98,19 +98,16 @@ impl ThemeStyles {
     /// Credit: http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1
     pub fn rgb() -> Self {
         Self {
-            error: style().fg_rgb::<172, 65, 66>(),
+            error: style().fg_rgb::<255, 0, 20>(),
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
             code: style().fg_rgb::<170, 117, 159>(),
-            help: style().fg_rgb::<106, 159, 181>(),
+            help: style().fg_rgb::<117, 181, 170>().bold(),
             filename: style().fg_rgb::<117, 181, 170>().underline().bold(),
             highlights: vec![
-                style().fg_rgb::<255, 135, 162>(),
-                style().fg_rgb::<150, 232, 133>(),
-                style().fg_rgb::<62, 238, 210>(),
-                style().fg_rgb::<234, 207, 182>(),
-                style().fg_rgb::<130, 221, 255>(),
-                style().fg_rgb::<255, 188, 242>(),
+                style().fg_rgb::<246, 87, 248>(),
+                style().fg_rgb::<30, 201, 212>(),
+                style().fg_rgb::<145, 246, 111>(),
             ],
         }
     }

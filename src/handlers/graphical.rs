@@ -101,10 +101,17 @@ impl GraphicalReportHandler {
         }
         writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
         writeln!(f)?;
+        write!(f, "    {} ", severity_icon.style(severity_style))?;
+        if diagnostic.source().is_some() {
+            write!(f, "{}", self.theme.characters.mtop.style(severity_style))?;
+        } else {
+            write!(f, "{}", self.theme.characters.hbar.style(severity_style))?;
+        }
         writeln!(
             f,
-            "    {} {}",
-            severity_icon.style(severity_style),
+            "{}{} {}",
+            self.theme.characters.hbar.style(severity_style),
+            self.theme.characters.rarrow.style(severity_style),
             diagnostic,
         )?;
         Ok(())
@@ -126,7 +133,7 @@ impl GraphicalReportHandler {
                     self.theme.characters.lbot
                 };
                 let prefix = format!(
-                    "    {}{}{}",
+                    "      {}{}{}",
                     char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
                 .style(severity_style)
@@ -255,6 +262,13 @@ impl GraphicalReportHandler {
                 }
             }
         }
+        writeln!(
+            f,
+            "{}{}{}",
+            " ".repeat(linum_width + 2),
+            self.theme.characters.lbot,
+            self.theme.characters.hbar.to_string().repeat(3),
+        )?;
         Ok(())
     }
 
