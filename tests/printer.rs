@@ -333,9 +333,11 @@ line5
 #[test]
 fn multiline_highlight_no_label() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
-    #[error("oops!")]
+    #[error("wtf?!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
+        #[source]
+        source: Inner,
         src: NamedSource,
         #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
@@ -344,6 +346,14 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
         #[highlight(ctx)]
         highlight2: SourceSpan,
     }
+
+    #[derive(Debug, Error)]
+    #[error("something went wrong")]
+    struct Inner(#[source] InnerInner);
+
+    #[derive(Debug, Error)]
+    #[error("very much went wrong")]
+    struct InnerInner;
 
     let src = r#"line1
 line2
@@ -354,6 +364,7 @@ line5
     .to_string();
     let len = src.len();
     let err = MyBad {
+        source: Inner(InnerInner),
         src: NamedSource::new("bad_file.rs", src),
         ctx: (0, len).into(),
         highlight1: (0, len).into(),
