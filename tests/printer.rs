@@ -48,7 +48,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -91,7 +91,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -134,7 +134,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -177,7 +177,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -222,7 +222,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
@@ -266,7 +266,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │     source
@@ -317,7 +317,7 @@ line5
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭──▶ line1
@@ -382,9 +382,9 @@ line5
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ┬─▶ wtf?!
-      ├─▶ something went wrong
-      ╰─▶ very much went wrong
+    × wtf?!
+    ├─▶ something went wrong
+    ╰─▶ very much went wrong
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭──▶ line1
@@ -431,7 +431,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭─▶ source
@@ -577,7 +577,7 @@ fn unnamed_snippet_shows_message() {
     let expected = r#"
 ────[oops::my::bad]────────────────────
 
-    × ──▶ oops!
+    × oops!
 
    ╭───[1:1] This is the part that broke:
  1 │ source_text_here
