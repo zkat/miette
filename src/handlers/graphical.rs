@@ -101,8 +101,13 @@ impl GraphicalReportHandler {
         }
         writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
         writeln!(f)?;
-        write!(f, "    {} ", severity_icon.style(severity_style))?;
-        writeln!(f, "{}", diagnostic,)?;
+        // TODO: terminal width support
+        let initial_indent = format!("    {} ", severity_icon.style(severity_style));
+        let rest_indent = format!("    {} ", self.theme.characters.vbar.style(severity_style));
+        let opts = textwrap::Options::new(80)
+            .initial_indent(&initial_indent)
+            .subsequent_indent(&rest_indent);
+        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
         Ok(())
     }
 
@@ -121,13 +126,19 @@ impl GraphicalReportHandler {
                 } else {
                     self.theme.characters.lbot
                 };
-                let prefix = format!(
-                    "    {}{}{}",
+                let initial_indent = format!(
+                    "    {}{}{} ",
                     char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
                 .style(severity_style)
                 .to_string();
-                writeln!(f, "{} {}", prefix, error)?;
+                let rest_indent = format!("    {}   ", self.theme.characters.vbar)
+                    .style(severity_style)
+                    .to_string();
+                let opts = textwrap::Options::new(80)
+                    .initial_indent(&initial_indent)
+                    .subsequent_indent(&rest_indent);
+                writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
             }
         }
 

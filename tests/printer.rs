@@ -340,7 +340,7 @@ line5
 #[test]
 fn multiline_highlight_no_label() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
-    #[error("wtf?!")]
+    #[error("wtf?!\nit broke :(")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source]
@@ -355,7 +355,7 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
     }
 
     #[derive(Debug, Error)]
-    #[error("something went wrong")]
+    #[error("something went wrong\n\nHere's a more detailed explanation of everything that actually went wrong because it's actually important.\n")]
     struct Inner(#[source] InnerInner);
 
     #[derive(Debug, Error)]
@@ -379,11 +379,16 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    let expected = r#"
+    let expected = "
 ────[oops::my::bad]────────────────────
 
     × wtf?!
+    │ it broke :(
     ├─▶ something went wrong
+    │\u{20}\u{20}\u{20}
+    │   Here's a more detailed explanation of everything that actually went
+    │   wrong because it's actually important.
+    │\u{20}\u{20}\u{20}
     ╰─▶ very much went wrong
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
@@ -396,7 +401,7 @@ line5
    ╰───
 
     ‽ try doing it better next time?
-"#
+"
     .trim_start()
     .to_string();
     assert_eq!(expected, out);
