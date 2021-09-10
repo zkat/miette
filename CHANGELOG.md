@@ -1,5 +1,15 @@
 # `miette` Release Changelog
 
+<a name="2.1.2"></a>
+## 2.1.2 (2021-09-10)
+
+So it turns out I forgot to make snippets and other stuff forward through when
+you use `.context()` &co. This should be fixed now 😅
+
+### Bug Fixes
+
+* **context:** pass on diagnostic metadata when wrapping with `Report` ([e4fdac38](https://github.com/zkat/miette/commit/e4fdac38ea8c295468ed0fce563a2df29241986a))
+
 <a name="2.1.1"></a>
 ## 2.1.1 (2021-09-09)
 
