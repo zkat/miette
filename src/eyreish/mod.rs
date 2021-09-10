@@ -95,8 +95,9 @@ fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandl
     } else {
         atty::is(Stream::Stdout) && atty::is(Stream::Stderr) && !ci_info::is_ci()
     };
+    let size = term_size::dimensions().unwrap_or((80, 0)).0;
     if fancy {
-        Box::new(GraphicalReportHandler::new())
+        Box::new(GraphicalReportHandler::new().with_width(size))
     } else {
         Box::new(NarratableReportHandler)
     }

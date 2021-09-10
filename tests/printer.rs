@@ -9,6 +9,7 @@ fn fmt_report(diag: Report) -> String {
     // Mostly for dev purposes.
     if std::env::var("STYLE").is_ok() {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+            .with_width(80)
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else if std::env::var("NARRATED").is_ok() {
@@ -17,6 +18,7 @@ fn fmt_report(diag: Report) -> String {
             .unwrap();
     } else {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .with_width(80)
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     };

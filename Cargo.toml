@@ -19,6 +19,7 @@ owo-colors = "2.0.0"
 atty = "0.2.14"
 ci_info = "0.14.2"
 textwrap = "0.14.2"
+term_size = "0.3.2"
 
 [dev-dependencies]
 semver = "1.0.4"

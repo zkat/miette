@@ -21,6 +21,7 @@ See [crate::set_hook] for more details on customizing your global printer.
 #[derive(Debug, Clone)]
 pub struct GraphicalReportHandler {
     pub(crate) linkify_code: bool,
+    pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
 }
 
@@ -30,6 +31,7 @@ impl GraphicalReportHandler {
     pub fn new() -> Self {
         Self {
             linkify_code: true,
+            termwidth: 200,
             theme: GraphicalTheme::default(),
         }
     }
@@ -38,6 +40,7 @@ impl GraphicalReportHandler {
     pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self {
             linkify_code: true,
+            termwidth: 200,
             theme,
         }
     }
@@ -45,6 +48,18 @@ impl GraphicalReportHandler {
     /// Disables error code linkification using [Diagnostic::url].
     pub fn without_code_linking(mut self) -> Self {
         self.linkify_code = false;
+        self
+    }
+
+    /// Set a theme for this handler.
+    pub fn with_theme(mut self, theme: GraphicalTheme) -> Self {
+        self.theme = theme;
+        self
+    }
+
+    /// Sets the width to wrap the report at.
+    pub fn with_width(mut self, width: usize) -> Self {
+        self.termwidth = width;
         self
     }
 }
@@ -66,6 +81,7 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
+        writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
         if let Some(snippets) = diagnostic.snippets() {
@@ -80,11 +96,6 @@ impl GraphicalReportHandler {
     }
 
     fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        let (severity_style, severity_icon) = match diagnostic.severity() {
-            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
-            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
-            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
-        };
         write!(f, "{}", self.theme.characters.hbar.to_string().repeat(4))?;
         if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
@@ -100,23 +111,24 @@ impl GraphicalReportHandler {
             write!(f, "[{}]", code.style(self.theme.styles.code))?;
         }
         writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
-        writeln!(f)?;
-        // TODO: terminal width support
-        let initial_indent = format!("    {} ", severity_icon.style(severity_style));
-        let rest_indent = format!("    {} ", self.theme.characters.vbar.style(severity_style));
-        let opts = textwrap::Options::new(80)
-            .initial_indent(&initial_indent)
-            .subsequent_indent(&rest_indent);
-        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
         Ok(())
     }
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        let severity_style = match diagnostic.severity() {
-            Some(Severity::Error) | None => self.theme.styles.error,
-            Some(Severity::Warning) => self.theme.styles.warning,
-            Some(Severity::Advice) => self.theme.styles.advice,
+        let (severity_style, severity_icon) = match diagnostic.severity() {
+            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
+            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
+            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
         };
+
+        let initial_indent = format!("    {} ", severity_icon.style(severity_style));
+        let rest_indent = format!("    {} ", self.theme.characters.vbar.style(severity_style));
+        let width = self.termwidth.saturating_sub(4);
+        let opts = textwrap::Options::new(width)
+            .initial_indent(&initial_indent)
+            .subsequent_indent(&rest_indent);
+
+        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
         if let Some(cause) = diagnostic.source() {
             let mut cause_iter = Chain::new(cause).peekable();
@@ -135,7 +147,7 @@ impl GraphicalReportHandler {
                 let rest_indent = format!("    {}   ", self.theme.characters.vbar)
                     .style(severity_style)
                     .to_string();
-                let opts = textwrap::Options::new(80)
+                let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
                 writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
