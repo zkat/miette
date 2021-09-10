@@ -1,6 +1,7 @@
-use std::fmt;
+use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
+use unicode_width::UnicodeWidthStr;
 
 use crate::chain::Chain;
 use crate::handlers::theme::*;
@@ -96,7 +97,14 @@ impl GraphicalReportHandler {
     }
 
     fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        write!(f, "{}", self.theme.characters.hbar.to_string().repeat(4))?;
+        let mut header = String::new();
+        let mut width = 0;
+        write!(
+            header,
+            "{}",
+            self.theme.characters.hbar.to_string().repeat(4)
+        )?;
+        width += UnicodeWidthStr::width(&header[..]);
         if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = format!(
@@ -106,11 +114,24 @@ impl GraphicalReportHandler {
                     .expect("MIETTE BUG: already got checked for None")
             );
             let link = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", url, code);
-            write!(f, "[{}]", link.style(self.theme.styles.code))?;
+            write!(header, "[{}]", link.style(self.theme.styles.code))?;
+            width += UnicodeWidthStr::width(&url.to_string()[..])
+                + UnicodeWidthStr::width(&code[..])
+                + 2;
         } else if let Some(code) = diagnostic.code() {
-            write!(f, "[{}]", code.style(self.theme.styles.code))?;
+            write!(header, "[{}]", code.style(self.theme.styles.code))?;
+            width += UnicodeWidthStr::width(&code.to_string()[..]) + 2;
         }
-        writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
+        writeln!(
+            f,
+            "{}{}",
+            header,
+            self.theme
+                .characters
+                .hbar
+                .to_string()
+                .repeat(self.termwidth.saturating_sub(width)),
+        )?;
         Ok(())
     }
 
