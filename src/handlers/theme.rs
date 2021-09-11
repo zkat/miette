@@ -98,12 +98,12 @@ impl ThemeStyles {
     /// Credit: http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1
     pub fn rgb() -> Self {
         Self {
-            error: style().fg_rgb::<255, 0, 20>(),
+            error: style().fg_rgb::<255, 30, 30>(),
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
-            code: style().fg_rgb::<170, 117, 159>(),
-            help: style().fg_rgb::<117, 181, 170>().bold(),
-            filename: style().fg_rgb::<117, 181, 170>().underline().bold(),
+            code: style().fg_rgb::<92, 157, 255>(),
+            help: style().fg_rgb::<117, 181, 170>(),
+            filename: style().fg_rgb::<92, 157, 255>().underline().bold(),
             highlights: vec![
                 style().fg_rgb::<246, 87, 248>(),
                 style().fg_rgb::<30, 201, 212>(),
@@ -175,7 +175,7 @@ pub struct ThemeCharacters {
     pub underbar: char,
     pub underline: char,
 
-    pub fyi: char,
+    pub fyi: String,
     pub x: char,
     pub warning: char,
     pub point_right: char,
@@ -203,7 +203,7 @@ impl ThemeCharacters {
             rcross: '┤',
             underbar: '┬',
             underline: '─',
-            fyi: '‽',
+            fyi: "help:".into(),
             x: '×',
             warning: '⚠',
             point_right: '☞',
@@ -231,7 +231,7 @@ impl ThemeCharacters {
             rcross: '|',
             underbar: '|',
             underline: '^',
-            fyi: 'i',
+            fyi: "help:".into(),
             x: 'x',
             warning: '!',
             point_right: '>',
