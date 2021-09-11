@@ -126,11 +126,11 @@ impl GraphicalReportHandler {
             f,
             "{}{}",
             header,
-            self.theme
-                .characters
-                .hbar
-                .to_string()
-                .repeat(self.termwidth.saturating_sub(width)),
+            self.theme.characters.hbar.to_string().repeat(
+                self.termwidth
+                    .saturating_sub(width)
+                    .saturating_sub("Error: ".len())
+            ),
         )?;
         Ok(())
     }
@@ -182,7 +182,12 @@ impl GraphicalReportHandler {
         if let Some(help) = diagnostic.help() {
             let help = help.style(self.theme.styles.help);
             writeln!(f)?;
-            writeln!(f, "    {} {}", self.theme.characters.fyi, help)?;
+            let width = self.termwidth.saturating_sub(4);
+            let initial_indent = format!("    {} ", self.theme.characters.fyi);
+            let opts = textwrap::Options::new(width)
+                .initial_indent(&initial_indent)
+                .subsequent_indent("      ");
+            writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
         Ok(())
     }
