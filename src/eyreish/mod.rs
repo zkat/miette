@@ -9,7 +9,6 @@ use core::mem::ManuallyDrop;
 
 use std::error::Error as StdError;
 
-use atty::Stream;
 use once_cell::sync::OnceCell;
 
 #[allow(unreachable_pub)]
@@ -27,7 +26,7 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
-use crate::{Diagnostic, GraphicalReportHandler, NarratableReportHandler};
+use crate::{Diagnostic, MietteHandler};
 use error::ErrorImpl;
 
 mod context;
@@ -88,19 +87,7 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
-    let fancy = if let Ok(string) = std::env::var("NO_COLOR") {
-        string == "0"
-    } else if let Ok(string) = std::env::var("CLICOLOR") {
-        string != "0" || string == "1"
-    } else {
-        atty::is(Stream::Stdout) && atty::is(Stream::Stderr) && !ci_info::is_ci()
-    };
-    let size = term_size::dimensions().unwrap_or((80, 0)).0;
-    if fancy {
-        Box::new(GraphicalReportHandler::new().with_width(size))
-    } else {
-        Box::new(NarratableReportHandler)
-    }
+    Box::new(MietteHandler::new())
 }
 
 impl dyn ReportHandler {
