@@ -596,7 +596,7 @@ fn disable_url_links() -> Result<(), MietteError> {
     let err = MyBad;
     let mut out = String::new();
     GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
-        .without_code_linking()
+        .with_links(false)
         .render_report(&mut out, &err)
         .unwrap();
     println!("{}", out);

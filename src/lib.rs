@@ -6,6 +6,7 @@ pub use miette_derive::*;
 
 pub use error::*;
 pub use eyreish::*;
+pub use handler::*;
 pub use handlers::*;
 pub use named_source::*;
 pub use protocol::*;
@@ -13,6 +14,7 @@ pub use protocol::*;
 mod chain;
 mod error;
 mod eyreish;
+mod handler;
 mod handlers;
 mod named_source;
 mod protocol;

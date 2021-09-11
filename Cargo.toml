@@ -21,6 +21,9 @@ ci_info = "0.14.2"
 textwrap = "0.14.2"
 term_size = "0.3.2"
 unicode-width = "0.1.8"
+supports-hyperlinks = "1.1.0"
+supports-color = "1.0.2"
+supports-unicode = "1.0.0"
 
 [dev-dependencies]
 semver = "1.0.4"

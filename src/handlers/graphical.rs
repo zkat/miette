@@ -46,9 +46,9 @@ impl GraphicalReportHandler {
         }
     }
 
-    /// Disables error code linkification using [Diagnostic::url].
-    pub fn without_code_linking(mut self) -> Self {
-        self.linkify_code = false;
+    /// Whether to enable error code linkification using [Diagnostic::url].
+    pub fn with_links(mut self, links: bool) -> Self {
+        self.linkify_code = links;
         self
     }
 
@@ -274,7 +274,7 @@ impl GraphicalReportHandler {
             } else {
                 self.theme.characters.ltop
             },
-            self.theme.characters.hbar.to_string().repeat(1),
+            self.theme.characters.hbar,
         )?;
         if let Some(source_name) = snippet.source.name() {
             let source_name = source_name.style(self.theme.styles.filename);
