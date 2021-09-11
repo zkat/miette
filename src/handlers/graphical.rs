@@ -97,6 +97,11 @@ impl GraphicalReportHandler {
     }
 
     fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+        let severity_style = match diagnostic.severity() {
+            Some(Severity::Error) | None => self.theme.styles.error,
+            Some(Severity::Warning) => self.theme.styles.warning,
+            Some(Severity::Advice) => self.theme.styles.advice,
+        };
         let mut header = String::new();
         let mut width = 0;
         write!(
@@ -104,23 +109,34 @@ impl GraphicalReportHandler {
             "{}",
             self.theme.characters.hbar.to_string().repeat(4)
         )?;
-        width += UnicodeWidthStr::width(&header[..]);
+        width += 4;
         if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = format!(
-                "{} (click for details)",
+                "{}",
                 diagnostic
                     .code()
                     .expect("MIETTE BUG: already got checked for None")
             );
-            let link = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", url, code);
-            write!(header, "[{}]", link.style(self.theme.styles.code))?;
-            width += UnicodeWidthStr::width(&url.to_string()[..])
-                + UnicodeWidthStr::width(&code[..])
-                + 2;
+            width += code[..].width();
+            let link = format!(
+                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+                url,
+                "(link)".style(self.theme.styles.filename)
+            );
+            write!(header, "[{} {}]", code.style(severity_style), link,)?;
+            width += "(link)".width() + 3
         } else if let Some(code) = diagnostic.code() {
-            write!(header, "[{}]", code.style(self.theme.styles.code))?;
-            width += UnicodeWidthStr::width(&code.to_string()[..]) + 2;
+            write!(header, "[{}", code.style(severity_style),)?;
+            width += &code.to_string()[..].width() + 1;
+
+            if let Some(link) = diagnostic.url() {
+                write!(header, " ({})]", link.style(self.theme.styles.filename))?;
+                width += &link.to_string()[..].width() + 3;
+            } else {
+                write!(header, "]")?;
+                width += 1;
+            }
         }
         writeln!(
             f,
@@ -129,8 +145,8 @@ impl GraphicalReportHandler {
             self.theme.characters.hbar.to_string().repeat(
                 self.termwidth
                     .saturating_sub(width)
-                    .saturating_sub("Error: ".len())
-            ),
+                    .saturating_sub("Error: ".width())
+            )
         )?;
         Ok(())
     }
@@ -142,9 +158,9 @@ impl GraphicalReportHandler {
             Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
         };
 
-        let initial_indent = format!("    {} ", severity_icon.style(severity_style));
-        let rest_indent = format!("    {} ", self.theme.characters.vbar.style(severity_style));
-        let width = self.termwidth.saturating_sub(4);
+        let initial_indent = format!("  {} ", severity_icon.style(severity_style));
+        let rest_indent = format!("  {} ", self.theme.characters.vbar.style(severity_style));
+        let width = self.termwidth.saturating_sub(2);
         let opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
             .subsequent_indent(&rest_indent);
@@ -160,12 +176,12 @@ impl GraphicalReportHandler {
                     self.theme.characters.lbot
                 };
                 let initial_indent = format!(
-                    "    {}{}{} ",
+                    "  {}{}{} ",
                     char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
                 .style(severity_style)
                 .to_string();
-                let rest_indent = format!("    {}   ", self.theme.characters.vbar)
+                let rest_indent = format!("  {}   ", self.theme.characters.vbar)
                     .style(severity_style)
                     .to_string();
                 let opts = textwrap::Options::new(width)
@@ -180,13 +196,12 @@ impl GraphicalReportHandler {
 
     fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
-            let help = help.style(self.theme.styles.help);
             writeln!(f)?;
             let width = self.termwidth.saturating_sub(4);
-            let initial_indent = format!("    {} ", self.theme.characters.fyi);
+            let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
             let opts = textwrap::Options::new(width)
                 .initial_indent(&initial_indent)
-                .subsequent_indent("      ");
+                .subsequent_indent("        ");
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
         Ok(())
@@ -234,16 +249,36 @@ impl GraphicalReportHandler {
             .len();
 
         // Header
+        if let Some(msg) = &snippet.message {
+            writeln!(
+                f,
+                "{}{}{}",
+                " ".repeat(linum_width + 2),
+                self.theme.characters.ltop,
+                self.theme.characters.hbar.to_string().repeat(4)
+            )?;
+            writeln!(
+                f,
+                "{}{} error: {}",
+                " ".repeat(linum_width + 2),
+                self.theme.characters.vbar,
+                msg
+            )?;
+        }
         write!(
             f,
             "{}{}{}",
             " ".repeat(linum_width + 2),
-            self.theme.characters.ltop,
-            self.theme.characters.hbar.to_string().repeat(3),
+            if snippet.message.is_some() {
+                self.theme.characters.lcross
+            } else {
+                self.theme.characters.ltop
+            },
+            self.theme.characters.hbar.to_string().repeat(1),
         )?;
         if let Some(source_name) = snippet.source.name() {
             let source_name = source_name.style(self.theme.styles.filename);
-            write!(
+            writeln!(
                 f,
                 "[{}:{}:{}]",
                 source_name,
@@ -251,12 +286,16 @@ impl GraphicalReportHandler {
                 contents.column() + 1
             )?;
         } else {
-            write!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
+            writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
         }
-        if let Some(msg) = &snippet.message {
-            write!(f, " {}:", msg)?;
-        }
-        writeln!(f)?;
+
+        // Blank line to improve readability
+        writeln!(
+            f,
+            "{}{}",
+            " ".repeat(linum_width + 2),
+            self.theme.characters.vbar,
+        )?;
 
         // Now it's time for the fun part--actually rendering everything!
         for line in &lines {
@@ -302,10 +341,16 @@ impl GraphicalReportHandler {
         }
         writeln!(
             f,
+            "{}{}",
+            " ".repeat(linum_width + 2),
+            self.theme.characters.vbar,
+        )?;
+        writeln!(
+            f,
             "{}{}{}",
             " ".repeat(linum_width + 2),
             self.theme.characters.lbot,
-            self.theme.characters.hbar.to_string().repeat(3),
+            self.theme.characters.hbar.to_string().repeat(4),
         )?;
         Ok(())
     }
@@ -409,7 +454,7 @@ impl GraphicalReportHandler {
         write!(
             f,
             " {:width$} {} ",
-            linum,
+            linum.dimmed(),
             self.theme.characters.vbar,
             width = width
         )?;
