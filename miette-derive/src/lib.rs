@@ -7,6 +7,7 @@ mod code;
 mod diagnostic;
 mod diagnostic_arg;
 mod fmt;
+mod forward;
 mod help;
 mod severity;
 mod snippets;

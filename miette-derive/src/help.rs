@@ -1,18 +1,18 @@
-use std::collections::HashSet;
-
 use proc_macro2::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
-    spanned::Spanned,
     Fields, Token,
 };
 
-use crate::fmt::{self, Display};
 use crate::{
-    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef, DiagnosticDefArgs},
-    utils::forward_to_single_field_variant,
+    diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
+    utils::{display_pat_members, gen_all_variants_with},
+};
+use crate::{
+    fmt::{self, Display},
+    forward::WhichFn,
 };
 
 pub struct Help {
@@ -31,7 +31,6 @@ impl Parse for Help {
                 let args = if content.is_empty() {
                     TokenStream::new()
                 } else {
-                    content.parse::<Token![,]>()?;
                     fmt::parse_token_expr(&content, false)?
                 };
                 let display = Display {
@@ -58,110 +57,28 @@ impl Parse for Help {
 
 impl Help {
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
-        let help_pairs = variants
-            .iter()
-            .map(
-                |DiagnosticDef {
-                     ident,
-                     fields,
-                     args,
-                     ..
-                 }| {
-                     match args {
-                         DiagnosticDefArgs::Transparent => {
-                             Some(forward_to_single_field_variant(ident, fields, quote!{ help() } ))
-                         }
-                         DiagnosticDefArgs::Concrete(DiagnosticConcreteArgs { help, .. }) => {
-                             let mut display = help.as_ref()?.display.clone();
-                             let member_idents = fields.iter().enumerate().map(|(i, field)| {
-                                 field
-                                     .ident
-                                     .as_ref()
-                                     .cloned()
-                                     .unwrap_or_else(|| format_ident!("_{}", i))
-                             });
-                             let members: HashSet<syn::Member> = fields.iter().enumerate().map(|(i, field)| {
-                                 if let Some(ident) = field.ident.as_ref().cloned() {
-                                     syn::Member::Named(ident)
-                                 } else {
-                                     syn::Member::Unnamed(syn::Index { index: i as u32, span: field.span() })
-                                 }
-                             }).collect();
-                             display.expand_shorthand(&members);
-                             let Display { fmt, args, .. } = display;
-                             Some(match fields {
-                                 syn::Fields::Named(_) => {
-                                     quote! { Self::#ident{ #(#member_idents),* } => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                                 }
-                                 syn::Fields::Unnamed(_) => {
-                                     quote! { Self::#ident( #(#member_idents),* ) => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), }
-                                 }
-                                 syn::Fields::Unit =>
-                                     quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args))), },
-                             })
-                         }
-                     }
-                 },
-            )
-            .flatten()
-            .collect::<Vec<_>>();
-        if help_pairs.is_empty() {
-            None
-        } else {
-            Some(quote! {
-                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                    #[allow(unused_variables, deprecated)]
-                    match self {
-                        #(#help_pairs)*
-                        _ => None,
-                    }
-                }
-            })
-        }
+        gen_all_variants_with(
+            variants,
+            WhichFn::Help,
+            |ident, fields, DiagnosticConcreteArgs { help, .. }| {
+                let (display_pat, display_members) = display_pat_members(fields);
+                let display = &help.as_ref()?.display;
+                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
+                Some(quote! {
+                    Self::#ident #display_pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
+                })
+            },
+        )
     }
 
     pub(crate) fn gen_struct(&self, fields: &Fields) -> Option<TokenStream> {
-        let mut display = self.display.clone();
-        let members: HashSet<syn::Member> = fields
-            .iter()
-            .enumerate()
-            .map(|(i, field)| {
-                if let Some(ident) = field.ident.as_ref().cloned() {
-                    syn::Member::Named(ident)
-                } else {
-                    syn::Member::Unnamed(syn::Index {
-                        index: i as u32,
-                        span: field.span(),
-                    })
-                }
-            })
-            .collect();
-        display.expand_shorthand(&members);
-        let members = members.iter();
-        let Display { fmt, args, .. } = display;
-        let fields_pat = match fields {
-            Fields::Named(_) => quote! {
-                let Self { #(#members),* } = self;
-            },
-            Fields::Unnamed(_) => {
-                let vars = members.map(|member| {
-                    if let syn::Member::Unnamed(member) = member {
-                        format_ident!("_{}", member)
-                    } else {
-                        unreachable!()
-                    }
-                });
-                quote! {
-                    let Self(#(#vars),*) = self;
-                }
-            }
-            Fields::Unit => quote! {},
-        };
+        let (display_pat, display_members) = display_pat_members(fields);
+        let (fmt, args) = self.display.expand_shorthand_cloned(&display_members);
         Some(quote! {
             fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
                 #[allow(unused_variables, deprecated)]
-                #fields_pat
-                std::option::Option::Some(std::boxed::Box::new(format!(#fmt, #args)))
+                let Self #display_pat = self;
+                std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
             }
         })
     }

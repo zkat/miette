@@ -322,7 +322,8 @@ const SNIPPET_TEXT: &str = "hello from miette";
 #[derive(Debug, Diagnostic, Error)]
 #[error("welp")]
 #[diagnostic(
-    code(foo::bar::baz),
+    // code not necessary.
+    // code(foo::bar::baz),
     url("https://example.com"),
     help("help"),
     severity(Warning)
@@ -345,13 +346,16 @@ impl ForwardsTo {
     }
 }
 
-fn check_snippets(diag: &impl Diagnostic) {
+fn check_all(diag: &impl Diagnostic) {
     // check Diagnostic impl forwards all these methods
-    assert_eq!(diag.code().unwrap().to_string(), "foo::bar::baz");
+    assert_eq!(diag.code().as_ref().map(|x| x.to_string()), None);
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
+    check_snippets(diag);
+}
 
+fn check_snippets(diag: &impl Diagnostic) {
     type Snip = (Option<String>, usize, usize);
     let snips: Vec<(Snip, Vec<Snip>)> = diag
         .snippets()
@@ -394,7 +398,7 @@ fn test_transparent_enum_unnamed() {
 
     let variant = Enum::FooVariant(ForwardsTo::new());
 
-    check_snippets(&variant);
+    check_all(&variant);
 }
 
 #[test]
@@ -416,7 +420,7 @@ fn test_transparent_enum_named() {
         single_field: ForwardsTo::new(),
     };
 
-    check_snippets(&variant);
+    check_all(&variant);
 
     let bar_variant = Enum::BarVariant;
     assert_eq!(
@@ -436,7 +440,7 @@ fn test_transparent_struct_named() {
     }
     // Also check the From impl here
     let variant: Struct = ForwardsTo::new().into();
-    check_snippets(&variant);
+    check_all(&variant);
 }
 
 #[test]
@@ -446,5 +450,113 @@ fn test_transparent_struct_unnamed() {
     #[diagnostic(transparent)]
     struct Struct(#[from] ForwardsTo);
     let variant = Struct(ForwardsTo::new());
+    check_all(&variant);
+}
+
+#[test]
+fn test_forward_struct_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("display")]
+    #[diagnostic(
+        code(foo::bar::overridden),
+        severity(Advice),
+        help("{help}"),
+        forward(span)
+    )]
+    struct Struct {
+        span: ForwardsTo,
+        help: &'static str,
+    }
+    // Also check the From impl here
+    let diag = Struct {
+        span: ForwardsTo::new(),
+        help: "overridden help please",
+    };
+    assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.help().unwrap().to_string(), "overridden help please");
+    assert_eq!(diag.severity(), Some(Severity::Advice));
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&diag);
+}
+
+#[test]
+fn test_forward_struct_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("display")]
+    #[diagnostic(code(foo::bar::overridden), url("{1}"), forward(0))]
+    struct Struct(ForwardsTo, &'static str);
+
+    // Also check the From impl here
+    let diag = Struct(ForwardsTo::new(), "url here");
+    assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.url().unwrap().to_string(), "url here");
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&diag);
+}
+
+#[test]
+fn test_forward_enum_named() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("help: {help_text}")]
+        #[diagnostic(code(foo::bar::overridden), help("{help_text}"), forward(span))]
+        Variant {
+            span: ForwardsTo,
+            help_text: &'static str,
+        },
+    }
+    // Also check the From impl here
+    let variant: Enum = Enum::Variant {
+        span: ForwardsTo::new(),
+        help_text: "overridden help please",
+    };
+    assert_eq!(variant.code().unwrap().to_string(), "foo::bar::overridden");
+    assert_eq!(
+        variant.help().unwrap().to_string(),
+        "overridden help please"
+    );
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
     check_snippets(&variant);
+}
+
+#[test]
+fn test_forward_enum_unnamed() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum ForwardEnumUnnamed {
+        #[error("help: {1}")]
+        #[diagnostic(code(foo::bar::overridden), help("{1}"), forward(0))]
+        Variant(ForwardsTo, &'static str),
+    }
+    // Also check the From impl here
+    let variant = ForwardEnumUnnamed::Variant(ForwardsTo::new(), "overridden help please");
+    assert_eq!(variant.code().unwrap().to_string(), "foo::bar::overridden");
+    assert_eq!(
+        variant.help().unwrap().to_string(),
+        "overridden help please"
+    );
+    // this comes from <ForwardsTo as Diagnostic>::snippets()
+    check_snippets(&variant);
+}
+
+#[test]
+fn test_unit_struct_display() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("unit only")]
+    #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
+    struct UnitOnly;
+    assert_eq!(UnitOnly.help().unwrap().to_string(), "hello from unit help")
+}
+
+#[test]
+fn test_unit_enum_display() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("unit only")]
+        #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
+        UnitVariant,
+    }
+    assert_eq!(
+        Enum::UnitVariant.help().unwrap().to_string(),
+        "hello from unit help"
+    )
 }
