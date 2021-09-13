@@ -228,7 +228,8 @@ impl Diagnostic {
                                 .as_ref()
                                 .map(|fwd| fwd.gen_struct_method(which))
                         };
-                        let code_body = concrete.code
+                        let code_body = concrete
+                            .code
                             .as_ref()
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::Code));

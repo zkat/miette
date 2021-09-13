@@ -196,7 +196,6 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     Ok(())
 }
 
-
 #[test]
 fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
@@ -234,8 +233,8 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
 
     ‽ try doing it better next time?
 "#
-        .trim_start()
-        .to_string();
+    .trim_start()
+    .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
