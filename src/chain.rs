@@ -10,7 +10,7 @@ use ChainState::*;
 
 #[derive(Clone)]
 #[allow(missing_debug_implementations)]
-pub(crate) struct Chain<'a> {
+pub struct Chain<'a> {
     state: crate::chain::ChainState<'a>,
 }
 
@@ -25,7 +25,7 @@ pub(crate) enum ChainState<'a> {
 }
 
 impl<'a> Chain<'a> {
-    pub(crate) fn new(head: &'a (dyn StdError + 'static)) -> Self {
+    pub fn new(head: &'a (dyn StdError + 'static)) -> Self {
         Chain {
             state: ChainState::Linked { next: Some(head) },
         }

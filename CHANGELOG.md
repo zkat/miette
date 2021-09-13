@@ -1,5 +1,75 @@
 # `miette` Release Changelog
 
+<a name="2.1.2"></a>
+## 2.1.2 (2021-09-10)
+
+So it turns out I forgot to make snippets and other stuff forward through when
+you use `.context()` &co. This should be fixed now 😅
+
+### Bug Fixes
+
+* **context:** pass on diagnostic metadata when wrapping with `Report` ([e4fdac38](https://github.com/zkat/miette/commit/e4fdac38ea8c295468ed0fce563a2df29241986a))
+
+<a name="2.1.1"></a>
+## 2.1.1 (2021-09-09)
+
+This is a small, but visually-noticeable bug fix. I spent some time playing
+with colors and styling and made some fixes that will improve where people's
+eyes are drawn to, and also take into account color visibility issues a bit
+more.
+
+### Bug Fixes
+
+* **report:** don't color error message text to draw eyes back to it ([6422f821](https://github.com/zkat/miette/commit/6422f8217495aeef38af4eb00feeb73ced36f7bf))
+* **reporter:** improve color situation and style things a little nicer ([533ff5f3](https://github.com/zkat/miette/commit/533ff5f348324132044bd2782a17fd6c81c08259))
+
+<a name="2.1.0"></a>
+## 2.1.0 (2021-09-08)
+
+This is a small release with a handful of quality of life improvements (and a small bugfix).
+
+### Features
+
+* **printer:** use uparrow for empty highlights and fix 0-offset display bug ([824cd8be](https://github.com/zkat/miette/commit/824cd8bebea2ae43a29d9d744d0386d00cc943e0))
+* **derive:** make #[diagnostic] optional for enums, too ([ffe1b558](https://github.com/zkat/miette/commit/ffe1b558d0d7284e39fcb38c4f410cddb4cdb4bd))
+
+<a name="2.0.0"></a>
+## 2.0.0 (2021-09-05)
+
+This release overhauls the toplevel/main experience for `miette`. It adds a
+new `Report` type based on `eyre::Report` and overhauls various types to fit
+into this model, as well as prepare for some [future changes in
+Rust](https://github.com/nrc/rfcs/pull/1) that will make it possible to
+integrate `miette` directly with crates like `eyre` instead of having to use
+this specific `Report`.
+
+On top of that, it includes a couple of nice new features, such as
+`#[diagnostic(transparent)]`, which should be super useful when wrapping other
+diagnostics with your own types!
+
+### Breaking Changes
+
+* **report:** anyhow-ify DiagnosticReport (#35) ([3f9da04b](https://github.com/zkat/miette/commit/3f9da04b866f3fd90f88e7e60f9fb7a322aef568))
+    * `DiagnosticReport` is now just `Report`, and is a different, `eyre::Report`-like type.
+    * `DiagnosticResult` is now just `Result`.
+    * `.into_diagnostic()` now just transforms the error into a `Report`.
+    * `DiagnosticReportPrinter` has been replaced with `ReportHandler`
+    * `set_printer` has been replaced by `set_hook`
+    * `code` is now optional.
+    * `.into_diagnostic()` no longer takes a `code` argument.
+    * `#[diagnostic]` is now optional when deriving `Diagnostic`.
+
+### Features
+
+* **derive:** Add `#[diagnostic(transparent,forward)]` (#36) ([53f5d6d1](https://github.com/zkat/miette/commit/53f5d6d1d62845b52e590fed5ce91a643b6e11f3))
+* **Source:** impl Source for str, &str (make &'static str usable for testing) (#40) ([50c7a883](https://github.com/zkat/miette/commit/50c7a88360dc7cef815af2dbb9dc18ede0d1fdb4))
+* **source:** Remove bound `T: Clone` from `Source` implementation for `Cow`. (#42) ([0427c9f9](https://github.com/zkat/miette/commit/0427c9f9666222084cb4494aabbd3e7dc5cdb789))
+
+### Bug Fixes
+
+* **reporter:** Only inc the line count if we haven't already done so with '\n' or '\r\n' (#37) ([5a474370](https://github.com/zkat/miette/commit/5a474370ddda92a3a92b6b84cd561ecaf4d6d858))
+* **printer:** Show snippet message for unnamed sources (#39) ([84219f6c](https://github.com/zkat/miette/commit/84219f6c80c2c432fbeb4c40a591380285de8767))
+
 <a name="1.1.0"></a>
 ## 1.1.0 (2021-08-29)
 

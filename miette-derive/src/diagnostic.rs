@@ -54,8 +54,9 @@ impl DiagnosticDefArgs {
     }
 }
 
+#[derive(Default)]
 pub struct DiagnosticConcreteArgs {
-    pub code: Code,
+    pub code: Option<Code>,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
     pub snippets: Option<Snippets>,
@@ -65,7 +66,7 @@ pub struct DiagnosticConcreteArgs {
 
 impl DiagnosticConcreteArgs {
     fn parse(
-        ident: &syn::Ident,
+        _ident: &syn::Ident,
         fields: &syn::Fields,
         attr: &syn::Attribute,
         args: impl Iterator<Item = DiagnosticArg>,
@@ -100,8 +101,7 @@ impl DiagnosticConcreteArgs {
         }
         let snippets = Snippets::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
-            code: code
-                .ok_or_else(|| syn::Error::new(ident.span(), "Diagnostic code is required."))?,
+            code,
             help,
             severity,
             snippets,
@@ -159,11 +159,12 @@ impl Diagnostic {
                         args,
                     }
                 } else {
-                    // Also handle when there's multiple `#[diagnostic]` attrs?
-                    return Err(syn::Error::new(
-                        input.ident.span(),
-                        "#[diagnostic] attribute is required when deriving Diagnostic.",
-                    ));
+                    Diagnostic::Struct {
+                        fields: data_struct.fields,
+                        ident: input.ident,
+                        generics: input.generics,
+                        args: DiagnosticDefArgs::Concrete(Default::default()),
+                    }
                 }
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
@@ -176,12 +177,6 @@ impl Diagnostic {
                             fields: var.fields,
                             args,
                         });
-                    } else {
-                        // Also handle when there's multiple `#[diagnostic]` attrs?
-                        return Err(syn::Error::new(
-                            var.ident.span(),
-                            "#[diagnostic] attribute is required on all enum variants when deriving Diagnostic.",
-                        ));
                     }
                 }
                 Diagnostic::Enum {
@@ -233,7 +228,10 @@ impl Diagnostic {
                                 .as_ref()
                                 .map(|fwd| fwd.gen_struct_method(which))
                         };
-                        let code_body = concrete.code.gen_struct();
+                        let code_body = concrete.code
+                            .as_ref()
+                            .and_then(|x| x.gen_struct())
+                            .or_else(|| forward(WhichFn::Code));
                         let help_body = concrete
                             .help
                             .as_ref()

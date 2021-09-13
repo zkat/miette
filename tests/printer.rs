@@ -1,23 +1,25 @@
 use miette::{
-    Diagnostic, DiagnosticReport, GraphicalReportPrinter, GraphicalTheme, MietteError, NamedSource,
-    NarratableReportPrinter, SourceSpan,
+    Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
+    NarratableReportHandler, Report, SourceSpan,
 };
 use thiserror::Error;
 
-fn fmt_report(diag: DiagnosticReport) -> String {
+fn fmt_report(diag: Report) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
     if std::env::var("STYLE").is_ok() {
-        GraphicalReportPrinter::new_themed(GraphicalTheme::unicode())
-            .render_report(&mut out, diag.inner())
+        GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+            .with_width(80)
+            .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else if std::env::var("NARRATED").is_ok() {
-        NarratableReportPrinter
-            .render_report(&mut out, diag.inner())
+        NarratableReportHandler
+            .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {
-        GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor())
-            .render_report(&mut out, diag.inner())
+        GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .with_width(80)
+            .render_report(&mut out, diag.as_ref())
             .unwrap();
     };
     out
@@ -46,7 +48,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -56,6 +58,50 @@ fn single_line_highlight() -> Result<(), MietteError> {
    ·   ──┬─
    ·     ╰── this bit here
  3 │     here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
+        ctx: SourceSpan,
+        #[highlight(ctx, label = "this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (0, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    let expected = r#"
+────[oops::my::bad]─────────────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+   · ▲
+   · ╰─ this bit here
+ 2 │   text
+ 3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -88,16 +134,17 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ source
  2 │   text
-   ·   ┬
+   ·   ▲
    ·   ╰─ this bit here
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -130,7 +177,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -139,11 +186,56 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
  2 │   text
    ·   ────
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
     .trim_start()
     .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+
+#[test]
+fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
+        ctx: SourceSpan,
+        #[highlight(ctx, label = "this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\ntext\n  here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    let expected = r#"
+────[oops::my::bad]─────────────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰── this bit here
+ 3 │   here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+        .trim_start()
+        .to_string();
     assert_eq!(expected, out);
     Ok(())
 }
@@ -174,7 +266,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -185,6 +277,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
    ·     ╰── this bit here
    ·          ╰── also this bit
  3 │     here
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -217,7 +310,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -226,6 +319,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -267,7 +361,7 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -279,6 +373,7 @@ line5
    · │╰──── block 2
  5 │ ├──▶ line5
    · ╰───── block 1
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -291,9 +386,11 @@ line5
 #[test]
 fn multiline_highlight_no_label() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
-    #[error("oops!")]
+    #[error("wtf?!\nit broke :(")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
+        #[source]
+        source: Inner,
         src: NamedSource,
         #[snippet(src, message("This is the part that broke"))]
         ctx: SourceSpan,
@@ -302,6 +399,14 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
         #[highlight(ctx)]
         highlight2: SourceSpan,
     }
+
+    #[derive(Debug, Error)]
+    #[error("something went wrong\n\nHere's a more detailed explanation of everything that actually went wrong because it's actually important.\n")]
+    struct Inner(#[source] InnerInner);
+
+    #[derive(Debug, Error)]
+    #[error("very much went wrong")]
+    struct InnerInner;
 
     let src = r#"line1
 line2
@@ -312,6 +417,7 @@ line5
     .to_string();
     let len = src.len();
     let err = MyBad {
+        source: Inner(InnerInner),
         src: NamedSource::new("bad_file.rs", src),
         ctx: (0, len).into(),
         highlight1: (0, len).into(),
@@ -319,10 +425,17 @@ line5
     };
     let out = fmt_report(err.into());
     println!("{}", out);
-    let expected = r#"
-────[oops::my::bad]────────────────────
+    let expected = "
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
-    × oops!
+    × wtf?!
+    │ it broke :(
+    ├─▶ something went wrong
+    │\u{20}\u{20}\u{20}
+    │   Here's a more detailed explanation of everything that actually went
+    │   wrong because it's actually important.
+    │\u{20}\u{20}\u{20}
+    ╰─▶ very much went wrong
 
    ╭───[bad_file.rs:1:1] This is the part that broke:
  1 │ ╭──▶ line1
@@ -331,9 +444,10 @@ line5
  4 │ │╰─▶ line4
  5 │ ├──▶ line5
    · ╰───── block 1
+   ╰───
 
     ‽ try doing it better next time?
-"#
+"
     .trim_start()
     .to_string();
     assert_eq!(expected, out);
@@ -366,7 +480,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
@@ -377,6 +491,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
  3 │ ╭─▶     here
  4 │ ├─▶ more here
    · ╰──── also this bit
+   ╰───
 
     ‽ try doing it better next time?
 "#
@@ -481,7 +596,7 @@ fn disable_url_links() -> Result<(), MietteError> {
     struct MyBad;
     let err = MyBad;
     let mut out = String::new();
-    GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor())
+    GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
         .without_code_linking()
         .render_report(&mut out, &err)
         .unwrap();
@@ -511,12 +626,13 @@ fn unnamed_snippet_shows_message() {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]────────────────────
+────[oops::my::bad]─────────────────────────────────────────────────────────────
 
     × oops!
 
    ╭───[1:1] This is the part that broke:
  1 │ source_text_here
+   ╰───
 
     ‽ try doing it better next time?
 "#

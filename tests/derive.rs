@@ -12,7 +12,7 @@ fn basic_struct() {
     )]
     struct Foo;
 
-    assert_eq!("foo::bar::baz".to_string(), Foo.code().to_string());
+    assert_eq!("foo::bar::baz".to_string(), Foo.code().unwrap().to_string());
 
     assert_eq!(Some(Severity::Error), Foo.severity());
 
@@ -39,11 +39,11 @@ fn basic_enum() {
         Z { prop: String },
     }
 
-    assert_eq!("foo::x".to_string(), Foo::X.code().to_string());
-    assert_eq!("foo::y".to_string(), Foo::Y(1).code().to_string());
+    assert_eq!("foo::x".to_string(), Foo::X.code().unwrap().to_string());
+    assert_eq!("foo::y".to_string(), Foo::Y(1).code().unwrap().to_string());
     assert_eq!(
         "foo::z".to_string(),
-        Foo::Z { prop: "bar".into() }.code().to_string()
+        Foo::Z { prop: "bar".into() }.code().unwrap().to_string()
     );
 
     assert_eq!(Some(Severity::Warning), Foo::X.severity());
@@ -57,7 +57,10 @@ fn paren_code() {
     #[diagnostic(code("foo::bar::baz"))]
     struct FooStruct;
 
-    assert_eq!("foo::bar::baz".to_string(), FooStruct.code().to_string());
+    assert_eq!(
+        "foo::bar::baz".to_string(),
+        FooStruct.code().unwrap().to_string()
+    );
 
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
@@ -66,7 +69,7 @@ fn paren_code() {
         X,
     }
 
-    assert_eq!("foo::x".to_string(), FooEnum::X.code().to_string());
+    assert_eq!("foo::x".to_string(), FooEnum::X.code().unwrap().to_string());
 }
 
 #[test]
@@ -76,7 +79,10 @@ fn path_code() {
     #[diagnostic(code(foo::bar::baz))]
     struct FooStruct;
 
-    assert_eq!("foo::bar::baz".to_string(), FooStruct.code().to_string());
+    assert_eq!(
+        "foo::bar::baz".to_string(),
+        FooStruct.code().unwrap().to_string()
+    );
 
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
@@ -85,7 +91,7 @@ fn path_code() {
         X,
     }
 
-    assert_eq!("foo::x".to_string(), FooEnum::X.code().to_string());
+    assert_eq!("foo::x".to_string(), FooEnum::X.code().unwrap().to_string());
 }
 
 #[test]
@@ -316,7 +322,8 @@ const SNIPPET_TEXT: &str = "hello from miette";
 #[derive(Debug, Diagnostic, Error)]
 #[error("welp")]
 #[diagnostic(
-    code(foo::bar::baz),
+    // code not necessary.
+    // code(foo::bar::baz),
     url("https://example.com"),
     help("help"),
     severity(Warning)
@@ -341,7 +348,7 @@ impl ForwardsTo {
 
 fn check_all(diag: &impl Diagnostic) {
     // check Diagnostic impl forwards all these methods
-    assert_eq!(diag.code().to_string(), "foo::bar::baz");
+    assert_eq!(diag.code().as_ref().map(|x| x.to_string()), None);
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
@@ -416,7 +423,10 @@ fn test_transparent_enum_named() {
     check_all(&variant);
 
     let bar_variant = Enum::BarVariant;
-    assert_eq!(bar_variant.code().to_string(), "foo::bar::bar_variant");
+    assert_eq!(
+        bar_variant.code().unwrap().to_string(),
+        "foo::bar::bar_variant"
+    );
 }
 
 #[test]
@@ -462,7 +472,7 @@ fn test_forward_struct_named() {
         span: ForwardsTo::new(),
         help: "overridden help please",
     };
-    assert_eq!(diag.code().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.help().unwrap().to_string(), "overridden help please");
     assert_eq!(diag.severity(), Some(Severity::Advice));
     // this comes from <ForwardsTo as Diagnostic>::snippets()
@@ -478,7 +488,7 @@ fn test_forward_struct_unnamed() {
 
     // Also check the From impl here
     let diag = Struct(ForwardsTo::new(), "url here");
-    assert_eq!(diag.code().to_string(), "foo::bar::overridden");
+    assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.url().unwrap().to_string(), "url here");
     // this comes from <ForwardsTo as Diagnostic>::snippets()
     check_snippets(&diag);
@@ -500,7 +510,7 @@ fn test_forward_enum_named() {
         span: ForwardsTo::new(),
         help_text: "overridden help please",
     };
-    assert_eq!(variant.code().to_string(), "foo::bar::overridden");
+    assert_eq!(variant.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(
         variant.help().unwrap().to_string(),
         "overridden help please"
@@ -519,7 +529,7 @@ fn test_forward_enum_unnamed() {
     }
     // Also check the From impl here
     let variant = ForwardEnumUnnamed::Variant(ForwardsTo::new(), "overridden help please");
-    assert_eq!(variant.code().to_string(), "foo::bar::overridden");
+    assert_eq!(variant.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(
         variant.help().unwrap().to_string(),
         "overridden help please"

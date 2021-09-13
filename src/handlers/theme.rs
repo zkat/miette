@@ -2,7 +2,7 @@ use atty::Stream;
 use owo_colors::Style;
 
 /**
-Theme used by [crate::GraphicalReportPrinter] to render fancy [crate::Diagnostic] reports.
+Theme used by [crate::GraphicalReportHandler] to render fancy [crate::Diagnostic] reports.
 
 A theme consists of two things: the set of characters to be used for drawing,
 and the [owo_colors::Style]s to be used to paint various items.
@@ -47,8 +47,8 @@ impl GraphicalTheme {
     /// A "basic" graphical theme that skips colors and unicode characters and
     /// just does monochrome ascii art. If you want a completely non-graphical
     /// rendering of your `Diagnostic`s, check out
-    /// [crate::NarratableReportPrinter], or write your own
-    /// [crate::DiagnosticReportPrinter]!
+    /// [crate::NarratableReportHandler], or write your own
+    /// [crate::ReportHandler]!
     pub fn none() -> Self {
         Self {
             characters: ThemeCharacters::ascii(),
@@ -68,7 +68,7 @@ impl Default for GraphicalTheme {
 }
 
 /**
-Styles for various parts of graphical rendering for the [crate::GraphicalReportPrinter].
+Styles for various parts of graphical rendering for the [crate::GraphicalReportHandler].
 */
 #[derive(Debug, Clone)]
 pub struct ThemeStyles {
@@ -98,19 +98,16 @@ impl ThemeStyles {
     /// Credit: http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1
     pub fn rgb() -> Self {
         Self {
-            error: style().fg_rgb::<172, 65, 66>(),
+            error: style().fg_rgb::<255, 0, 20>(),
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
             code: style().fg_rgb::<170, 117, 159>(),
-            help: style().fg_rgb::<106, 159, 181>(),
+            help: style().fg_rgb::<117, 181, 170>().bold(),
             filename: style().fg_rgb::<117, 181, 170>().underline().bold(),
             highlights: vec![
-                style().fg_rgb::<255, 135, 162>(),
-                style().fg_rgb::<150, 232, 133>(),
-                style().fg_rgb::<62, 238, 210>(),
-                style().fg_rgb::<234, 207, 182>(),
-                style().fg_rgb::<130, 221, 255>(),
-                style().fg_rgb::<255, 188, 242>(),
+                style().fg_rgb::<246, 87, 248>(),
+                style().fg_rgb::<30, 201, 212>(),
+                style().fg_rgb::<145, 246, 111>(),
             ],
         }
     }
@@ -150,7 +147,7 @@ impl ThemeStyles {
 // Most of these characters were taken from
 // https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
 
-/// Characters to be used when drawing when using [crate::GraphicalReportPrinter].
+/// Characters to be used when drawing when using [crate::GraphicalReportHandler].
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ThemeCharacters {

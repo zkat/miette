@@ -29,7 +29,7 @@ impl Parse for Forward {
     }
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Copy, Clone)]
 pub enum WhichFn {
     Code,
     Help,
@@ -52,7 +52,7 @@ impl WhichFn {
     pub fn signature(&self) -> TokenStream {
         match self {
             Self::Code => quote! {
-                fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a>
+                fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>>
             },
             Self::Help => quote! {
                 fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>>
@@ -80,12 +80,10 @@ impl WhichFn {
 
 impl Forward {
     pub fn for_transparent_field(fields: &syn::Fields) -> syn::Result<Self> {
-        let make_err = || {
-            syn::Error::new(
-                fields.span(),
-                "you can only use #[diagnostic(transparent)] with exactly one field",
-            )
-        };
+        let make_err = || syn::Error::new(
+            fields.span(),
+            "you can only use #[diagnostic(transparent)] with exactly one field",
+        );
         match fields {
             syn::Fields::Named(named) => {
                 let mut iter = named.named.iter();
@@ -148,3 +146,5 @@ impl Forward {
         }
     }
 }
+
+

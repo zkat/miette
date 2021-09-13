@@ -1,48 +1,47 @@
-use std::fmt;
+use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
+use unicode_width::UnicodeWidthStr;
 
 use crate::chain::Chain;
-use crate::printer::theme::*;
-use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::{SourceSpan, SpanContents};
+use crate::handlers::theme::*;
+use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
+use crate::{ReportHandler, SourceSpan, SpanContents};
 
 /**
-A [DiagnosticReportPrinter] that displays a given [crate::DiagnosticReport] in a quasi-graphical way, using terminal colors, unicode drawing characters, and other such things.
+A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
+way, using terminal colors, unicode drawing characters, and other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a [GraphicalTheme] of your own creation (or using one of its own defaults!)
+This printer can be customized by using `new_themed()` and handing it a
+[GraphicalTheme] of your own creation (or using one of its own defaults!)
 
-See [crate::set_printer] for more details on customizing your global printer.
-
-## Example
-
-```
-use miette::{GraphicalReportPrinter, GraphicalTheme};
-miette::set_printer(GraphicalReportPrinter::new_themed(GraphicalTheme::unicode_nocolor()));
-```
+See [crate::set_hook] for more details on customizing your global printer.
 */
 #[derive(Debug, Clone)]
-pub struct GraphicalReportPrinter {
+pub struct GraphicalReportHandler {
     pub(crate) linkify_code: bool,
+    pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
 }
 
-impl GraphicalReportPrinter {
-    /// Create a new [GraphicalReportPrinter] with the default
+impl GraphicalReportHandler {
+    /// Create a new [GraphicalReportHandler] with the default
     /// [GraphicalTheme]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
             linkify_code: true,
+            termwidth: 200,
             theme: GraphicalTheme::default(),
         }
     }
 
-    ///Create a new [GraphicalReportPrinter] with a given [GraphicalTheme].
+    ///Create a new [GraphicalReportHandler] with a given [GraphicalTheme].
     pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self {
             linkify_code: true,
+            termwidth: 200,
             theme,
         }
     }
@@ -52,17 +51,29 @@ impl GraphicalReportPrinter {
         self.linkify_code = false;
         self
     }
+
+    /// Set a theme for this handler.
+    pub fn with_theme(mut self, theme: GraphicalTheme) -> Self {
+        self.theme = theme;
+        self
+    }
+
+    /// Sets the width to wrap the report at.
+    pub fn with_width(mut self, width: usize) -> Self {
+        self.termwidth = width;
+        self
+    }
 }
 
-impl Default for GraphicalReportPrinter {
+impl Default for GraphicalReportHandler {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl GraphicalReportPrinter {
+impl GraphicalReportHandler {
     /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [DiagnosticReportPrinter] handler, but is
+    /// be called by the toplevel [ReportHandler] handler, but is
     /// made public to make it easier (possible) to test in isolation from
     /// global state.
     pub fn render_report(
@@ -71,6 +82,7 @@ impl GraphicalReportPrinter {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
+        writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
         if let Some(snippets) = diagnostic.snippets() {
@@ -85,37 +97,59 @@ impl GraphicalReportPrinter {
     }
 
     fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        let (severity_style, severity_icon) = match diagnostic.severity() {
-            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
-            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
-            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
-        };
-        write!(f, "{}", self.theme.characters.hbar.to_string().repeat(4))?;
-        if self.linkify_code && diagnostic.url().is_some() {
+        let mut header = String::new();
+        let mut width = 0;
+        write!(
+            header,
+            "{}",
+            self.theme.characters.hbar.to_string().repeat(4)
+        )?;
+        width += UnicodeWidthStr::width(&header[..]);
+        if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
-            let code = format!("{} (click for details)", diagnostic.code());
+            let code = format!(
+                "{} (click for details)",
+                diagnostic
+                    .code()
+                    .expect("MIETTE BUG: already got checked for None")
+            );
             let link = format!("\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\", url, code);
-            write!(f, "[{}]", link.style(self.theme.styles.code))?;
-        } else {
-            write!(f, "[{}]", diagnostic.code().style(self.theme.styles.code))?;
+            write!(header, "[{}]", link.style(self.theme.styles.code))?;
+            width += UnicodeWidthStr::width(&url.to_string()[..])
+                + UnicodeWidthStr::width(&code[..])
+                + 2;
+        } else if let Some(code) = diagnostic.code() {
+            write!(header, "[{}]", code.style(self.theme.styles.code))?;
+            width += UnicodeWidthStr::width(&code.to_string()[..]) + 2;
         }
-        writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(20),)?;
-        writeln!(f)?;
         writeln!(
             f,
-            "    {} {}",
-            severity_icon.style(severity_style),
-            diagnostic.style(severity_style)
+            "{}{}",
+            header,
+            self.theme.characters.hbar.to_string().repeat(
+                self.termwidth
+                    .saturating_sub(width)
+                    .saturating_sub("Error: ".len())
+            ),
         )?;
         Ok(())
     }
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        let severity_style = match diagnostic.severity() {
-            Some(Severity::Error) | None => self.theme.styles.error,
-            Some(Severity::Warning) => self.theme.styles.warning,
-            Some(Severity::Advice) => self.theme.styles.advice,
+        let (severity_style, severity_icon) = match diagnostic.severity() {
+            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
+            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
+            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
         };
+
+        let initial_indent = format!("    {} ", severity_icon.style(severity_style));
+        let rest_indent = format!("    {} ", self.theme.characters.vbar.style(severity_style));
+        let width = self.termwidth.saturating_sub(4);
+        let opts = textwrap::Options::new(width)
+            .initial_indent(&initial_indent)
+            .subsequent_indent(&rest_indent);
+
+        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
         if let Some(cause) = diagnostic.source() {
             let mut cause_iter = Chain::new(cause).peekable();
@@ -125,13 +159,19 @@ impl GraphicalReportPrinter {
                 } else {
                     self.theme.characters.lbot
                 };
-                let msg = format!(
-                    "    {}{}{} {}",
-                    char, self.theme.characters.hbar, self.theme.characters.rarrow, error
+                let initial_indent = format!(
+                    "    {}{}{} ",
+                    char, self.theme.characters.hbar, self.theme.characters.rarrow
                 )
                 .style(severity_style)
                 .to_string();
-                writeln!(f, "{}", msg)?;
+                let rest_indent = format!("    {}   ", self.theme.characters.vbar)
+                    .style(severity_style)
+                    .to_string();
+                let opts = textwrap::Options::new(width)
+                    .initial_indent(&initial_indent)
+                    .subsequent_indent(&rest_indent);
+                writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
             }
         }
 
@@ -142,7 +182,12 @@ impl GraphicalReportPrinter {
         if let Some(help) = diagnostic.help() {
             let help = help.style(self.theme.styles.help);
             writeln!(f)?;
-            writeln!(f, "    {} {}", self.theme.characters.fyi, help)?;
+            let width = self.termwidth.saturating_sub(4);
+            let initial_indent = format!("    {} ", self.theme.characters.fyi);
+            let opts = textwrap::Options::new(width)
+                .initial_indent(&initial_indent)
+                .subsequent_indent("      ");
+            writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
         Ok(())
     }
@@ -255,6 +300,13 @@ impl GraphicalReportPrinter {
                 }
             }
         }
+        writeln!(
+            f,
+            "{}{}{}",
+            " ".repeat(linum_width + 2),
+            self.theme.characters.lbot,
+            self.theme.characters.hbar.to_string().repeat(3),
+        )?;
         Ok(())
     }
 
@@ -401,7 +453,9 @@ impl GraphicalReportPrinter {
                         "{:width$}{}{}{}",
                         "",
                         chars.underline.to_string().repeat(num_left),
-                        if hl.label().is_some() {
+                        if hl.len() == 0 {
+                            chars.uarrow
+                        } else if hl.label().is_some() {
                             chars.underbar
                         } else {
                             chars.underline
@@ -427,7 +481,7 @@ impl GraphicalReportPrinter {
                 let num_right = local_offset + hl_len - vbar_offset - 1;
                 let lines = format!(
                     "{:width$}{}{} {}",
-                    " ",
+                    "",
                     chars.lbot,
                     chars.hbar.to_string().repeat(num_right + 1),
                     label,
@@ -510,7 +564,7 @@ impl GraphicalReportPrinter {
     }
 }
 
-impl DiagnosticReportPrinter for GraphicalReportPrinter {
+impl ReportHandler for GraphicalReportHandler {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
@@ -538,7 +592,7 @@ impl Line {
 
     fn span_applies(&self, span: &FancySpan) -> bool {
         // Span starts in this line
-        (span.offset() >= self.offset && span.offset() <= self.offset +self.length)
+        (span.offset() >= self.offset && span.offset() < self.offset +self.length)
         // Span passes through this line
         || (span.offset() < self.offset && span.offset() + span.len() > self.offset + self.length) //todo
         // Span ends on this line

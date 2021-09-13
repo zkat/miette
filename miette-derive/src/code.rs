@@ -53,16 +53,16 @@ impl Code {
             variants,
             WhichFn::Code,
             |ident, fields, DiagnosticConcreteArgs { code, .. }| {
-                let code = &code.0;
+                let code = &code.as_ref()?.0;
                 Some(match fields {
                     syn::Fields::Named(_) => {
-                        quote! { Self::#ident { .. } => std::boxed::Box::new(#code), }
+                        quote! { Self::#ident { .. } => std::option::Option::Some(std::boxed::Box::new(#code)), }
                     }
                     syn::Fields::Unnamed(_) => {
-                        quote! { Self::#ident(..) => std::boxed::Box::new(#code), }
+                        quote! { Self::#ident(..) => std::option::Option::Some(std::boxed::Box::new(#code)), }
                     }
                     syn::Fields::Unit => {
-                        quote! { Self::#ident => std::boxed::Box::new(#code), }
+                        quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(#code)), }
                     }
                 })
             },
@@ -72,8 +72,8 @@ impl Code {
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let code = &self.0;
         Some(quote! {
-            fn code<'a>(&'a self) -> std::boxed::Box<dyn std::fmt::Display + 'a> {
-                std::boxed::Box::new(#code)
+            fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                std::option::Option::Some(std::boxed::Box::new(#code))
             }
         })
     }

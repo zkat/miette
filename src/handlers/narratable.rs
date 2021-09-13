@@ -1,34 +1,34 @@
 use std::fmt;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticReportPrinter, DiagnosticSnippet, Severity};
-use crate::{SourceSpan, SpanContents};
+use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
+use crate::{ReportHandler, SourceSpan, SpanContents};
 
 /**
-[DiagnosticReportPrinter] that renders plain text and avoids extraneous graphics.
+[ReportHandler] that renders plain text and avoids extraneous graphics.
 It's optimized for screen readers and braille users, but is also used in any
 non-graphical environments, such as non-TTY output.
 */
 #[derive(Debug, Clone)]
-pub struct NarratableReportPrinter;
+pub struct NarratableReportHandler;
 
-impl NarratableReportPrinter {
-    /// Create a new [NarratableReportPrinter]. There are no customization
+impl NarratableReportHandler {
+    /// Create a new [NarratableReportHandler]. There are no customization
     /// options.
     pub fn new() -> Self {
         Self
     }
 }
 
-impl Default for NarratableReportPrinter {
+impl Default for NarratableReportHandler {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl NarratableReportPrinter {
+impl NarratableReportHandler {
     /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [DiagnosticReportPrinter] handler, but is
+    /// be called by the toplevel [ReportHandler] handler, but is
     /// made public to make it easier (possible) to test in isolation from
     /// global state.
     pub fn render_report(
@@ -75,7 +75,9 @@ impl NarratableReportPrinter {
         if let Some(help) = diagnostic.help() {
             writeln!(f, "diagnostic help: {}", help)?;
         }
-        writeln!(f, "diagnostic error code: {}", diagnostic.code())?;
+        if let Some(code) = diagnostic.code() {
+            writeln!(f, "diagnostic code: {}", code)?;
+        }
         if let Some(url) = diagnostic.url() {
             writeln!(f, "For more details, see {}", url)?;
         }
@@ -192,7 +194,7 @@ impl NarratableReportPrinter {
     }
 }
 
-impl DiagnosticReportPrinter for NarratableReportPrinter {
+impl ReportHandler for NarratableReportHandler {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
