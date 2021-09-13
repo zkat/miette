@@ -196,6 +196,50 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     Ok(())
 }
 
+
+#[test]
+fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
+        ctx: SourceSpan,
+        #[highlight(ctx, label = "this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\ntext\n  here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    let expected = r#"
+────[oops::my::bad]─────────────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰── this bit here
+ 3 │   here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+        .trim_start()
+        .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
 #[test]
 fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
