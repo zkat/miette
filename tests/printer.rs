@@ -48,7 +48,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -91,7 +91,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -134,7 +134,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -177,7 +177,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -219,7 +219,7 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -265,7 +265,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -309,7 +309,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -360,7 +360,7 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -425,7 +425,7 @@ line5
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = "
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × wtf?!
     │ it broke :(
@@ -479,7 +479,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
@@ -625,7 +625,7 @@ fn unnamed_snippet_shows_message() {
     let out = fmt_report(err.into());
     println!("{}", out);
     let expected = r#"
-────[oops::my::bad]─────────────────────────────────────────────────────────────
+────[oops::my::bad]──────────────────────────────────────────────────────
 
     × oops!
 
