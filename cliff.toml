@@ -55,7 +55,7 @@ commit_parsers = [
     { body = ".*security", group = "Security"},
 ]
 # filter out the commits that are not matched by commit parsers
-filter_commits = false
+filter_commits = true
 # glob pattern for matching git tags
 tag_pattern = "v\\d+\\.\\d+\\.\\d+"
 # regex for skipping tags
