@@ -1,6 +1,6 @@
 [package]
 name = "miette"
-version = "2.2.0"
+version = "2.2.1-alpha.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 description = "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers."
 categories = ["rust-patterns"]
