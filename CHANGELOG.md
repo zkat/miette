@@ -1,5 +1,40 @@
 # `miette` Release Changelog
 
+<a name="2.2.0"></a>
+## 2.2.0 (2021-09-14)
+
+So it turns out [`3.0.0` is already under way](https://github.com/zkat/miette/issues/45), if you didn't already hear!
+
+It's going to be an exciting release, but we'll still be putting out bugfixes
+and (backwards-compatible) features in the `2.x` line until that's ready.
+
+And there's definitely stuff in this one to be excited about! Not least of all
+the ability to _forward_ diagnostic metadata when wrapping other
+`Diagnostic`s. Huge thanks to [@cormacrelf](https://github.com/cormacrelf) for
+that one!
+
+We've also got some nice improvements to reporter formatting that should make
+output look at least a little nicer--most notably, we now wrap messages and
+footers along the appropriate column so formatting keeps looking good even
+when you use newlines!
+
+Finally, huge thanks to [@icewind1991](https://github.com/icewind1991) for
+fixing a [really weird-looking bug](https://github.com/zkat/miette/pull/52)
+caused by an off-by-one error. Oopsies 😅
+
+### Features
+
+* **report:** wrap multiline messages to keep formatting ([f482dcec](https://github.com/zkat/miette/commit/f482dcec6a4e981c256854f73506ed01abaa65f9))
+* **report:** take terminal width into account for wrapping text ([bc725324](https://github.com/zkat/miette/commit/bc72532465bde00e11d83ff4a9f767051ee6771d))
+* **report:** make header line as wide as terminal ([eaebde92](https://github.com/zkat/miette/commit/eaebde92cf528d50d799dd60acd98b16978e8681))
+* **derive:** Add `#[diagnostic(forward(field_name), code(...))]` (#41) ([2fa5551c](https://github.com/zkat/miette/commit/2fa5551c81831734fd9a162463a4a939dff9dfba))
+
+### Bug Fixes
+
+* **report:** get rid of the weird arrow thing. it does not look good ([1ba3f2f5](https://github.com/zkat/miette/commit/1ba3f2f5d292419571302477195836f89d9c7cb5))
+* **report:** fix wrapping for header and add wrapping for footer ([eb07d5bd](https://github.com/zkat/miette/commit/eb07d5bd66928457b4f3affe96aa6a0d39f642f7))
+* **report:** Fix end of previous line wrongly being included in highlight (#52) ([d994add9](https://github.com/zkat/miette/commit/d994add912700873de3ebdb8d14d81516955c901))
+
 <a name="2.1.2"></a>
 ## 2.1.2 (2021-09-10)
 
