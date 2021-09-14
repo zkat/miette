@@ -17,6 +17,3 @@ mod handlers;
 mod named_source;
 mod protocol;
 mod source_impls;
-
-#[cfg(doctest)]
-mod compile_test;
