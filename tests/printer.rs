@@ -12,10 +12,11 @@ fn fmt_report(diag: Report) -> String {
     if std::env::var("STYLE").is_ok() {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
             .with_width(80)
+            .with_footer("this is a footer".into())
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else if std::env::var("NARRATED").is_ok() {
-        NarratableReportHandler
+        NarratableReportHandler::new()
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {

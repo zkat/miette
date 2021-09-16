@@ -24,6 +24,7 @@ pub struct MietteHandlerOpts {
     pub(crate) rgb_colors: Option<bool>,
     pub(crate) color: Option<bool>,
     pub(crate) unicode: Option<bool>,
+    pub(crate) footer: Option<String>,
 }
 
 impl MietteHandlerOpts {
@@ -92,13 +93,23 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// Set a footer to be displayed at the bottom of the report.
+    pub fn footer(mut self, footer: String) -> Self {
+        self.footer = Some(footer);
+        self
+    }
+
     /// Builds a [MietteHandler] from this builder.
     pub fn build(self) -> MietteHandler {
         let graphical = self.is_graphical();
         let width = self.get_width();
         if !graphical {
+            let mut handler = NarratableReportHandler::new();
+            if let Some(footer) = self.footer {
+                handler = handler.with_footer(footer);
+            }
             MietteHandler {
-                inner: Box::new(NarratableReportHandler::new()),
+                inner: Box::new(handler),
             }
         } else {
             let linkify = self.use_links();
@@ -123,13 +134,15 @@ impl MietteHandlerOpts {
             } else {
                 ThemeStyles::none()
             };
+            let mut handler = GraphicalReportHandler::new()
+                .with_width(width)
+                .with_links(linkify)
+                .with_theme(GraphicalTheme { characters, styles });
+            if let Some(footer) = self.footer {
+                handler = handler.with_footer(footer);
+            }
             MietteHandler {
-                inner: Box::new(
-                    GraphicalReportHandler::new()
-                        .with_width(width)
-                        .with_links(linkify)
-                        .with_theme(GraphicalTheme { characters, styles }),
-                ),
+                inner: Box::new(handler),
             }
         }
     }
