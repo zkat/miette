@@ -29,6 +29,49 @@ fn fmt_report(diag: Report) -> String {
 }
 
 #[test]
+fn single_line_with_wide_char() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        src: NamedSource,
+        #[snippet(src, message("This is the part that broke"))]
+        ctx: SourceSpan,
+        #[highlight(ctx, label = "this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  👼🏼text\n    here".to_string();
+    let len = src.len();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        ctx: (0, len).into(),
+        highlight: (9, 6).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    let expected = r#"
+────[oops::my::bad]──────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   👼🏼text
+   ·   ──┬──
+   ·     ╰── this bit here
+ 3 │     here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn single_line_highlight() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
