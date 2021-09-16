@@ -24,6 +24,7 @@ pub struct GraphicalReportHandler {
     pub(crate) linkify_code: bool,
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
+    pub(crate) footer: Option<String>,
 }
 
 impl GraphicalReportHandler {
@@ -34,6 +35,7 @@ impl GraphicalReportHandler {
             linkify_code: true,
             termwidth: 200,
             theme: GraphicalTheme::default(),
+            footer: None,
         }
     }
 
@@ -43,6 +45,7 @@ impl GraphicalReportHandler {
             linkify_code: true,
             termwidth: 200,
             theme,
+            footer: None,
         }
     }
 
@@ -61,6 +64,12 @@ impl GraphicalReportHandler {
     /// Sets the width to wrap the report at.
     pub fn with_width(mut self, width: usize) -> Self {
         self.termwidth = width;
+        self
+    }
+
+    /// Sets the "global" footer for this handler.
+    pub fn with_footer(mut self, footer: String) -> Self {
+        self.footer = Some(footer);
         self
     }
 }
@@ -203,6 +212,14 @@ impl GraphicalReportHandler {
                 .initial_indent(&initial_indent)
                 .subsequent_indent("        ");
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
+        }
+        if let Some(footer) = &self.footer {
+            writeln!(f)?;
+            let width = self.termwidth.saturating_sub(4);
+            let opts = textwrap::Options::new(width)
+                .initial_indent("  ")
+                .subsequent_indent("  ");
+            writeln!(f, "{}", textwrap::fill(footer, opts))?;
         }
         Ok(())
     }

@@ -17,7 +17,7 @@ fn fmt_report(diag: Report) -> String {
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {
-        NarratableReportHandler
+        NarratableReportHandler::new()
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     };

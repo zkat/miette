@@ -10,13 +10,21 @@ It's optimized for screen readers and braille users, but is also used in any
 non-graphical environments, such as non-TTY output.
 */
 #[derive(Debug, Clone)]
-pub struct NarratableReportHandler;
+pub struct NarratableReportHandler {
+    footer: Option<String>,
+}
 
 impl NarratableReportHandler {
     /// Create a new [NarratableReportHandler]. There are no customization
     /// options.
     pub fn new() -> Self {
-        Self
+        Self { footer: None}
+    }
+
+    /// Set the footer to be displayed at the end of the report.
+    pub fn with_footer(mut self, footer: String) -> Self {
+        self.footer = Some(footer);
+        self
     }
 }
 
