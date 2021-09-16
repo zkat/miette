@@ -1,13 +1,18 @@
 use miette::{
-    Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
+    Diagnostic, MietteError, NamedSource,
     NarratableReportHandler, Report, SourceSpan,
 };
+
+#[cfg(feature = "fancy")]
+use miette::{GraphicalReportHandler, GraphicalTheme};
+
 use thiserror::Error;
 
 fn fmt_report(diag: Report) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
-    if std::env::var("STYLE").is_ok() {
+    if cfg!(feature = "fancy") && std::env::var("STYLE").is_ok() {
+        #[cfg(feature = "fancy")]
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
             .render_report(&mut out, diag.as_ref())
             .unwrap();

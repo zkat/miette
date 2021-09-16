@@ -66,6 +66,12 @@ Using [`cargo-edit`](https://crates.io/crates/cargo-edit):
 $ cargo add miette
 ```
 
+If you want to use the fancy printer in all these screenshots:
+
+```sh
+$ cargo add miette --features fancy
+```
+
 ## Example
 
 ```rust
@@ -238,6 +244,14 @@ fn pretend_this_is_main() -> Result<()> {
     println!("{}", version);
     Ok(())
 }
+```
+
+Please note: in order to get fancy diagnostic rendering with all the pretty
+colors and arrows, you should install `miette` with the `fancy` feature
+enabled:
+
+```toml
+miette = { version = "X.Y.Z", features = ["fancy"] }
 ```
 
 ### ... diagnostic code URLs
