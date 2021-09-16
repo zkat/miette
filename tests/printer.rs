@@ -1,3 +1,5 @@
+#![cfg(feature = "fancy")]
+
 use miette::{
     Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
     NarratableReportHandler, Report, SourceSpan,

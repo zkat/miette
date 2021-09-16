@@ -26,7 +26,12 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
-use crate::{Diagnostic, MietteHandler};
+use crate::Diagnostic;
+#[cfg(feature = "fancy")]
+use crate::MietteHandler;
+#[cfg(not(feature = "fancy"))]
+use crate::NarratableReportHandler;
+
 use error::ErrorImpl;
 
 mod context;
@@ -87,7 +92,10 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
-    Box::new(MietteHandler::new())
+    #[cfg(feature = "fancy")]
+    return Box::new(MietteHandler::new());
+    #[cfg(not(feature = "fancy"))]
+    return Box::new(NarratableReportHandler::new());
 }
 
 impl dyn ReportHandler {
