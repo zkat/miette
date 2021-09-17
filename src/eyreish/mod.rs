@@ -30,7 +30,7 @@ use crate::Diagnostic;
 #[cfg(feature = "fancy")]
 use crate::MietteHandler;
 #[cfg(not(feature = "fancy"))]
-use crate::NarratableReportHandler;
+use crate::DebugReportHandler;
 
 use error::ErrorImpl;
 
@@ -95,7 +95,7 @@ fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandl
     #[cfg(feature = "fancy")]
     return Box::new(MietteHandler::new());
     #[cfg(not(feature = "fancy"))]
-    return Box::new(NarratableReportHandler::new());
+    return Box::new(DebugReportHandler::new());
 }
 
 impl dyn ReportHandler {
