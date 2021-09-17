@@ -40,7 +40,7 @@ pub trait Diagnostic: std::error::Error {
         None
     }
 
-    /// URL to visit for a more details explanation/help about this Diagnostic.
+    /// URL to visit for a more detailed explanation/help about this Diagnostic.
     fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         None
     }

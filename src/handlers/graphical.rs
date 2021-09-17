@@ -131,17 +131,21 @@ impl GraphicalReportHandler {
             let link = format!(
                 "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
                 url,
-                "(link)".style(self.theme.styles.filename)
+                format!(
+                    "{} {}",
+                    code.style(severity_style),
+                    "(link)".style(self.theme.styles.link)
+                )
             );
-            write!(header, "[{} {}]", code.style(severity_style), link,)?;
+            write!(header, "[{}]", link)?;
             width += "(link)".width() + 3
         } else if let Some(code) = diagnostic.code() {
             write!(header, "[{}", code.style(severity_style),)?;
             width += &code.to_string()[..].width() + 1;
 
             if let Some(link) = diagnostic.url() {
-                write!(header, " ({})]", link.style(self.theme.styles.filename))?;
-                width += &link.to_string()[..].width() + 3;
+                write!(header, " ({})]", link.style(self.theme.styles.link))?;
+                width += &link.to_string()[..].width() + 4;
             } else {
                 write!(header, "]")?;
                 width += 1;
@@ -162,9 +166,9 @@ impl GraphicalReportHandler {
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         let (severity_style, severity_icon) = match diagnostic.severity() {
-            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.error),
-            Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
-            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.advice),
+            Some(Severity::Error) | None => (self.theme.styles.error, &self.theme.characters.error),
+            Some(Severity::Warning) => (self.theme.styles.warning, &self.theme.characters.warning),
+            Some(Severity::Advice) => (self.theme.styles.advice, &self.theme.characters.advice),
         };
 
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
@@ -294,7 +298,7 @@ impl GraphicalReportHandler {
             self.theme.characters.hbar,
         )?;
         if let Some(source_name) = snippet.source.name() {
-            let source_name = source_name.style(self.theme.styles.filename);
+            let source_name = source_name.style(self.theme.styles.link);
             writeln!(
                 f,
                 "[{}:{}:{}]",

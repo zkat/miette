@@ -630,6 +630,20 @@ fn url_links() -> Result<(), MietteError> {
 }
 
 #[test]
+fn url_links_no_code() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(help("try doing it better next time?"), url("https://example.com"))]
+    struct MyBad;
+    let err = MyBad;
+    let out = fmt_report(err.into());
+    println!("{}", out);
+    assert!(out.contains("https://example.com"));
+    assert!(out.contains("click for details"));
+    Ok(())
+}
+
+#[test]
 fn disable_url_links() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
@@ -646,7 +660,7 @@ fn disable_url_links() -> Result<(), MietteError> {
         .render_report(&mut out, &err)
         .unwrap();
     println!("{}", out);
-    assert!(!out.contains("https://example.com"));
+    assert!(out.contains("url: https://example.com"));
     assert!(!out.contains("click for details"));
     assert!(out.contains("oops::my::bad"));
     Ok(())
