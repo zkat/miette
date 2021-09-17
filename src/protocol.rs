@@ -52,7 +52,15 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-impl std::error::Error for Box<dyn Diagnostic> {}
+impl std::error::Error for Box<dyn Diagnostic> {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        (**self).source()
+    }
+
+    fn cause(&self) -> Option<&dyn std::error::Error> {
+        self.source()
+    }
+}
 
 impl<T: Diagnostic + Send + Sync + 'static> From<T>
     for Box<dyn Diagnostic + Send + Sync + 'static>
