@@ -49,7 +49,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
         highlight: (9, 6).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -92,7 +92,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -135,7 +135,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
         highlight: (0, 0).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -178,7 +178,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
         highlight: (9, 0).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -221,7 +221,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -263,7 +263,7 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
         highlight: (7, 4).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -309,7 +309,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
         highlight2: (14, 4).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -353,7 +353,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
         highlight: (9, 11).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -404,7 +404,7 @@ line5
         highlight2: (10, 9).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -469,7 +469,7 @@ line5
         highlight2: (10, 9).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = "
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -523,7 +523,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
         highlight2: (20, 6).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
@@ -574,7 +574,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
         highlight2: (9, 10).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
@@ -605,7 +605,7 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
         highlight2: (10, 10).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
 }
@@ -622,7 +622,7 @@ fn url_links() -> Result<(), MietteError> {
     struct MyBad;
     let err = MyBad;
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     assert!(out.contains("https://example.com"));
     assert!(out.contains("click for details"));
     assert!(out.contains("oops::my::bad"));
@@ -637,7 +637,7 @@ fn url_links_no_code() -> Result<(), MietteError> {
     struct MyBad;
     let err = MyBad;
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     assert!(out.contains("https://example.com"));
     assert!(out.contains("click for details"));
     Ok(())
@@ -659,7 +659,7 @@ fn disable_url_links() -> Result<(), MietteError> {
         .with_links(false)
         .render_report(&mut out, &err)
         .unwrap();
-    println!("{}", out);
+    println!("Error: {}", out);
     assert!(out.contains("url: https://example.com"));
     assert!(!out.contains("click for details"));
     assert!(out.contains("oops::my::bad"));
@@ -683,7 +683,7 @@ fn unnamed_snippet_shows_message() {
         ctx: (0, len).into(),
     };
     let out = fmt_report(err.into());
-    println!("{}", out);
+    println!("Error: {}", out);
     let expected = r#"
 ────[oops::my::bad]──────────────────────────────────────────────────────
 
