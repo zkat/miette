@@ -82,8 +82,8 @@ pub struct ThemeStyles {
     pub code: Style,
     /// Style to apply to the help text.
     pub help: Style,
-    /// Style to apply to the filename/source name.
-    pub filename: Style,
+    /// Style to apply to filenames/links/URLs.
+    pub link: Style,
     /// Styles to cycle through (using `.iter().cycle()`), to render the lines
     /// and text for diagnostic highlights.
     pub highlights: Vec<Style>,
@@ -102,8 +102,8 @@ impl ThemeStyles {
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
             code: style().fg_rgb::<92, 157, 255>(),
-            help: style().fg_rgb::<117, 181, 170>(),
-            filename: style().fg_rgb::<92, 157, 255>().underline().bold(),
+            help: style().fg_rgb::<106, 159, 181>(),
+            link: style().fg_rgb::<92, 157, 255>().underline().bold(),
             highlights: vec![
                 style().fg_rgb::<246, 87, 248>(),
                 style().fg_rgb::<30, 201, 212>(),
@@ -120,7 +120,7 @@ impl ThemeStyles {
             advice: style().cyan(),
             code: style().yellow(),
             help: style().cyan(),
-            filename: style().cyan().underline().bold(),
+            link: style().cyan().underline().bold(),
             highlights: vec![
                 style().red().bold(),
                 style().yellow().bold(),
@@ -137,7 +137,7 @@ impl ThemeStyles {
             advice: style(),
             code: style(),
             help: style(),
-            filename: style(),
+            link: style(),
             highlights: vec![style()],
         }
     }
@@ -175,10 +175,9 @@ pub struct ThemeCharacters {
     pub underbar: char,
     pub underline: char,
 
-    pub fyi: String,
-    pub x: char,
-    pub warning: char,
-    pub point_right: char,
+    pub error: String,
+    pub warning: String,
+    pub advice: String,
 }
 
 impl ThemeCharacters {
@@ -203,13 +202,38 @@ impl ThemeCharacters {
             rcross: '┤',
             underbar: '┬',
             underline: '─',
-            fyi: "help:".into(),
-            x: '×',
-            warning: '⚠',
-            point_right: '☞',
+            error: "×".into(),
+            warning: "⚠".into(),
+            advice: "☞".into(),
         }
     }
 
+    /// Emoji-heavy unicode characters.
+    pub fn emoji() -> Self {
+        Self {
+            hbar: '─',
+            vbar: '│',
+            xbar: '┼',
+            vbar_break: '·',
+            uarrow: '▲',
+            rarrow: '▶',
+            ltop: '╭',
+            mtop: '┬',
+            rtop: '╮',
+            lbot: '╰',
+            mbot: '┴',
+            rbot: '╯',
+            lbox: '[',
+            rbox: ']',
+            lcross: '├',
+            rcross: '┤',
+            underbar: '┬',
+            underline: '─',
+            error: "💥".into(),
+            warning: "⚠️".into(),
+            advice: "💡".into(),
+        }
+    }
     /// ASCII-art-based graphical elements. Works well on older terminals.
     pub fn ascii() -> Self {
         Self {
@@ -231,10 +255,9 @@ impl ThemeCharacters {
             rcross: '|',
             underbar: '|',
             underline: '^',
-            fyi: "help:".into(),
-            x: 'x',
-            warning: '!',
-            point_right: '>',
+            error: "x".into(),
+            warning: "!".into(),
+            advice: ">".into(),
         }
     }
 }

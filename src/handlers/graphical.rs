@@ -162,9 +162,9 @@ impl GraphicalReportHandler {
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         let (severity_style, severity_icon) = match diagnostic.severity() {
-            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.x),
+            Some(Severity::Error) | None => (self.theme.styles.error, self.theme.characters.error),
             Some(Severity::Warning) => (self.theme.styles.warning, self.theme.characters.warning),
-            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.point_right),
+            Some(Severity::Advice) => (self.theme.styles.advice, self.theme.characters.advice),
         };
 
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
