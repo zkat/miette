@@ -66,15 +66,14 @@ impl WhichFn {
             Self::Snippets => quote! {
                 fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>>
             },
+            Self::Related => quote! {
+                fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>>
+            },
         }
     }
 
     pub fn catchall_arm(&self) -> TokenStream {
-        match self {
-            // required, hence method can't return None
-            Self::Code => quote! {},
-            _ => quote! { _ => None, },
-        }
+        quote! { _ => std::option::Option::None }
     }
 }
 
