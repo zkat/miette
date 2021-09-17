@@ -2,6 +2,23 @@ use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
 #[test]
+fn related_manual() {
+    #[derive(Error, Debug)]
+    #[error("welp")]
+    struct Foo {
+        related: Vec<Foo>,
+    }
+
+    impl Diagnostic for Foo {
+        fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+            Some(Box::new(
+                self.related.iter().map(|x| -> &dyn Diagnostic { &*x }),
+            ))
+        }
+    }
+}
+
+#[test]
 fn basic_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]

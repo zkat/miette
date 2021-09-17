@@ -54,6 +54,11 @@ pub trait Diagnostic: std::error::Error {
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
         None
     }
+
+    /// Additional related Diagnostics.
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        None
+    }
 }
 
 impl std::error::Error for Box<dyn Diagnostic> {

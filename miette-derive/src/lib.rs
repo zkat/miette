@@ -10,6 +10,7 @@ mod fmt;
 mod forward;
 mod help;
 mod label;
+mod related;
 mod severity;
 mod source_code;
 mod url;
