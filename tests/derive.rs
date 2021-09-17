@@ -16,7 +16,10 @@ fn related() {
         #[error("variant1")]
         #[diagnostic(code(foo::bar::baz))]
         #[allow(dead_code)]
-        Bad(#[related] Baz),
+        Bad {
+            #[related]
+            related: Baz,
+        },
 
         #[error("variant2")]
         #[allow(dead_code)]

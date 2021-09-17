@@ -27,7 +27,6 @@ impl Relateds {
         let mut relateds = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
-                println!("{:?}", attr.path.get_ident());
                 if attr.path.is_ident("related") {
                     let related = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
