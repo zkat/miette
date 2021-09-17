@@ -2,21 +2,32 @@ use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
 #[test]
-fn related_manual() {
-    #[derive(Error, Debug)]
+fn related() {
+    #[derive(Error, Debug, Diagnostic)]
     #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
     struct Foo {
-        related: Vec<Foo>,
+        #[related]
+        related: Baz,
     }
 
-    impl Diagnostic for Foo {
-        fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
-            Some(Box::new(
-                self.related.iter().map(|x| -> &dyn Diagnostic { &*x }),
-            ))
-        }
+    #[derive(Error, Debug, Diagnostic)]
+    enum Bar {
+        #[error("variant1")]
+        #[diagnostic(code(foo::bar::baz))]
+        #[allow(dead_code)]
+        Bad(#[related] Baz),
+
+        #[error("variant2")]
+        #[allow(dead_code)]
+        LessBad(#[related] Baz),
     }
+
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("welp2")]
+    struct Baz;
 }
+/*
 
 #[test]
 fn basic_struct() {
@@ -502,3 +513,4 @@ fn test_unit_enum_display() {
         "hello from unit help"
     )
 }
+*/
