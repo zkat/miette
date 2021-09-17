@@ -1,11 +1,11 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::spanned::Spanned;
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
-    utils::gen_all_variants_with,
+    utils::{display_pat_members, gen_all_variants_with},
 };
 
 pub struct Relateds(Vec<Related>);
@@ -52,17 +52,23 @@ impl Relateds {
             variants,
             WhichFn::Related,
             |ident, fields, DiagnosticConcreteArgs { related, .. }| {
+                let (display_pat, _display_members) = display_pat_members(fields);
                 related.as_ref().map(|relateds| {
                     let relateds = relateds.0.iter().map(|related| {
-                        let rel = &related.0;
-                        quote! { &self.#rel }
+                        let rel = match &related.0 {
+                            syn::Member::Named(ident) => ident.clone(),
+                            syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                format_ident!("_{}", index)
+                            }
+                        };
+                        quote! { #rel }
                     });
                     quote! {
-                        Self::#ident #fields => {
+                        Self::#ident #display_pat => {
                             std::option::Option::Some(std::boxed::Box::new(
                                 vec![
                                     #(#relateds),*
-                                ].iter().map(|x| -> dyn Diagnostic { &*x })
+                                ].into_iter().map(|x| -> &dyn Diagnostic { &*x as &Diagnostic })
                             ))
                         }
                     }

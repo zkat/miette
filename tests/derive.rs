@@ -22,6 +22,7 @@ fn related() {
         },
 
         #[error("variant2")]
+        #[diagnostic(code(foo::bar::baz))]
         #[allow(dead_code)]
         LessBad(#[related] Baz),
     }
@@ -30,7 +31,6 @@ fn related() {
     #[error("welp2")]
     struct Baz;
 }
-/*
 
 #[test]
 fn basic_struct() {
@@ -516,4 +516,3 @@ fn test_unit_enum_display() {
         "hello from unit help"
     )
 }
-*/
