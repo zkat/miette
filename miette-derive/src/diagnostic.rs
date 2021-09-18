@@ -209,7 +209,7 @@ impl Diagnostic {
                         let help_method = forward.gen_struct_method(WhichFn::Help);
                         let url_method = forward.gen_struct_method(WhichFn::Url);
                         let severity_method = forward.gen_struct_method(WhichFn::Severity);
-                        let snippets_method = forward.gen_struct_method(WhichFn::Snippets);
+                        let snippets_method = forward.gen_struct_method(WhichFn::Labels);
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -247,7 +247,7 @@ impl Diagnostic {
                             .snippets
                             .as_ref()
                             .and_then(|x| x.gen_struct(fields))
-                            .or_else(|| forward(WhichFn::Snippets));
+                            .or_else(|| forward(WhichFn::Labels));
                         let url_body = concrete
                             .url
                             .as_ref()

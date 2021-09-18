@@ -5,7 +5,7 @@ use unicode_width::UnicodeWidthStr;
 
 use crate::chain::Chain;
 use crate::handlers::theme::*;
-use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
+use crate::protocol::{Diagnostic, Severity};
 use crate::{ReportHandler, SourceSpan, SpanContents};
 
 /**
@@ -94,12 +94,12 @@ impl GraphicalReportHandler {
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
-        if let Some(snippets) = diagnostic.snippets() {
-            for snippet in snippets {
-                writeln!(f)?;
-                self.render_snippet(f, &snippet)?;
-            }
-        }
+        // if let Some(snippets) = diagnostic.snippets() {
+        //     for snippet in snippets {
+        //         writeln!(f)?;
+        //         self.render_snippet(f, &snippet)?;
+        //     }
+        // }
 
         self.render_footer(f, diagnostic)?;
         Ok(())
@@ -228,6 +228,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
+    /*
     fn render_snippet(
         &self,
         f: &mut impl fmt::Write,
@@ -628,6 +629,7 @@ impl GraphicalReportHandler {
         }
         Ok((context_data, lines))
     }
+    */
 }
 
 impl ReportHandler for GraphicalReportHandler {

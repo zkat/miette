@@ -282,7 +282,7 @@ impl Snippets {
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         gen_all_variants_with(
             variants,
-            WhichFn::Snippets,
+            WhichFn::Labels,
             |ident, fields, DiagnosticConcreteArgs { snippets, .. }| {
                 let (display_pat, display_members) = display_pat_members(fields);
                 snippets.as_ref().and_then(|snippets| {

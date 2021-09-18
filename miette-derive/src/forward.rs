@@ -35,7 +35,7 @@ pub enum WhichFn {
     Help,
     Url,
     Severity,
-    Snippets,
+    Labels,
 }
 
 impl WhichFn {
@@ -45,7 +45,7 @@ impl WhichFn {
             Self::Help => quote! { help() },
             Self::Url => quote! { url() },
             Self::Severity => quote! { severity() },
-            Self::Snippets => quote! { snippets() },
+            Self::Labels => quote! { snippets() },
         }
     }
 
@@ -63,11 +63,8 @@ impl WhichFn {
             Self::Severity => quote! {
                 fn severity(&self) -> std::option::Option<miette::Severity>
             },
-            Self::Snippets => quote! {
+            Self::Labels => quote! {
                 fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>>
-            },
-            Self::Related => quote! {
-                fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>>
             },
         }
     }

@@ -141,10 +141,8 @@ where
         self.error.url()
     }
 
-    fn snippets<'a>(
-        &'a self,
-    ) -> Option<Box<dyn Iterator<Item = crate::DiagnosticSnippet<'a>> + 'a>> {
-        self.error.snippets()
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = crate::SourceSpan> + 'a>> {
+        self.error.labels()
     }
 }
 
@@ -168,10 +166,8 @@ where
         self.error.inner.diagnostic().url()
     }
 
-    fn snippets<'a>(
-        &'a self,
-    ) -> Option<Box<dyn Iterator<Item = crate::DiagnosticSnippet<'a>> + 'a>> {
-        self.error.inner.diagnostic().snippets()
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = crate::SourceSpan> + 'a>> {
+        self.error.inner.diagnostic().labels()
     }
 }
 

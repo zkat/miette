@@ -45,9 +45,13 @@ pub trait Diagnostic: std::error::Error {
         None
     }
 
-    /// Additional contextual snippets. This is typically used for adding
-    /// marked-up source file output the way compilers often do.
-    fn snippets<'a>(&'a self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'a>> + 'a>> {
+    /// Source code to apply this Diagnostic's [Diagnostic::labels] to.
+    fn source_code(&self) -> Option<&dyn SourceCode> {
+        None
+    }
+
+    /// Labels to apply to this Diagnostic's [Diagnostic::source_code]
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = SourceSpan> + 'a>> {
         None
     }
 }
@@ -168,7 +172,7 @@ If you can read it, you can source it,
 and it's not necessary to read the whole thing--meaning you should be able to
 support Sources which are gigabytes or larger in size.
 */
-pub trait Source: std::fmt::Debug + Send + Sync {
+pub trait SourceCode: std::fmt::Debug + Send + Sync {
     /// Read the bytes for a specific span from this Source.
     fn read_span<'a>(
         &'a self,
@@ -182,16 +186,16 @@ pub trait Source: std::fmt::Debug + Send + Sync {
 }
 
 /**
-Contents of a [Source] covered by [SourceSpan].
+Contents of a [SourceCode] covered by [SourceSpan].
 
 Includes line and column information to optimize highlight calculations.
 */
 pub trait SpanContents {
     /// Reference to the data inside the associated span, in bytes.
     fn data(&self) -> &[u8];
-    /// The 0-indexed line in the associated [Source] where the data begins.
+    /// The 0-indexed line in the associated [SourceCode] where the data begins.
     fn line(&self) -> usize;
-    /// The 0-indexed column in the associated [Source] where the data begins,
+    /// The 0-indexed column in the associated [SourceCode] where the data begins,
     /// relative to `line`.
     fn column(&self) -> usize;
 }
@@ -201,7 +205,7 @@ Basic implementation of the [SpanContents] trait, for convenience.
 */
 #[derive(Clone, Debug)]
 pub struct MietteSpanContents<'a> {
-    /// Data from a [Source], in bytes.
+    /// Data from a [SourceCode], in bytes.
     data: &'a [u8],
     // The 0-indexed line where the associated [SourceSpan] _starts_.
     line: usize,
@@ -229,24 +233,7 @@ impl<'a> SpanContents for MietteSpanContents<'a> {
 }
 
 /**
-A snippet from a [Source] to be displayed with a message and possibly some highlights.
- */
-#[derive(Clone, Debug)]
-pub struct DiagnosticSnippet<'a> {
-    /// Explanation of this specific diagnostic snippet.
-    pub message: Option<String>,
-    /// A [Source] that can be used to read the actual text of a source.
-    pub source: &'a (dyn Source),
-    /// The primary [SourceSpan] where this diagnostic is located.
-    pub context: SourceSpan,
-    /// Additional [SourceSpan]s that mark specific sections of the span, for
-    /// example, to underline specific text within the larger span. They're
-    /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<(Option<String>, SourceSpan)>>,
-}
-
-/**
-Span within a [Source] with an associated message.
+Span within a [SourceCode] with an associated message.
 */
 #[derive(Clone, Debug)]
 pub struct SourceSpan {
@@ -265,7 +252,7 @@ impl SourceSpan {
         }
     }
 
-    /// The absolute offset, in bytes, from the beginning of a [Source].
+    /// The absolute offset, in bytes, from the beginning of a [SourceCode].
     pub fn offset(&self) -> usize {
         self.offset.offset()
     }
@@ -301,12 +288,12 @@ impl From<(SourceOffset, SourceOffset)> for SourceSpan {
 }
 
 /**
-"Raw" type for the byte offset from the beginning of a [Source].
+"Raw" type for the byte offset from the beginning of a [SourceCode].
 */
 pub type ByteOffset = usize;
 
 /**
-Newtype that represents the [ByteOffset] from the beginning of a [Source]
+Newtype that represents the [ByteOffset] from the beginning of a [SourceCode]
 */
 #[derive(Clone, Copy, Debug)]
 pub struct SourceOffset(ByteOffset);

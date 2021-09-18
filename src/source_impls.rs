@@ -1,5 +1,5 @@
 /*!
-Default trait implementations for [Source].
+Default trait implementations for [SourceCode].
 */
 use std::{
     borrow::{Cow, ToOwned},
@@ -7,7 +7,7 @@ use std::{
     sync::Arc,
 };
 
-use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
+use crate::{MietteError, MietteSpanContents, SourceCode, SourceSpan, SpanContents};
 
 fn start_line_column(string: &str, span: &SourceSpan) -> Result<(usize, usize), MietteError> {
     let mut offset = 0usize;
@@ -46,7 +46,7 @@ fn start_line_column(string: &str, span: &SourceSpan) -> Result<(usize, usize), 
 // The basic impl here is on str (not &str), because otherwise String's impl cannot reuse it
 // without creating a temporary &str inside its read_span implementation, and then returning data
 // that refers to that temporary.
-impl Source for str {
+impl SourceCode for str {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
@@ -61,25 +61,25 @@ impl Source for str {
 }
 
 /// Makes `src: &'static str` or `struct S<'a> { src: &'a str }` usable.
-impl<'s> Source for &'s str {
+impl<'s> SourceCode for &'s str {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        <str as Source>::read_span(self, span)
+        <str as SourceCode>::read_span(self, span)
     }
 }
 
-impl Source for String {
+impl SourceCode for String {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        <str as Source>::read_span(self, span)
+        <str as SourceCode>::read_span(self, span)
     }
 }
 
-impl<T: Source> Source for Arc<T> {
+impl<T: SourceCode> SourceCode for Arc<T> {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
@@ -88,7 +88,7 @@ impl<T: Source> Source for Arc<T> {
     }
 }
 
-impl<T: ?Sized + Source + ToOwned> Source for Cow<'_, T>
+impl<T: ?Sized + SourceCode + ToOwned> SourceCode for Cow<'_, T>
 where
     // The minimal bounds are used here. `T::Owned` need not be `Source`, because `&T` can always
     // be obtained from `Cow<'_, T>`.
