@@ -17,9 +17,7 @@ fn context_info<'a>(
 ) -> Result<(&'a [u8], usize, usize), MietteError> {
     let mut offset = 0usize;
     let mut start_line = 0usize;
-    // We don't mess with this for now -- context always assume it starts at
-    // the beginning of a line.
-    let start_column = 0usize;
+    let mut start_column = 0usize;
     let mut before_lines_starts = Vec::new();
     let mut current_line_start = 0usize;
     let mut end_lines = 0usize;
@@ -32,9 +30,10 @@ fn context_info<'a>(
             }
             if offset < span.offset() {
                 // We're before the start of the span.
-                start_line += 1;
+                start_column = 0;
                 before_lines_starts.push(current_line_start);
                 if before_lines_starts.len() > context_lines_before {
+                    start_line += 1;
                     before_lines_starts.remove(0);
                 }
             } else if offset >= span.offset() + span.len() - 1 {
@@ -43,6 +42,7 @@ fn context_info<'a>(
                 // collecting context lines).
                 if post_span {
                     end_lines += 1;
+                    start_column = 0;
                     if end_lines > context_lines_after {
                         offset += 1;
                         break;
@@ -50,6 +50,8 @@ fn context_info<'a>(
                 }
             }
             current_line_start = offset + 1;
+        } else if offset < span.offset() {
+            start_column += 1;
         }
 
         if offset >= span.offset() + span.len() - 1 {
@@ -62,6 +64,7 @@ fn context_info<'a>(
 
         offset += 1;
     }
+
     if offset >= span.offset() + span.len() - 1 {
         Ok((
             &input[before_lines_starts
@@ -69,7 +72,11 @@ fn context_info<'a>(
                 .copied()
                 .unwrap_or_else(|| span.offset())..offset],
             start_line,
-            start_column,
+            if context_lines_before == 0 {
+                start_column
+            } else {
+                0
+            },
         ))
     } else {
         Err(MietteError::OutOfBounds)
@@ -146,8 +153,8 @@ impl<T: SourceCode> SourceCode for Arc<T> {
 
 impl<T: ?Sized + SourceCode + ToOwned> SourceCode for Cow<'_, T>
 where
-    // The minimal bounds are used here. `T::Owned` need not be `Source`, because `&T` can always
-    // be obtained from `Cow<'_, T>`.
+    // The minimal bounds are used here. `T::Owned` need not be `SourceCode`,
+    // because `&T` can always be obtained from `Cow<'_, T>`.
     T::Owned: Debug + Send + Sync,
 {
     fn read_span<'a>(
@@ -170,6 +177,8 @@ mod tests {
         let src = String::from("foo\n");
         let contents = src.read_span(&(0, 4).into(), 0, 0)?;
         assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(0, contents.line());
+        assert_eq!(0, contents.column());
         Ok(())
     }
 
@@ -178,6 +187,18 @@ mod tests {
         let src = String::from("foo\nbar\nbaz\n");
         let contents = src.read_span(&(4, 4).into(), 0, 0)?;
         assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn middle_of_line() -> Result<(), MietteError> {
+        let src = String::from("foo\nbarbar\nbaz\n");
+        let contents = src.read_span(&(7, 4).into(), 0, 0)?;
+        assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(3, contents.column());
         Ok(())
     }
 
@@ -186,17 +207,21 @@ mod tests {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
         let contents = src.read_span(&(5, 5).into(), 0, 0)?;
         assert_eq!("bar\r\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
         Ok(())
     }
 
     #[test]
     fn with_context() -> Result<(), MietteError> {
         let src = String::from("xxx\nfoo\nbar\nbaz\n\nyyy\n");
-        let contents = src.read_span(&(10, 4).into(), 1, 2)?;
+        let contents = src.read_span(&(8, 4).into(), 1, 2)?;
         assert_eq!(
             "foo\nbar\nbaz\n\n",
             std::str::from_utf8(contents.data()).unwrap()
         );
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
         Ok(())
     }
 }
