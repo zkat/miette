@@ -9,22 +9,22 @@ use std::{
 
 use crate::{MietteError, MietteSpanContents, SourceCode, SourceSpan, SpanContents};
 
-fn start_line_column(string: &str, span: &SourceSpan) -> Result<(usize, usize), MietteError> {
+fn start_line_column(string: &[u8], span: &SourceSpan) -> Result<(usize, usize), MietteError> {
     let mut offset = 0usize;
     let mut start_line = 0usize;
     let mut start_column = 0usize;
-    let mut iter = string.chars().peekable();
+    let mut iter = string.iter().copied().peekable();
     while let Some(char) = iter.next() {
         if offset < span.offset() {
             match char {
-                '\r' => {
-                    if iter.next_if_eq(&'\n').is_some() {
+                b'\r' => {
+                    if iter.next_if_eq(&b'\n').is_some() {
                         offset += 1;
                     }
                     start_line += 1;
                     start_column = 0;
                 }
-                '\n' => {
+                b'\n' => {
                     start_line += 1;
                     start_column = 0;
                 }
@@ -38,7 +38,7 @@ fn start_line_column(string: &str, span: &SourceSpan) -> Result<(usize, usize), 
             return Ok((start_line, start_column));
         }
 
-        offset += char.len_utf8();
+        offset += 1;
     }
     Err(MietteError::OutOfBounds)
 }
@@ -51,9 +51,10 @@ impl SourceCode for str {
         &'a self,
         span: &SourceSpan,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        let (start_line, start_column) = start_line_column(self, span)?;
+        let bytes = self.as_bytes();
+        let (start_line, start_column) = start_line_column(bytes, span)?;
         return Ok(Box::new(MietteSpanContents::new(
-            &self.as_bytes()[span.offset()..span.offset() + span.len()],
+            &bytes[span.offset()..span.offset() + span.len()],
             start_line,
             start_column,
         )));
