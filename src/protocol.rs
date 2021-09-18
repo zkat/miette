@@ -173,10 +173,13 @@ and it's not necessary to read the whole thing--meaning you should be able to
 support Sources which are gigabytes or larger in size.
 */
 pub trait SourceCode: std::fmt::Debug + Send + Sync {
-    /// Read the bytes for a specific span from this Source.
+    /// Read the bytes for a specific span from this SourceCode, keeping a
+    /// certain number of lines before and after the span as context.
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
+        context_lines_before: usize,
+        context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
 
     /// Optional name, usually a filename, for this source.

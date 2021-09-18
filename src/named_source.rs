@@ -28,8 +28,11 @@ impl SourceCode for NamedSource {
     fn read_span<'a>(
         &'a self,
         span: &crate::SourceSpan,
+        context_lines_before: usize,
+        context_lines_after: usize,
     ) -> Result<Box<dyn crate::SpanContents + 'a>, crate::MietteError> {
-        self.source.read_span(span)
+        self.source
+            .read_span(span, context_lines_before, context_lines_after)
     }
 
     fn name(&self) -> Option<String> {
