@@ -51,7 +51,7 @@ pub trait Diagnostic: std::error::Error {
     }
 
     /// Labels to apply to this Diagnostic's [Diagnostic::source_code]
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
         None
     }
 }

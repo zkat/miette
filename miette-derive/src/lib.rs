@@ -9,6 +9,7 @@ mod diagnostic_arg;
 mod fmt;
 mod forward;
 mod help;
+mod label;
 mod severity;
 mod snippets;
 mod url;

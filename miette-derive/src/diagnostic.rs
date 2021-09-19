@@ -6,6 +6,7 @@ use crate::code::Code;
 use crate::diagnostic_arg::DiagnosticArg;
 use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
+use crate::label::Labels;
 use crate::severity::Severity;
 use crate::snippets::Snippets;
 use crate::url::Url;
@@ -32,7 +33,7 @@ pub struct DiagnosticDef {
 
 pub enum DiagnosticDefArgs {
     Transparent(Forward),
-    Concrete(DiagnosticConcreteArgs),
+    Concrete(Box<DiagnosticConcreteArgs>),
 }
 
 impl DiagnosticDefArgs {
@@ -59,6 +60,7 @@ pub struct DiagnosticConcreteArgs {
     pub code: Option<Code>,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
+    pub labels: Option<Labels>,
     pub snippets: Option<Snippets>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
@@ -100,11 +102,13 @@ impl DiagnosticConcreteArgs {
             }
         }
         let snippets = Snippets::from_fields(fields)?;
+        let labels = Labels::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
             help,
             severity,
             snippets,
+            labels,
             url,
             forward,
         };
@@ -141,7 +145,7 @@ impl DiagnosticDefArgs {
             .into_iter()
             .filter(|x| !matches!(x, DiagnosticArg::Transparent));
         let concrete = DiagnosticConcreteArgs::parse(ident, fields, attr, args)?;
-        Ok(DiagnosticDefArgs::Concrete(concrete))
+        Ok(DiagnosticDefArgs::Concrete(Box::new(concrete)))
     }
 }
 
@@ -208,6 +212,7 @@ impl Diagnostic {
                         let code_method = forward.gen_struct_method(WhichFn::Code);
                         let help_method = forward.gen_struct_method(WhichFn::Help);
                         let url_method = forward.gen_struct_method(WhichFn::Url);
+                        let labels_method = forward.gen_struct_method(WhichFn::Labels);
                         let severity_method = forward.gen_struct_method(WhichFn::Severity);
                         let snippets_method = forward.gen_struct_method(WhichFn::Labels);
 
@@ -216,6 +221,7 @@ impl Diagnostic {
                                 #code_method
                                 #help_method
                                 #url_method
+                                #labels_method
                                 #severity_method
                                 #snippets_method
                             }
@@ -253,6 +259,11 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct(ident, fields))
                             .or_else(|| forward(WhichFn::Url));
+                        let labels_body = concrete
+                            .labels
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields))
+                            .or_else(|| forward(WhichFn::Url));
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -261,6 +272,7 @@ impl Diagnostic {
                                 #sev_body
                                 #snip_body
                                 #url_body
+                                #labels_body
                             }
                         }
                     }
@@ -276,6 +288,7 @@ impl Diagnostic {
                 let help_body = Help::gen_enum(variants);
                 let sev_body = Severity::gen_enum(variants);
                 let snip_body = Snippets::gen_enum(variants);
+                let labels_body = Labels::gen_enum(variants);
                 let url_body = Url::gen_enum(ident, variants);
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -283,6 +296,7 @@ impl Diagnostic {
                         #help_body
                         #sev_body
                         #snip_body
+                        #labels_body
                         #url_body
                     }
                 }
