@@ -94,20 +94,12 @@ impl GraphicalReportHandler {
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
-        if let Some(source) = diagnostic.source_code() {
-            if let Some(labels) = diagnostic.labels() {
-                let mut labels = labels.collect::<Vec<_>>();
-                labels.sort_unstable_by_key(|l| l.inner().offset());
-                if !labels.is_empty() {
-                    writeln!(f)?;
-                    self.render_snippets(f, source, labels)?;
-                }
-            }
-        }
-        // if let Some(snippets) = diagnostic.snippets() {
-        //     for snippet in snippets {
+        // if let Some(labels) = diagnostic.labels() {
+        //     let mut labels = labels.collect::<Vec<_>>();
+        //     labels.sort_unstable_by_key(|l| l.inner().offset());
+        //     if !labels.is_empty() {
         //         writeln!(f)?;
-        //         self.render_snippet(f, &snippet)?;
+        //         self.render_snippets(f, labels)?;
         //     }
         // }
 
@@ -238,6 +230,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
+    /*
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
@@ -623,6 +616,7 @@ impl GraphicalReportHandler {
         }
         Ok((context_data, lines))
     }
+    */
 }
 
 impl ReportHandler for GraphicalReportHandler {
