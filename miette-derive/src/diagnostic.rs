@@ -8,7 +8,6 @@ use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
 use crate::label::Labels;
 use crate::severity::Severity;
-use crate::snippets::Snippets;
 use crate::url::Url;
 
 pub enum Diagnostic {
@@ -61,7 +60,6 @@ pub struct DiagnosticConcreteArgs {
     pub severity: Option<Severity>,
     pub help: Option<Help>,
     pub labels: Option<Labels>,
-    pub snippets: Option<Snippets>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
 }
@@ -101,13 +99,11 @@ impl DiagnosticConcreteArgs {
                 }
             }
         }
-        let snippets = Snippets::from_fields(fields)?;
         let labels = Labels::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
             help,
             severity,
-            snippets,
             labels,
             url,
             forward,
@@ -249,11 +245,6 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::Severity));
-                        let snip_body = concrete
-                            .snippets
-                            .as_ref()
-                            .and_then(|x| x.gen_struct(fields))
-                            .or_else(|| forward(WhichFn::Labels));
                         let url_body = concrete
                             .url
                             .as_ref()
@@ -270,7 +261,6 @@ impl Diagnostic {
                                 #code_body
                                 #help_body
                                 #sev_body
-                                #snip_body
                                 #url_body
                                 #labels_body
                             }
@@ -287,7 +277,6 @@ impl Diagnostic {
                 let code_body = Code::gen_enum(variants);
                 let help_body = Help::gen_enum(variants);
                 let sev_body = Severity::gen_enum(variants);
-                let snip_body = Snippets::gen_enum(variants);
                 let labels_body = Labels::gen_enum(variants);
                 let url_body = Url::gen_enum(ident, variants);
                 quote! {
@@ -295,7 +284,6 @@ impl Diagnostic {
                         #code_body
                         #help_body
                         #sev_body
-                        #snip_body
                         #labels_body
                         #url_body
                     }
