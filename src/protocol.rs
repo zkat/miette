@@ -182,8 +182,8 @@ pub trait SourceCode: std::fmt::Debug + Send + Sync {
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
 
-    /// Optional name, usually a filename, for this source.
-    fn name(&self) -> Option<String> {
+    /// Optional name, usually a filename, where a [SourceSpan] is located in the SourceCode.
+    fn name(&self, span: &SourceSpan) -> Option<String> {
         None
     }
 }

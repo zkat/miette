@@ -1,4 +1,4 @@
-use crate::SourceCode;
+use crate::{SourceCode, SourceSpan};
 
 /// Utility struct for when you have a regular [Source] type, such as a String,
 /// that doesn't implement `name`, or if you want to override the `.name()`
@@ -35,7 +35,7 @@ impl SourceCode for NamedSource {
             .read_span(span, context_lines_before, context_lines_after)
     }
 
-    fn name(&self) -> Option<String> {
+    fn name(&self, span: &SourceSpan) -> Option<String> {
         Some(self.name.clone())
     }
 }

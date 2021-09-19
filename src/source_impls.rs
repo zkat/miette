@@ -100,6 +100,17 @@ impl SourceCode for [u8] {
     }
 }
 
+impl<'src> SourceCode for &'src [u8] {
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
+        <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
+    }
+}
+
 impl SourceCode for str {
     fn read_span<'a>(
         &'a self,

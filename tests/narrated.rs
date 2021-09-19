@@ -1,7 +1,4 @@
-use miette::{
-    Diagnostic, MietteError, NamedSource,
-    NarratableReportHandler, Report, SourceSpan,
-};
+use miette::{Diagnostic, MietteError, NamedSource, NarratableReportHandler, Report, SourceSpan};
 
 #[cfg(feature = "fancy")]
 use miette::{GraphicalReportHandler, GraphicalTheme};
@@ -30,19 +27,17 @@ fn single_line_highlight() -> Result<(), MietteError> {
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
+        #[source_code]
         src: NamedSource,
-        #[snippet(src, message("This is the part that broke"))]
-        ctx: SourceSpan,
-        #[highlight(ctx, label = "this bit here")]
-        highlight: SourceSpan,
+        #[label("this bit here")]
+        bad_thing: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let len = src.len();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        ctx: (0, len).into(),
-        highlight: (9, 4).into(),
+        bad_thing: (9, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("{}", out);

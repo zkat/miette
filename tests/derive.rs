@@ -202,39 +202,12 @@ fn test_snippet_named_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo {
-        // The actual "source code" our contexts will be using. This can be
-        // reused by multiple contexts, and just needs to implement
-        // miette::Source!
+        #[source_code]
         src: String,
-
-        // The "snippet" span. This is the span that will be displayed to
-        // users. It should be a big enough slice of the Source to provide
-        // reasonable context, but still somewhat compact.
-        //
-        // You can have as many of these #[snippet] fields as you want, and
-        // even feed them from different sources!
-        //
-        // Example display:
-        //   / [my_snippet]: hi this is where the thing went wrong.
-        // 1 | hello
-        // 2 |     world
-        #[snippet(src, message("hi this is where the thing went wrong"))]
-        snip: SourceSpan, // Defines filename using `label`
-
-        // "Highlights" are the specific highlights _inside_ the snippet.
-        // These will be used to underline/point to specific sections of the
-        // #[snippet] they refer to. As such, these SourceSpans must be within
-        // the bounds of their referenced snippet.
-        //
-        // Example display:
-        // 1 | var1 + var2
-        //   | ^^^^   ^^^^ - var 2
-        //   | |
-        //   | var 1
-        #[highlight(snip)]
+        #[label("var 1")]
         // label from SourceSpan is used, if any.
         var1: SourceSpan,
-        #[highlight(snip)]
+        #[label("var 2")]
         // Anything that's Clone + Into<SourceSpan> can be used here.
         var2: (usize, usize),
     }
