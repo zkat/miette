@@ -1,5 +1,6 @@
 use std::fmt::{self, Write};
 
+use itertools::Itertools;
 use owo_colors::{OwoColorize, Style};
 use unicode_width::UnicodeWidthStr;
 
@@ -94,14 +95,16 @@ impl GraphicalReportHandler {
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
-        // if let Some(labels) = diagnostic.labels() {
-        //     let mut labels = labels.collect::<Vec<_>>();
-        //     labels.sort_unstable_by_key(|l| l.inner().offset());
-        //     if !labels.is_empty() {
-        //         writeln!(f)?;
-        //         self.render_snippets(f, labels)?;
-        //     }
-        // }
+        if let Some(source) = diagnostic.source_code() {
+            if let Some(labels) = diagnostic.labels() {
+                let mut labels = labels.collect::<Vec<_>>();
+                labels.sort_unstable_by_key(|l| l.inner().offset());
+                if !labels.is_empty() {
+                    writeln!(f)?;
+                    self.render_snippets(f, source, labels)?;
+                }
+            }
+        }
 
         self.render_footer(f, diagnostic)?;
         Ok(())
@@ -230,13 +233,30 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    /*
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
         source: &dyn SourceCode,
         labels: Vec<LabeledSpan>,
     ) -> fmt::Result {
+        // TODO: Actually do the rewrite against the new protocol.
+        let contexts: Vec<_> = labels
+            .iter()
+            .cloned()
+            .coalesce(|left, right| {
+                if left.offset() + left.len() >= right.offset() {
+                    let left_end = left.offset() + left.len();
+                    let right_end = right.offset() + right.len();
+                    Ok(LabeledSpan::new(
+                        left.label().map(String::from),
+                        left.offset(),
+                        right_end - left_end,
+                    ))
+                } else {
+                    Err((left, right))
+                }
+            })
+            .collect();
         let (contents, lines) = self.get_lines(source, &labels)?;
 
         // sorting is your friend
@@ -278,18 +298,19 @@ impl GraphicalReportHandler {
             self.theme.characters.ltop,
             self.theme.characters.hbar,
         )?;
-        if let Some(source_name) = source.name() {
-            let source_name = source_name.style(self.theme.styles.link);
-            writeln!(
-                f,
-                "[{}:{}:{}]",
-                source_name,
-                contents.line() + 1,
-                contents.column() + 1
-            )?;
-        } else {
-            writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
-        }
+        // TODO: filenames
+        // if let Some(source_name) = source.name() {
+        //     let source_name = source_name.style(self.theme.styles.link);
+        //     writeln!(
+        //         f,
+        //         "[{}:{}:{}]",
+        //         source_name,
+        //         contents.line() + 1,
+        //         contents.column() + 1
+        //     )?;
+        // } else {
+        //     writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
+        // }
 
         // Blank line to improve readability
         writeln!(
@@ -554,7 +575,7 @@ impl GraphicalReportHandler {
         &'a self,
         source: &'a dyn SourceCode,
         labels: &'a [LabeledSpan],
-    ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
+    ) -> Result<(Box<dyn SpanContents<'a> + 'a>, Vec<Line>), fmt::Error> {
         let first = labels.first().expect("MIETTE BUG: This should be safe.");
         let last = labels.last().expect("MIETTE BUG: This should be safe.");
         let context_span = (
@@ -616,7 +637,6 @@ impl GraphicalReportHandler {
         }
         Ok((context_data, lines))
     }
-    */
 }
 
 impl ReportHandler for GraphicalReportHandler {

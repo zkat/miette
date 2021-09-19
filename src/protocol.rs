@@ -172,7 +172,7 @@ If you can read it, you can source it,
 and it's not necessary to read the whole thing--meaning you should be able to
 support SourceCodes which are gigabytes or larger in size.
 */
-pub trait SourceCode: std::fmt::Debug + Send + Sync {
+pub trait SourceCode {
     /// Read the bytes for a specific span from this SourceCode, keeping a
     /// certain number of lines before and after the span as context.
     fn read_span<'a>(
@@ -193,6 +193,14 @@ pub struct LabeledSpan {
 }
 
 impl LabeledSpan {
+    /// Makes a new labels span.
+    pub fn new(label: Option<String>, offset: ByteOffset, len: ByteOffset) -> Self {
+        Self {
+            label,
+            span: (offset, len).into(),
+        }
+    }
+
     /// Gets the (optional) label string for this LabeledSpan.
     pub fn label(&self) -> Option<&str> {
         self.label.as_deref()
@@ -250,7 +258,7 @@ pub struct MietteSpanContents<'a> {
     // The 0-indexed column where the associated [SourceSpan] _starts_.
     column: usize,
     // Optional filename
-    name: Option<&'a str>,
+    name: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
@@ -266,7 +274,7 @@ impl<'a> MietteSpanContents<'a> {
 
     /// Make a new [MietteSpanContents] object, with a name for its "file".
     pub fn new_named(
-        name: &'a str,
+        name: String,
         data: &'a [u8],
         line: usize,
         column: usize,
