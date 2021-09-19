@@ -51,7 +51,7 @@ pub trait Diagnostic: std::error::Error {
     }
 
     /// Labels to apply to this Diagnostic's [Diagnostic::source_code]
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = SourceSpan> + 'a>> {
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         None
     }
 }
@@ -162,7 +162,7 @@ pub enum Severity {
 }
 
 /**
-Represents a readable source of some sort.
+Represents readable source code of some sort.
 
 This trait is able to support simple Source types like [String]s, as well
 as more involved types like indexes into centralized `SourceMap`-like types,
@@ -170,7 +170,7 @@ file handles, and even network streams.
 
 If you can read it, you can source it,
 and it's not necessary to read the whole thing--meaning you should be able to
-support Sources which are gigabytes or larger in size.
+support SourceCodes which are gigabytes or larger in size.
 */
 pub trait SourceCode: std::fmt::Debug + Send + Sync {
     /// Read the bytes for a specific span from this SourceCode, keeping a
@@ -185,6 +185,42 @@ pub trait SourceCode: std::fmt::Debug + Send + Sync {
     /// Optional name, usually a filename, for this source.
     fn name(&self) -> Option<String> {
         None
+    }
+}
+
+/**
+A labeled [SourceSpan].
+*/
+#[derive(Debug, Clone)]
+pub struct LabeledSpan {
+    label: Option<String>,
+    span: SourceSpan,
+}
+
+impl LabeledSpan {
+    /// Gets the (optional) label string for this LabeledSpan.
+    pub fn label(&self) -> Option<&str> {
+        self.label.as_deref()
+    }
+
+    /// Returns a reference to the inner [SourceSpan].
+    pub fn inner(&self) -> &SourceSpan {
+        &self.span
+    }
+
+    /// Returns the 0-based starting byte offset.
+    pub fn offset(&self) -> usize {
+        self.span.offset()
+    }
+
+    /// Returns the number of bytes this LabeledSpan spans.
+    pub fn len(&self) -> usize {
+        self.span.len()
+    }
+
+    /// True if this LabeledSpan is empty.
+    pub fn is_empty(&self) -> bool {
+        self.span.is_empty()
     }
 }
 

@@ -6,7 +6,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::chain::Chain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
-use crate::{ReportHandler, SourceSpan, SpanContents};
+use crate::{LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
@@ -94,6 +94,16 @@ impl GraphicalReportHandler {
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
 
+        if let Some(source) = diagnostic.source_code() {
+            if let Some(labels) = diagnostic.labels() {
+                let mut labels = labels.collect::<Vec<_>>();
+                labels.sort_unstable_by_key(|l| l.inner().offset());
+                if !labels.is_empty() {
+                    writeln!(f)?;
+                    self.render_snippets(f, source, labels)?;
+                }
+            }
+        }
         // if let Some(snippets) = diagnostic.snippets() {
         //     for snippet in snippets {
         //         writeln!(f)?;
@@ -228,24 +238,21 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    /*
-    fn render_snippet(
+    fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        snippet: &DiagnosticSnippet<'_>,
+        source: &dyn SourceCode,
+        labels: Vec<LabeledSpan>,
     ) -> fmt::Result {
-        let (contents, lines) = self.get_lines(snippet)?;
+        let (contents, lines) = self.get_lines(source, &labels)?;
 
-        // Highlights are the bits we're going to underline in our overall
-        // snippet, and we need to do some analysis first to come up with
-        // gutter size.
-        let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
-        // sorting is your friend.
-        highlights.sort_unstable_by_key(|(_, h)| h.offset());
-        let highlights = highlights
-            .into_iter()
+        // sorting is your friend
+        let labels = labels
+            .iter()
             .zip(self.theme.styles.highlights.iter().cloned().cycle())
-            .map(|((label, hl), st)| FancySpan::new(label, hl, st))
+            .map(|(label, st)| {
+                FancySpan::new(label.label().map(String::from), label.inner().clone(), st)
+            })
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
@@ -254,7 +261,7 @@ impl GraphicalReportHandler {
         let mut max_gutter = 0usize;
         for line in &lines {
             let mut num_highlights = 0;
-            for hl in &highlights {
+            for hl in &labels {
                 if !line.span_line_only(hl) && line.span_applies(hl) {
                     num_highlights += 1;
                 }
@@ -271,34 +278,14 @@ impl GraphicalReportHandler {
             .len();
 
         // Header
-        if let Some(msg) = &snippet.message {
-            writeln!(
-                f,
-                "{}{}{}",
-                " ".repeat(linum_width + 2),
-                self.theme.characters.ltop,
-                self.theme.characters.hbar.to_string().repeat(4)
-            )?;
-            writeln!(
-                f,
-                "{}{} error: {}",
-                " ".repeat(linum_width + 2),
-                self.theme.characters.vbar,
-                msg
-            )?;
-        }
         write!(
             f,
             "{}{}{}",
             " ".repeat(linum_width + 2),
-            if snippet.message.is_some() {
-                self.theme.characters.lcross
-            } else {
-                self.theme.characters.ltop
-            },
+            self.theme.characters.ltop,
             self.theme.characters.hbar,
         )?;
-        if let Some(source_name) = snippet.source.name() {
+        if let Some(source_name) = source.name() {
             let source_name = source_name.style(self.theme.styles.link);
             writeln!(
                 f,
@@ -327,13 +314,13 @@ impl GraphicalReportHandler {
             // Then, we need to print the gutter, along with any fly-bys We
             // have separate gutters depending on whether we're on the actual
             // line, or on one of the "highlight lines" below it.
-            self.render_line_gutter(f, max_gutter, line, &highlights)?;
+            self.render_line_gutter(f, max_gutter, line, &labels)?;
 
             // And _now_ we can print out the line text itself!
             writeln!(f, "{}", line.text)?;
 
             // Next, we write all the highlights that apply to this particular line.
-            let (single_line, multi_line): (Vec<_>, Vec<_>) = highlights
+            let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
                 .iter()
                 .filter(|hl| line.span_applies(hl))
                 .partition(|hl| line.span_line_only(hl));
@@ -341,14 +328,14 @@ impl GraphicalReportHandler {
                 // no line number!
                 self.write_no_linum(f, linum_width)?;
                 // gutter _again_
-                self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
+                self.render_highlight_gutter(f, max_gutter, line, &labels)?;
                 self.render_single_line_highlights(
                     f,
                     line,
                     linum_width,
                     max_gutter,
                     &single_line,
-                    &highlights,
+                    &labels,
                 )?;
             }
             for hl in multi_line {
@@ -356,7 +343,7 @@ impl GraphicalReportHandler {
                     // no line number!
                     self.write_no_linum(f, linum_width)?;
                     // gutter _again_
-                    self.render_highlight_gutter(f, max_gutter, line, &highlights)?;
+                    self.render_highlight_gutter(f, max_gutter, line, &labels)?;
                     self.render_multi_line_end(f, hl)?;
                 }
             }
@@ -572,16 +559,23 @@ impl GraphicalReportHandler {
 
     fn get_lines<'a>(
         &'a self,
-        snippet: &'a DiagnosticSnippet<'_>,
+        source: &'a dyn SourceCode,
+        labels: &'a [LabeledSpan],
     ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
-        let context_data = snippet
-            .source
-            .read_span(&snippet.context)
+        let first = labels.first().expect("MIETTE BUG: This should be safe.");
+        let last = labels.last().expect("MIETTE BUG: This should be safe.");
+        let context_span = (
+            first.inner().offset(),
+            last.inner().offset() + last.inner().len(),
+        )
+            .into();
+        let context_data = source
+            .read_span(&context_span, 1, 1)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
-        let mut offset = snippet.context.offset();
+        let mut offset = context_span.offset();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
         let mut line_str = String::new();
@@ -629,7 +623,6 @@ impl GraphicalReportHandler {
         }
         Ok((context_data, lines))
     }
-    */
 }
 
 impl ReportHandler for GraphicalReportHandler {

@@ -2,7 +2,7 @@ use core::fmt::{self, Debug, Display};
 
 use std::error::Error as StdError;
 
-use crate::Diagnostic;
+use crate::{Diagnostic, LabeledSpan};
 
 use crate as miette;
 
@@ -91,7 +91,7 @@ impl Diagnostic for BoxedError {
         self.0.url()
     }
 
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = miette::SourceSpan> + 'a>> {
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.0.labels()
     }
 }

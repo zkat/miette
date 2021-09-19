@@ -4,7 +4,7 @@ use core::fmt::{self, Debug, Display, Write};
 
 use std::error::Error as StdError;
 
-use crate::Diagnostic;
+use crate::{Diagnostic, LabeledSpan};
 
 mod ext {
     use super::*;
@@ -141,7 +141,7 @@ where
         self.error.url()
     }
 
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = crate::SourceSpan> + 'a>> {
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.error.labels()
     }
 }
@@ -166,7 +166,7 @@ where
         self.error.inner.diagnostic().url()
     }
 
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = crate::SourceSpan> + 'a>> {
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.error.inner.diagnostic().labels()
     }
 }
