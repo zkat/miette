@@ -180,12 +180,7 @@ pub trait SourceCode: std::fmt::Debug + Send + Sync {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
-
-    /// Optional name, usually a filename, where a [SourceSpan] is located in the SourceCode.
-    fn name(&self, span: &SourceSpan) -> Option<String> {
-        None
-    }
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
 }
 
 /**
@@ -229,9 +224,13 @@ Contents of a [SourceCode] covered by [SourceSpan].
 
 Includes line and column information to optimize highlight calculations.
 */
-pub trait SpanContents {
+pub trait SpanContents<'a> {
     /// Reference to the data inside the associated span, in bytes.
-    fn data(&self) -> &[u8];
+    fn data(&self) -> &'a [u8];
+    /// An optional (file?) name for the container of this SpanContents.
+    fn name(&self) -> Option<&'a str> {
+        None
+    }
     /// The 0-indexed line in the associated [SourceCode] where the data begins.
     fn line(&self) -> usize;
     /// The 0-indexed column in the associated [SourceCode] where the data begins,
@@ -250,17 +249,39 @@ pub struct MietteSpanContents<'a> {
     line: usize,
     // The 0-indexed column where the associated [SourceSpan] _starts_.
     column: usize,
+    // Optional filename
+    name: Option<&'a str>,
 }
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [MietteSpanContents] object.
     pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
-        MietteSpanContents { data, line, column }
+        MietteSpanContents {
+            data,
+            line,
+            column,
+            name: None,
+        }
+    }
+
+    /// Make a new [MietteSpanContents] object, with a name for its "file".
+    pub fn new_named(
+        name: &'a str,
+        data: &'a [u8],
+        line: usize,
+        column: usize,
+    ) -> MietteSpanContents<'a> {
+        MietteSpanContents {
+            data,
+            line,
+            column,
+            name: Some(name),
+        }
     }
 }
 
-impl<'a> SpanContents for MietteSpanContents<'a> {
-    fn data(&self) -> &[u8] {
+impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
+    fn data(&self) -> &'a [u8] {
         self.data
     }
     fn line(&self) -> usize {
