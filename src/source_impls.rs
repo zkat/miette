@@ -23,6 +23,7 @@ fn context_info<'a>(
     let mut current_line_start = 0usize;
     let mut end_lines = 0usize;
     let mut post_span = false;
+    let mut post_span_got_newline = false;
     let mut iter = input.iter().copied().peekable();
     while let Some(char) = iter.next() {
         if matches!(char, b'\r' | b'\n') {
@@ -43,9 +44,13 @@ fn context_info<'a>(
                 // started collecting end lines yet (we might still be
                 // collecting context lines).
                 if post_span {
-                    end_lines += 1;
                     start_column = 0;
-                    if end_lines > context_lines_after {
+                    if post_span_got_newline {
+                        end_lines += 1;
+                    } else {
+                        post_span_got_newline = true;
+                    }
+                    if end_lines >= context_lines_after {
                         offset += 1;
                         break;
                     }
@@ -224,9 +229,9 @@ mod tests {
     #[test]
     fn with_context() -> Result<(), MietteError> {
         let src = String::from("xxx\nfoo\nbar\nbaz\n\nyyy\n");
-        let contents = src.read_span(&(8, 4).into(), 1, 2)?;
+        let contents = src.read_span(&(8, 3).into(), 1, 1)?;
         assert_eq!(
-            "foo\nbar\nbaz\n\n",
+            "foo\nbar\nbaz\n",
             std::str::from_utf8(contents.data()).unwrap()
         );
         assert_eq!(1, contents.line());
