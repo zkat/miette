@@ -14,17 +14,20 @@ fn context_info<'a>(
     span: &SourceSpan,
     context_lines_before: usize,
     context_lines_after: usize,
-) -> Result<(&'a [u8], usize, usize), MietteError> {
+) -> Result<MietteSpanContents<'a>, MietteError> {
     let mut offset = 0usize;
+    let mut line_count = 0usize;
     let mut start_line = 0usize;
     let mut start_column = 0usize;
     let mut before_lines_starts = Vec::new();
     let mut current_line_start = 0usize;
     let mut end_lines = 0usize;
     let mut post_span = false;
+    let mut post_span_got_newline = false;
     let mut iter = input.iter().copied().peekable();
     while let Some(char) = iter.next() {
         if matches!(char, b'\r' | b'\n') {
+            line_count += 1;
             if char == b'\r' && iter.next_if_eq(&b'\n').is_some() {
                 offset += 1;
             }
@@ -41,9 +44,13 @@ fn context_info<'a>(
                 // started collecting end lines yet (we might still be
                 // collecting context lines).
                 if post_span {
-                    end_lines += 1;
                     start_column = 0;
-                    if end_lines > context_lines_after {
+                    if post_span_got_newline {
+                        end_lines += 1;
+                    } else {
+                        post_span_got_newline = true;
+                    }
+                    if end_lines >= context_lines_after {
                         offset += 1;
                         break;
                     }
@@ -54,7 +61,7 @@ fn context_info<'a>(
             start_column += 1;
         }
 
-        if offset >= span.offset() + span.len() - 1 {
+        if offset >= (span.offset() + span.len()).saturating_sub(1) {
             post_span = true;
             if end_lines >= context_lines_after {
                 offset += 1;
@@ -65,20 +72,36 @@ fn context_info<'a>(
         offset += 1;
     }
 
-    if offset >= span.offset() + span.len() - 1 {
-        Ok((
-            &input[before_lines_starts
-                .get(0)
-                .copied()
-                .unwrap_or_else(|| span.offset())..offset],
+    // These lines are commented as a hat-tip towards better failures. For the
+    // case of error reporting _specifically_, exposing a bug in your own
+    // error span calculation code by crashing with an opaque fmt::Error is
+    // not ideal. Instead, we go ahead and return what we've collected so far
+    // in out-of-range cases and just let it render without or with a missing
+    // label.
+    //
+    // Old code is left here in case we change our minds and we want to bring back more strict calculation.
+
+    if offset >= (span.offset() + span.len()).saturating_sub(1) {
+        let starting_offset = before_lines_starts.get(0).copied().unwrap_or_else(|| {
+            if line_count > 0 {
+                span.offset()
+            } else {
+                0
+            }
+        });
+        Ok(MietteSpanContents::new(
+            &input[starting_offset..offset],
+            (starting_offset, offset - starting_offset).into(),
             start_line,
             if context_lines_before == 0 {
                 start_column
             } else {
                 0
             },
+            line_count,
         ))
     } else {
+        // eprintln!("Out of bounds :(");
         Err(MietteError::OutOfBounds)
     }
 }
@@ -90,13 +113,8 @@ impl SourceCode for [u8] {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
-        let (data, start_line, start_column) =
-            context_info(self, span, context_lines_before, context_lines_after)?;
-        return Ok(Box::new(MietteSpanContents::new(
-            data,
-            start_line,
-            start_column,
-        )));
+        let contents = context_info(self, span, context_lines_before, context_lines_after)?;
+        Ok(Box::new(contents))
     }
 }
 
@@ -194,6 +212,16 @@ mod tests {
     }
 
     #[test]
+    fn shifted() -> Result<(), MietteError> {
+        let src = String::from("foobar");
+        let contents = src.read_span(&(3, 3).into(), 1, 1)?;
+        assert_eq!("foobar", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(0, contents.line());
+        assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
         let contents = src.read_span(&(4, 4).into(), 0, 0)?;
@@ -226,13 +254,28 @@ mod tests {
     #[test]
     fn with_context() -> Result<(), MietteError> {
         let src = String::from("xxx\nfoo\nbar\nbaz\n\nyyy\n");
-        let contents = src.read_span(&(8, 4).into(), 1, 2)?;
+        let contents = src.read_span(&(8, 3).into(), 1, 1)?;
         assert_eq!(
-            "foo\nbar\nbaz\n\n",
+            "foo\nbar\nbaz\n",
             std::str::from_utf8(contents.data()).unwrap()
         );
         assert_eq!(1, contents.line());
         assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn multiline_with_context() -> Result<(), MietteError> {
+        let src = String::from("aaa\nxxx\n\nfoo\nbar\nbaz\n\nyyy\nbbb\n");
+        let contents = src.read_span(&(9, 11).into(), 1, 1)?;
+        assert_eq!(
+            "\nfoo\nbar\nbaz\n\n",
+            std::str::from_utf8(contents.data()).unwrap()
+        );
+        assert_eq!(2, contents.line());
+        assert_eq!(0, contents.column());
+        let span: SourceSpan = (8, 14).into();
+        assert_eq!(&span, contents.span());
         Ok(())
     }
 }
