@@ -193,11 +193,19 @@ pub struct LabeledSpan {
 }
 
 impl LabeledSpan {
-    /// Makes a new labels span.
+    /// Makes a new labeled span.
     pub fn new(label: Option<String>, offset: ByteOffset, len: ByteOffset) -> Self {
         Self {
             label,
             span: (offset, len).into(),
+        }
+    }
+
+    /// Makes a new labeled span using an existing span.
+    pub fn new_with_span(label: Option<String>, span: impl Into<SourceSpan>) -> Self {
+        Self {
+            label,
+            span: span.into(),
         }
     }
 

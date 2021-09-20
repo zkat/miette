@@ -106,18 +106,16 @@ impl Labels {
             if let Some(display) = label {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                 quote! {
-                    miette::LabeledSpan::new(
+                    miette::LabeledSpan::new_with_span(
                         std::option::Option::Some(format!(#fmt #args)),
-                        self.#span.offset(),
-                        self.#span.len(),
+                        self.#span.clone(),
                     )
                 }
             } else {
                 quote! {
-                    miette::LabeledSpan::new(
+                    miette::LabeledSpan::new_with_span(
                         std::option::Option::None,
-                        self.#span.offset(),
-                        self.#span.len(),
+                        self.#span.clone(),
                     )
                 }
             }
@@ -151,18 +149,16 @@ impl Labels {
                     if let Some(display) = label {
                         let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                         quote! {
-                            miette::LabeledSpan::new(
+                            miette::LabeledSpan::new_with_span(
                                 std::option::Option::Some(format!(#fmt #args)),
-                                #field.offset(),
-                                #field.len(),
+                                #field.clone(),
                             )
                         }
                     } else {
                         quote! {
-                            miette::LabeledSpan::new(
+                            miette::LabeledSpan::new_with_span(
                                 std::option::Option::None,
-                                #field.offset(),
-                                #field.len(),
+                                #field.clone(),
                             )
                         }
                     }

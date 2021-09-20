@@ -11,6 +11,7 @@ mod forward;
 mod help;
 mod label;
 mod severity;
+mod source_code;
 mod url;
 mod utils;
 
