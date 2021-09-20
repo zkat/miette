@@ -263,7 +263,6 @@ impl GraphicalReportHandler {
                         LabeledSpan::new(
                             left.label().map(String::from),
                             left.offset(),
-                            // TODO: This is definitely wrong
                             if right_end >= left_end {
                                 // Right end goes past left end
                                 right_end - left.offset()
@@ -293,7 +292,6 @@ impl GraphicalReportHandler {
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
-        // TODO: Actually do the rewrite against the new protocol.
         let (contents, lines) = self.get_lines(source, context.inner())?;
 
         // sorting is your friend
