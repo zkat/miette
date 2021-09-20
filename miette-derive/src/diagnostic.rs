@@ -6,8 +6,9 @@ use crate::code::Code;
 use crate::diagnostic_arg::DiagnosticArg;
 use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
+use crate::label::Labels;
 use crate::severity::Severity;
-use crate::snippets::Snippets;
+use crate::source_code::SourceCode;
 use crate::url::Url;
 
 pub enum Diagnostic {
@@ -32,7 +33,7 @@ pub struct DiagnosticDef {
 
 pub enum DiagnosticDefArgs {
     Transparent(Forward),
-    Concrete(DiagnosticConcreteArgs),
+    Concrete(Box<DiagnosticConcreteArgs>),
 }
 
 impl DiagnosticDefArgs {
@@ -59,7 +60,8 @@ pub struct DiagnosticConcreteArgs {
     pub code: Option<Code>,
     pub severity: Option<Severity>,
     pub help: Option<Help>,
-    pub snippets: Option<Snippets>,
+    pub labels: Option<Labels>,
+    pub source_code: Option<SourceCode>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
 }
@@ -99,14 +101,16 @@ impl DiagnosticConcreteArgs {
                 }
             }
         }
-        let snippets = Snippets::from_fields(fields)?;
+        let labels = Labels::from_fields(fields)?;
+        let source_code = SourceCode::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
             help,
             severity,
-            snippets,
+            labels,
             url,
             forward,
+            source_code,
         };
         Ok(concrete)
     }
@@ -141,7 +145,7 @@ impl DiagnosticDefArgs {
             .into_iter()
             .filter(|x| !matches!(x, DiagnosticArg::Transparent));
         let concrete = DiagnosticConcreteArgs::parse(ident, fields, attr, args)?;
-        Ok(DiagnosticDefArgs::Concrete(concrete))
+        Ok(DiagnosticDefArgs::Concrete(Box::new(concrete)))
     }
 }
 
@@ -208,16 +212,18 @@ impl Diagnostic {
                         let code_method = forward.gen_struct_method(WhichFn::Code);
                         let help_method = forward.gen_struct_method(WhichFn::Help);
                         let url_method = forward.gen_struct_method(WhichFn::Url);
+                        let labels_method = forward.gen_struct_method(WhichFn::Labels);
+                        let source_code_method = forward.gen_struct_method(WhichFn::SourceCode);
                         let severity_method = forward.gen_struct_method(WhichFn::Severity);
-                        let snippets_method = forward.gen_struct_method(WhichFn::Snippets);
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                                 #code_method
                                 #help_method
                                 #url_method
+                                #labels_method
                                 #severity_method
-                                #snippets_method
+                                #source_code_method
                             }
                         }
                     }
@@ -243,24 +249,29 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::Severity));
-                        let snip_body = concrete
-                            .snippets
-                            .as_ref()
-                            .and_then(|x| x.gen_struct(fields))
-                            .or_else(|| forward(WhichFn::Snippets));
                         let url_body = concrete
                             .url
                             .as_ref()
                             .and_then(|x| x.gen_struct(ident, fields))
                             .or_else(|| forward(WhichFn::Url));
-
+                        let labels_body = concrete
+                            .labels
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields))
+                            .or_else(|| forward(WhichFn::Labels));
+                        let src_body = concrete
+                            .source_code
+                            .as_ref()
+                            .and_then(|x| x.gen_struct(fields))
+                            .or_else(|| forward(WhichFn::SourceCode));
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                                 #code_body
                                 #help_body
                                 #sev_body
-                                #snip_body
                                 #url_body
+                                #labels_body
+                                #src_body
                             }
                         }
                     }
@@ -275,14 +286,16 @@ impl Diagnostic {
                 let code_body = Code::gen_enum(variants);
                 let help_body = Help::gen_enum(variants);
                 let sev_body = Severity::gen_enum(variants);
-                let snip_body = Snippets::gen_enum(variants);
+                let labels_body = Labels::gen_enum(variants);
+                let src_body = SourceCode::gen_enum(variants);
                 let url_body = Url::gen_enum(ident, variants);
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                         #code_body
                         #help_body
                         #sev_body
-                        #snip_body
+                        #labels_body
+                        #src_body
                         #url_body
                     }
                 }

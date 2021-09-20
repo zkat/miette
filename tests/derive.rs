@@ -202,41 +202,15 @@ fn test_snippet_named_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo {
-        // The actual "source code" our contexts will be using. This can be
-        // reused by multiple contexts, and just needs to implement
-        // miette::Source!
+        #[source_code]
         src: String,
-
-        // The "snippet" span. This is the span that will be displayed to
-        // users. It should be a big enough slice of the Source to provide
-        // reasonable context, but still somewhat compact.
-        //
-        // You can have as many of these #[snippet] fields as you want, and
-        // even feed them from different sources!
-        //
-        // Example display:
-        //   / [my_snippet]: hi this is where the thing went wrong.
-        // 1 | hello
-        // 2 |     world
-        #[snippet(src, message("hi this is where the thing went wrong"))]
-        snip: SourceSpan, // Defines filename using `label`
-
-        // "Highlights" are the specific highlights _inside_ the snippet.
-        // These will be used to underline/point to specific sections of the
-        // #[snippet] they refer to. As such, these SourceSpans must be within
-        // the bounds of their referenced snippet.
-        //
-        // Example display:
-        // 1 | var1 + var2
-        //   | ^^^^   ^^^^ - var 2
-        //   | |
-        //   | var 1
-        #[highlight(snip)]
-        // label from SourceSpan is used, if any.
+        #[label("var 1")]
         var1: SourceSpan,
-        #[highlight(snip)]
+        #[label = "var 2"]
         // Anything that's Clone + Into<SourceSpan> can be used here.
         var2: (usize, usize),
+        #[label]
+        var3: (usize, usize),
     }
 }
 
@@ -246,15 +220,10 @@ fn test_snippet_unnamed_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo(
-        String,
-        #[snippet(0, message("hi"))] SourceSpan,
-        #[highlight(1)] SourceSpan,
-        #[highlight(1)] SourceSpan,
-        // referenced source name
-        String,
-        #[snippet(0, message("{}", self.4))] SourceSpan,
-        #[highlight(5)] SourceSpan,
-        #[highlight(5)] SourceSpan,
+        #[source_code] String,
+        #[label("{0}")] SourceSpan,
+        #[label = "idk"] SourceSpan,
+        #[label] SourceSpan,
     );
 }
 
@@ -266,24 +235,23 @@ fn test_snippet_enum() {
     enum Foo {
         #[diagnostic(code(foo::a))]
         A {
+            #[source_code]
             src: String,
-            #[snippet(src, message("hi this is where the thing went wrong"))]
-            snip: SourceSpan,
-            #[highlight(snip)]
+            msg: String,
+            #[label("hi this is where the thing went wrong ({msg})")]
+            var0: SourceSpan,
+            #[label = "blorp"]
             var1: SourceSpan,
-            #[highlight(snip)]
+            #[label]
             var2: SourceSpan,
         },
         #[diagnostic(code(foo::b))]
         B(
+            #[source_code] String,
             String,
-            #[snippet(0, message("hi"))] SourceSpan,
-            #[highlight(1)] SourceSpan,
-            #[highlight(1, label("var 2"))] SourceSpan,
-            // referenced source name
-            #[snippet(0)] SourceSpan,
-            #[highlight(4)] SourceSpan,
-            #[highlight(4)] SourceSpan,
+            #[label("{1}")] SourceSpan,
+            #[label = "blorp"] SourceSpan,
+            #[label] SourceSpan,
         ),
     }
 }
@@ -329,19 +297,17 @@ const SNIPPET_TEXT: &str = "hello from miette";
     severity(Warning)
 )]
 struct ForwardsTo {
+    #[source_code]
     src: String,
-    #[snippet(src, message("snippet text"))]
-    snip: miette::SourceSpan,
-    #[highlight(snip, label("highlight text"))]
-    highlight: miette::SourceSpan,
+    #[label("highlight text")]
+    label: miette::SourceSpan,
 }
 
 impl ForwardsTo {
     fn new() -> Self {
         ForwardsTo {
             src: SNIPPET_TEXT.into(),
-            snip: SourceSpan::new(0.into(), SNIPPET_TEXT.len().into()),
-            highlight: SourceSpan::new(11.into(), 6.into()),
+            label: SourceSpan::new(11.into(), 6.into()),
         }
     }
 }
@@ -352,39 +318,6 @@ fn check_all(diag: &impl Diagnostic) {
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
-    check_snippets(diag);
-}
-
-fn check_snippets(diag: &impl Diagnostic) {
-    type Snip = (Option<String>, usize, usize);
-    let snips: Vec<(Snip, Vec<Snip>)> = diag
-        .snippets()
-        .unwrap()
-        .map(
-            |miette::DiagnosticSnippet {
-                 message,
-                 context,
-                 highlights,
-                 ..
-             }| {
-                (
-                    (message, context.offset(), context.len()),
-                    highlights
-                        .into_iter()
-                        .flatten()
-                        .map(|(msg, span)| (msg, span.offset(), span.len()))
-                        .collect(),
-                )
-            },
-        )
-        .collect();
-    assert_eq!(
-        &snips[..],
-        &[(
-            (Some("snippet text".into()), 0, SNIPPET_TEXT.len()),
-            vec![(Some("highlight text".into()), 11, 6)]
-        )]
-    );
 }
 
 #[test]
@@ -475,8 +408,6 @@ fn test_forward_struct_named() {
     assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.help().unwrap().to_string(), "overridden help please");
     assert_eq!(diag.severity(), Some(Severity::Advice));
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&diag);
 }
 
 #[test]
@@ -490,8 +421,6 @@ fn test_forward_struct_unnamed() {
     let diag = Struct(ForwardsTo::new(), "url here");
     assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.url().unwrap().to_string(), "url here");
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&diag);
 }
 
 #[test]
@@ -515,8 +444,6 @@ fn test_forward_enum_named() {
         variant.help().unwrap().to_string(),
         "overridden help please"
     );
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&variant);
 }
 
 #[test]
@@ -534,8 +461,6 @@ fn test_forward_enum_unnamed() {
         variant.help().unwrap().to_string(),
         "overridden help please"
     );
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&variant);
 }
 
 #[test]

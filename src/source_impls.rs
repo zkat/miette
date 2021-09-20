@@ -1,5 +1,5 @@
 /*!
-Default trait implementations for [Source].
+Default trait implementations for [SourceCode].
 */
 use std::{
     borrow::{Cow, ToOwned},
@@ -7,98 +7,175 @@ use std::{
     sync::Arc,
 };
 
-use crate::{MietteError, MietteSpanContents, Source, SourceSpan, SpanContents};
+use crate::{MietteError, MietteSpanContents, SourceCode, SourceSpan, SpanContents};
 
-fn start_line_column(string: &str, span: &SourceSpan) -> Result<(usize, usize), MietteError> {
+fn context_info<'a>(
+    input: &'a [u8],
+    span: &SourceSpan,
+    context_lines_before: usize,
+    context_lines_after: usize,
+) -> Result<(&'a [u8], usize, usize), MietteError> {
     let mut offset = 0usize;
     let mut start_line = 0usize;
     let mut start_column = 0usize;
-    let mut iter = string.chars().peekable();
+    let mut before_lines_starts = Vec::new();
+    let mut current_line_start = 0usize;
+    let mut end_lines = 0usize;
+    let mut post_span = false;
+    let mut iter = input.iter().copied().peekable();
     while let Some(char) = iter.next() {
-        if offset < span.offset() {
-            match char {
-                '\r' => {
-                    if iter.next_if_eq(&'\n').is_some() {
+        if matches!(char, b'\r' | b'\n') {
+            if char == b'\r' && iter.next_if_eq(&b'\n').is_some() {
+                offset += 1;
+            }
+            if offset < span.offset() {
+                // We're before the start of the span.
+                start_column = 0;
+                before_lines_starts.push(current_line_start);
+                if before_lines_starts.len() > context_lines_before {
+                    start_line += 1;
+                    before_lines_starts.remove(0);
+                }
+            } else if offset >= span.offset() + span.len() - 1 {
+                // We're after the end of the span, but haven't necessarily
+                // started collecting end lines yet (we might still be
+                // collecting context lines).
+                if post_span {
+                    end_lines += 1;
+                    start_column = 0;
+                    if end_lines > context_lines_after {
                         offset += 1;
+                        break;
                     }
-                    start_line += 1;
-                    start_column = 0;
-                }
-                '\n' => {
-                    start_line += 1;
-                    start_column = 0;
-                }
-                _ => {
-                    start_column += 1;
                 }
             }
+            current_line_start = offset + 1;
+        } else if offset < span.offset() {
+            start_column += 1;
         }
 
         if offset >= span.offset() + span.len() - 1 {
-            return Ok((start_line, start_column));
+            post_span = true;
+            if end_lines >= context_lines_after {
+                offset += 1;
+                break;
+            }
         }
 
-        offset += char.len_utf8();
+        offset += 1;
     }
-    Err(MietteError::OutOfBounds)
+
+    if offset >= span.offset() + span.len() - 1 {
+        Ok((
+            &input[before_lines_starts
+                .get(0)
+                .copied()
+                .unwrap_or_else(|| span.offset())..offset],
+            start_line,
+            if context_lines_before == 0 {
+                start_column
+            } else {
+                0
+            },
+        ))
+    } else {
+        Err(MietteError::OutOfBounds)
+    }
 }
 
-// The basic impl here is on str (not &str), because otherwise String's impl cannot reuse it
-// without creating a temporary &str inside its read_span implementation, and then returning data
-// that refers to that temporary.
-impl Source for str {
+impl SourceCode for [u8] {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        let (start_line, start_column) = start_line_column(self, span)?;
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        let (data, start_line, start_column) =
+            context_info(self, span, context_lines_before, context_lines_after)?;
         return Ok(Box::new(MietteSpanContents::new(
-            &self.as_bytes()[span.offset()..span.offset() + span.len()],
+            data,
             start_line,
             start_column,
         )));
     }
 }
 
+impl<'src> SourceCode for &'src [u8] {
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
+    }
+}
+
+impl SourceCode for str {
+    fn read_span<'a>(
+        &'a self,
+        span: &SourceSpan,
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        <[u8] as SourceCode>::read_span(
+            self.as_bytes(),
+            span,
+            context_lines_before,
+            context_lines_after,
+        )
+    }
+}
+
 /// Makes `src: &'static str` or `struct S<'a> { src: &'a str }` usable.
-impl<'s> Source for &'s str {
+impl<'s> SourceCode for &'s str {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        <str as Source>::read_span(self, span)
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
 
-impl Source for String {
+impl SourceCode for String {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        <str as Source>::read_span(self, span)
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
 
-impl<T: Source> Source for Arc<T> {
+impl<T: SourceCode> SourceCode for Arc<T> {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        self.as_ref().read_span(span)
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        self.as_ref()
+            .read_span(span, context_lines_before, context_lines_after)
     }
 }
 
-impl<T: ?Sized + Source + ToOwned> Source for Cow<'_, T>
+impl<T: ?Sized + SourceCode + ToOwned> SourceCode for Cow<'_, T>
 where
-    // The minimal bounds are used here. `T::Owned` need not be `Source`, because `&T` can always
-    // be obtained from `Cow<'_, T>`.
+    // The minimal bounds are used here. `T::Owned` need not be `SourceCode`,
+    // because `&T` can always be obtained from `Cow<'_, T>`.
     T::Owned: Debug + Send + Sync,
 {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
-        self.as_ref().read_span(span)
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+        self.as_ref()
+            .read_span(span, context_lines_before, context_lines_after)
     }
 }
 
@@ -109,24 +186,53 @@ mod tests {
     #[test]
     fn basic() -> Result<(), MietteError> {
         let src = String::from("foo\n");
-        let contents = src.read_span(&(0, 4).into())?;
+        let contents = src.read_span(&(0, 4).into(), 0, 0)?;
         assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(0, contents.line());
+        assert_eq!(0, contents.column());
         Ok(())
     }
 
     #[test]
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&(4, 4).into())?;
+        let contents = src.read_span(&(4, 4).into(), 0, 0)?;
         assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn middle_of_line() -> Result<(), MietteError> {
+        let src = String::from("foo\nbarbar\nbaz\n");
+        let contents = src.read_span(&(7, 4).into(), 0, 0)?;
+        assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(3, contents.column());
         Ok(())
     }
 
     #[test]
     fn with_crlf() -> Result<(), MietteError> {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
-        let contents = src.read_span(&(5, 5).into())?;
+        let contents = src.read_span(&(5, 5).into(), 0, 0)?;
         assert_eq!("bar\r\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn with_context() -> Result<(), MietteError> {
+        let src = String::from("xxx\nfoo\nbar\nbaz\n\nyyy\n");
+        let contents = src.read_span(&(8, 4).into(), 1, 2)?;
+        assert_eq!(
+            "foo\nbar\nbaz\n\n",
+            std::str::from_utf8(contents.data()).unwrap()
+        );
+        assert_eq!(1, contents.line());
+        assert_eq!(0, contents.column());
         Ok(())
     }
 }

@@ -1,8 +1,8 @@
 use std::fmt;
 
 use crate::chain::Chain;
-use crate::protocol::{Diagnostic, DiagnosticSnippet, Severity};
-use crate::{ReportHandler, SourceSpan, SpanContents};
+use crate::protocol::{Diagnostic, Severity};
+use crate::{ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 [ReportHandler] that renders plain text and avoids extraneous graphics.
@@ -18,7 +18,7 @@ impl NarratableReportHandler {
     /// Create a new [NarratableReportHandler]. There are no customization
     /// options.
     pub fn new() -> Self {
-        Self { footer: None}
+        Self { footer: None }
     }
 
     /// Set the footer to be displayed at the end of the report.
@@ -47,12 +47,11 @@ impl NarratableReportHandler {
         self.render_header(f, diagnostic)?;
         self.render_causes(f, diagnostic)?;
 
-        if let Some(snippets) = diagnostic.snippets() {
-            for snippet in snippets {
-                writeln!(f)?;
-                self.render_snippet(f, &snippet)?;
-            }
-        }
+        // if let Some(labels) = diagnostic.labels() {
+        //     for label in labels {
+        //         self.render_label(f, &label)?;
+        //     }
+        // }
 
         self.render_footer(f, diagnostic)?;
         Ok(())
@@ -92,68 +91,12 @@ impl NarratableReportHandler {
         Ok(())
     }
 
-    fn render_snippet(
-        &self,
-        f: &mut impl fmt::Write,
-        snippet: &DiagnosticSnippet<'_>,
-    ) -> fmt::Result {
-        let (contents, lines) = self.get_lines(snippet)?;
-
-        write!(f, "Begin snippet")?;
-        if let Some(filename) = snippet.source.name() {
-            write!(f, " for {}", filename,)?;
-        }
-        write!(
-            f,
-            " starting at line {}, column {}",
-            contents.line() + 1,
-            contents.column() + 1
-        )?;
-        if let Some(message) = snippet.message.as_deref() {
-            write!(f, ": {}", message)?;
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-
-        // Highlights are the bits we're going to underline in our overall
-        // snippet, and we need to do some analysis first to come up with
-        // gutter size.
-        let mut highlights = snippet.highlights.clone().unwrap_or_else(Vec::new);
-        // sorting is your friend.
-        highlights.sort_unstable_by_key(|(_, h)| h.offset());
-
-        // Now it's time for the fun part--actually rendering everything!
-        for line in &lines {
-            writeln!(f, "snippet line {}: {}", line.line_number, line.text)?;
-            let relevant = highlights.iter().filter(|(_, hl)| line.span_starts(hl));
-            for (label, hl) in relevant {
-                let contents = snippet.source.read_span(hl).map_err(|_| fmt::Error)?;
-                if contents.line() + 1 == line.line_number {
-                    write!(
-                        f,
-                        "    highlight starting at line {}, column {}",
-                        contents.line() + 1,
-                        contents.column() + 1
-                    )?;
-                    if let Some(label) = label {
-                        write!(f, ": {}", label)?;
-                    }
-                    writeln!(f)?;
-                }
-            }
-        }
-        writeln!(f)?;
-        Ok(())
-    }
-
+    /*
     fn get_lines<'a>(
         &'a self,
-        snippet: &'a DiagnosticSnippet<'a>,
+        source: &'a dyn Source,
     ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
-        let context_data = snippet
-            .source
-            .read_span(&snippet.context)
-            .map_err(|_| fmt::Error)?;
+        let context_data = source.read_span(&snippet.context).map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
@@ -200,6 +143,7 @@ impl NarratableReportHandler {
         }
         Ok((context_data, lines))
     }
+    */
 }
 
 impl ReportHandler for NarratableReportHandler {
