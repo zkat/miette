@@ -48,9 +48,9 @@ impl DebugReportHandler {
         if let Some(help) = diagnostic.help() {
             diag.field("help", &help.to_string());
         }
-        if let Some(snippets) = diagnostic.snippets() {
-            let snippets: Vec<_> = snippets.collect();
-            diag.field("snippets", &format!("{:?}", snippets));
+        if let Some(labels) = diagnostic.labels() {
+            let labels: Vec<_> = labels.collect();
+            diag.field("labels", &format!("{:?}", labels));
         }
         diag.finish()?;
         writeln!(f)?;

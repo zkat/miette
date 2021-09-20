@@ -2,7 +2,7 @@ use core::fmt::{self, Debug, Display};
 
 use std::error::Error as StdError;
 
-use crate::Diagnostic;
+use crate::{Diagnostic, LabeledSpan};
 
 use crate as miette;
 
@@ -71,10 +71,30 @@ impl Display for NoneError {
 impl StdError for NoneError {}
 impl Diagnostic for NoneError {}
 
-#[derive(miette_derive::Diagnostic)]
 #[repr(transparent)]
-#[diagnostic(transparent)]
 pub(crate) struct BoxedError(pub(crate) Box<dyn Diagnostic + Send + Sync>);
+
+impl Diagnostic for BoxedError {
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.0.code()
+    }
+
+    fn severity(&self) -> Option<miette::Severity> {
+        self.0.severity()
+    }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.0.help()
+    }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.0.url()
+    }
+
+    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
+        self.0.labels()
+    }
+}
 
 impl Debug for BoxedError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

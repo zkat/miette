@@ -45,9 +45,13 @@ pub trait Diagnostic: std::error::Error {
         None
     }
 
-    /// Additional contextual snippets. This is typically used for adding
-    /// marked-up source file output the way compilers often do.
-    fn snippets<'a>(&'a self) -> Option<Box<dyn Iterator<Item = DiagnosticSnippet<'a>> + 'a>> {
+    /// Source code to apply this Diagnostic's [Diagnostic::labels] to.
+    fn source_code(&self) -> Option<&dyn SourceCode> {
+        None
+    }
+
+    /// Labels to apply to this Diagnostic's [Diagnostic::source_code]
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
         None
     }
 }
@@ -158,7 +162,7 @@ pub enum Severity {
 }
 
 /**
-Represents a readable source of some sort.
+Represents readable source code of some sort.
 
 This trait is able to support simple Source types like [String]s, as well
 as more involved types like indexes into centralized `SourceMap`-like types,
@@ -166,32 +170,86 @@ file handles, and even network streams.
 
 If you can read it, you can source it,
 and it's not necessary to read the whole thing--meaning you should be able to
-support Sources which are gigabytes or larger in size.
+support SourceCodes which are gigabytes or larger in size.
 */
-pub trait Source: std::fmt::Debug + Send + Sync {
-    /// Read the bytes for a specific span from this Source.
+pub trait SourceCode {
+    /// Read the bytes for a specific span from this SourceCode, keeping a
+    /// certain number of lines before and after the span as context.
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-    ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
+        context_lines_before: usize,
+        context_lines_after: usize,
+    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
+}
 
-    /// Optional name, usually a filename, for this source.
-    fn name(&self) -> Option<String> {
-        None
+/**
+A labeled [SourceSpan].
+*/
+#[derive(Debug, Clone)]
+pub struct LabeledSpan {
+    label: Option<String>,
+    span: SourceSpan,
+}
+
+impl LabeledSpan {
+    /// Makes a new labeled span.
+    pub fn new(label: Option<String>, offset: ByteOffset, len: ByteOffset) -> Self {
+        Self {
+            label,
+            span: (offset, len).into(),
+        }
+    }
+
+    /// Makes a new labeled span using an existing span.
+    pub fn new_with_span(label: Option<String>, span: impl Into<SourceSpan>) -> Self {
+        Self {
+            label,
+            span: span.into(),
+        }
+    }
+
+    /// Gets the (optional) label string for this LabeledSpan.
+    pub fn label(&self) -> Option<&str> {
+        self.label.as_deref()
+    }
+
+    /// Returns a reference to the inner [SourceSpan].
+    pub fn inner(&self) -> &SourceSpan {
+        &self.span
+    }
+
+    /// Returns the 0-based starting byte offset.
+    pub fn offset(&self) -> usize {
+        self.span.offset()
+    }
+
+    /// Returns the number of bytes this LabeledSpan spans.
+    pub fn len(&self) -> usize {
+        self.span.len()
+    }
+
+    /// True if this LabeledSpan is empty.
+    pub fn is_empty(&self) -> bool {
+        self.span.is_empty()
     }
 }
 
 /**
-Contents of a [Source] covered by [SourceSpan].
+Contents of a [SourceCode] covered by [SourceSpan].
 
 Includes line and column information to optimize highlight calculations.
 */
-pub trait SpanContents {
+pub trait SpanContents<'a> {
     /// Reference to the data inside the associated span, in bytes.
-    fn data(&self) -> &[u8];
-    /// The 0-indexed line in the associated [Source] where the data begins.
+    fn data(&self) -> &'a [u8];
+    /// An optional (file?) name for the container of this SpanContents.
+    fn name(&self) -> Option<&'a str> {
+        None
+    }
+    /// The 0-indexed line in the associated [SourceCode] where the data begins.
     fn line(&self) -> usize;
-    /// The 0-indexed column in the associated [Source] where the data begins,
+    /// The 0-indexed column in the associated [SourceCode] where the data begins,
     /// relative to `line`.
     fn column(&self) -> usize;
 }
@@ -201,23 +259,45 @@ Basic implementation of the [SpanContents] trait, for convenience.
 */
 #[derive(Clone, Debug)]
 pub struct MietteSpanContents<'a> {
-    /// Data from a [Source], in bytes.
+    /// Data from a [SourceCode], in bytes.
     data: &'a [u8],
     // The 0-indexed line where the associated [SourceSpan] _starts_.
     line: usize,
     // The 0-indexed column where the associated [SourceSpan] _starts_.
     column: usize,
+    // Optional filename
+    name: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [MietteSpanContents] object.
     pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
-        MietteSpanContents { data, line, column }
+        MietteSpanContents {
+            data,
+            line,
+            column,
+            name: None,
+        }
+    }
+
+    /// Make a new [MietteSpanContents] object, with a name for its "file".
+    pub fn new_named(
+        name: String,
+        data: &'a [u8],
+        line: usize,
+        column: usize,
+    ) -> MietteSpanContents<'a> {
+        MietteSpanContents {
+            data,
+            line,
+            column,
+            name: Some(name),
+        }
     }
 }
 
-impl<'a> SpanContents for MietteSpanContents<'a> {
-    fn data(&self) -> &[u8] {
+impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
+    fn data(&self) -> &'a [u8] {
         self.data
     }
     fn line(&self) -> usize {
@@ -229,24 +309,7 @@ impl<'a> SpanContents for MietteSpanContents<'a> {
 }
 
 /**
-A snippet from a [Source] to be displayed with a message and possibly some highlights.
- */
-#[derive(Clone, Debug)]
-pub struct DiagnosticSnippet<'a> {
-    /// Explanation of this specific diagnostic snippet.
-    pub message: Option<String>,
-    /// A [Source] that can be used to read the actual text of a source.
-    pub source: &'a (dyn Source),
-    /// The primary [SourceSpan] where this diagnostic is located.
-    pub context: SourceSpan,
-    /// Additional [SourceSpan]s that mark specific sections of the span, for
-    /// example, to underline specific text within the larger span. They're
-    /// paired with labels that should be applied to those sections.
-    pub highlights: Option<Vec<(Option<String>, SourceSpan)>>,
-}
-
-/**
-Span within a [Source] with an associated message.
+Span within a [SourceCode] with an associated message.
 */
 #[derive(Clone, Debug)]
 pub struct SourceSpan {
@@ -265,7 +328,7 @@ impl SourceSpan {
         }
     }
 
-    /// The absolute offset, in bytes, from the beginning of a [Source].
+    /// The absolute offset, in bytes, from the beginning of a [SourceCode].
     pub fn offset(&self) -> usize {
         self.offset.offset()
     }
@@ -301,12 +364,12 @@ impl From<(SourceOffset, SourceOffset)> for SourceSpan {
 }
 
 /**
-"Raw" type for the byte offset from the beginning of a [Source].
+"Raw" type for the byte offset from the beginning of a [SourceCode].
 */
 pub type ByteOffset = usize;
 
 /**
-Newtype that represents the [ByteOffset] from the beginning of a [Source]
+Newtype that represents the [ByteOffset] from the beginning of a [SourceCode]
 */
 #[derive(Clone, Copy, Debug)]
 pub struct SourceOffset(ByteOffset);

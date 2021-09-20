@@ -9,12 +9,13 @@ mod diagnostic_arg;
 mod fmt;
 mod forward;
 mod help;
+mod label;
 mod severity;
-mod snippets;
+mod source_code;
 mod url;
 mod utils;
 
-#[proc_macro_derive(Diagnostic, attributes(diagnostic, snippet, highlight))]
+#[proc_macro_derive(Diagnostic, attributes(diagnostic, label, source_code))]
 pub fn derive_diagnostic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let cmd = match Diagnostic::from_derive_input(input) {
