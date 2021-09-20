@@ -1,5 +1,37 @@
 # `miette` Release Changelog
 
+<a name="3.0.0-alpha.0"></a>
+## 3.0.0-alpha.0 (2021-09-20)
+
+This is the first WIP alpha release of miette 3.0!
+
+It's a MAJOR rewrite of the entire snippet definition and rendering system,
+and you can expect even more changes before 3.0 goes live.
+
+In the meantime, there's this. :)
+
+### Bug Fixes
+
+* **report:** miscellaneous, hacky tweaks to graphical rendering ([8029f9c6](https://github.com/zkat/miette/commit/8029f9c6c39d9d9592a2183380e83add8f9938e1))
+* **protocol:** implement source/cause for Box<dyn Diagnostic> ([3e8a27e2](https://github.com/zkat/miette/commit/3e8a27e263d6b22c1f2a9b192b2d305c2f0aa367))
+* **derive:** Code is no longer required ([8a0f71e6](https://github.com/zkat/miette/commit/8a0f71e6d11cd6f89fbad67cce46e34aa75f3b39))
+
+### Features
+
+* **report:** make a single big MietteHandler that can switch modes ([3d74a500](https://github.com/zkat/miette/commit/3d74a500c3193fb1dff26591191a67eaab079671))
+    * **BREAKING CHANGE**: linkification option method on GraphicalReportHandler has been changed to .with_links(bool)
+* **deps:** move fancy reporter (and its deps) to a feature ([bc495e6e](https://github.com/zkat/miette/commit/bc495e6ed49f227895260d8877685e267c0d5814))
+    * **BREAKING CHANGE**: The default fancy reporter is no longer available unless you enable the "fancy" feature. This also means you will not be pulling in a bunch of deps if you are using miette for a library
+* **footer:** add footer support to graphical and narrated ([412436cd](https://github.com/zkat/miette/commit/412436cd689ac55e9ec8172f772c321288629553))
+* **theme:** rename some theme items for clarity ([12a9235b](https://github.com/zkat/miette/commit/12a9235bec53d6dbd347f43dfaef167696a381e1))
+    * **BREAKING CHANGE**: These were part of the public API, so if you were using theming, this might have broken for you
+* **theme:** more styling changes ([9901030e](https://github.com/zkat/miette/commit/9901030eb160e72bc64144c44b8bf48cce8dfe48))
+* **report:** add debug report as default, instead of narrated one ([eb1b7222](https://github.com/zkat/miette/commit/eb1b7222fc5b73b6fb8fee90b1de27e0b8d6d588))
+* **labels:** replace snippet stuff with simpler labels (#62) ([0ef2853f](https://github.com/zkat/miette/commit/0ef2853f27ea84407789cbd0680956f9e3ee9168))
+* **protocol:** Make SourceCode Send+Sync ([eb485658](https://github.com/zkat/miette/commit/eb485658cc5a0df894c59d6ad29f945fff2839a5))
+* **handlers:** Update graphical handler to use new label protocol (#66) ([6cd44a86](https://github.com/zkat/miette/commit/6cd44a86c6e6f1d9c79006d4cfa89220dbd3a7b4))
+
+
 <a name="2.2.0"></a>
 ## 2.2.0 (2021-09-14)
 
