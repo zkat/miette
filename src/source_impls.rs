@@ -72,6 +72,15 @@ fn context_info<'a>(
         offset += 1;
     }
 
+    // These lines are commented as a hat-tip towards better failures. For the
+    // case of error reporting _specifically_, exposing a bug in your own
+    // error span calculation code by crashing with an opaque fmt::Error is
+    // not ideal. Instead, we go ahead and return what we've collected so far
+    // in out-of-range cases and just let it render without or with a missing
+    // label.
+    //
+    // Old code is left here in case we change our minds and we want to bring back more strict calculation.
+
     if offset >= span.offset() + span.len() - 1 {
         let starting_offset = before_lines_starts
             .get(0)
@@ -89,6 +98,7 @@ fn context_info<'a>(
             line_count,
         ))
     } else {
+        eprintln!("Out of bounds :(");
         Err(MietteError::OutOfBounds)
     }
 }

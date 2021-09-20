@@ -246,7 +246,7 @@ pub trait SpanContents<'a> {
     /// [SourceSpan] representing the span covered by this SpanContents.
     fn span(&self) -> &SourceSpan;
     /// An optional (file?) name for the container of this SpanContents.
-    fn name(&self) -> Option<&'a str> {
+    fn name(&self) -> Option<&str> {
         None
     }
     /// The 0-indexed line in the associated [SourceCode] where the data begins.
@@ -331,6 +331,9 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     }
     fn line_count(&self) -> usize {
         self.line_count
+    }
+    fn name(&self) -> Option<&str> {
+        self.name.as_deref()
     }
 }
 

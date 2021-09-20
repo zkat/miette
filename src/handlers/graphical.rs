@@ -343,6 +343,8 @@ impl GraphicalReportHandler {
                 contents.line() + 1,
                 contents.column() + 1
             )?;
+        } else if lines.len() == 1 {
+            writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
         } else {
             writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
         }
