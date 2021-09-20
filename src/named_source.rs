@@ -47,6 +47,7 @@ impl SourceCode for NamedSource {
             contents.data(),
             contents.line(),
             contents.column(),
+            contents.line_count(),
         )))
     }
 }

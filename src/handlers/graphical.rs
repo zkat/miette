@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::chain::Chain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
@@ -239,26 +239,52 @@ impl GraphicalReportHandler {
         source: &dyn SourceCode,
         labels: Vec<LabeledSpan>,
     ) -> fmt::Result {
-        // TODO: Actually do the rewrite against the new protocol.
-        let contexts: Vec<_> = labels
+        let contents = labels
             .iter()
-            .cloned()
-            .coalesce(|left, right| {
-                if left.offset() + left.len() >= right.offset() {
-                    let left_end = left.offset() + left.len();
-                    let right_end = right.offset() + right.len();
-                    Ok(LabeledSpan::new(
-                        left.label().map(String::from),
-                        left.offset(),
-                        right_end - left_end,
+            .map(|label| source.read_span(label.inner(), 1, 1))
+            .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
+            .map_err(|_| fmt::Error)?;
+        let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
+            |(left, left_conts), (right, right_conts)| {
+                let left_end = left.offset() + left.len();
+                let right_end = right.offset() + right.len();
+                if left_conts.line() + left_conts.line_count() >= right_conts.line() {
+                    // The snippets will overlap, so we create one Big Chunky Boi
+                    Ok((
+                        LabeledSpan::new(
+                            left.label().map(String::from),
+                            left.offset(),
+                            if right_end >= left_end {
+                                right_end - left_end
+                            } else {
+                                left_end - right_end
+                            },
+                        ),
+                        // We'll throw this away later
+                        left_conts,
                     ))
                 } else {
-                    Err((left, right))
+                    Err(((left, left_conts), (right, right_conts)))
                 }
-            })
-            .collect();
-        let (contents, lines) = self.get_lines(source, &labels)?;
+            },
+        );
+        for (ctx, _) in contexts {
+            self.render_context(f, source, &ctx, &labels[..])?;
+        }
+        Ok(())
+    }
 
+    fn render_context(
+        &self,
+        f: &mut impl fmt::Write,
+        source: &dyn SourceCode,
+        context: &LabeledSpan,
+        labels: &[LabeledSpan],
+    ) -> fmt::Result {
+        // TODO: Actually do the rewrite against the new protocol.
+        let (contents, lines) = self.get_lines(source, context.inner())?;
+
+        println!("{:?}", String::from_utf8(contents.data().into()));
         // sorting is your friend
         let labels = labels
             .iter()
@@ -574,15 +600,8 @@ impl GraphicalReportHandler {
     fn get_lines<'a>(
         &'a self,
         source: &'a dyn SourceCode,
-        labels: &'a [LabeledSpan],
+        context_span: &'a SourceSpan,
     ) -> Result<(Box<dyn SpanContents<'a> + 'a>, Vec<Line>), fmt::Error> {
-        let first = labels.first().expect("MIETTE BUG: This should be safe.");
-        let last = labels.last().expect("MIETTE BUG: This should be safe.");
-        let context_span = (
-            first.inner().offset(),
-            last.inner().offset() + last.inner().len(),
-        )
-            .into();
         let context_data = source
             .read_span(&context_span, 1, 1)
             .map_err(|_| fmt::Error)?;
@@ -653,6 +672,7 @@ impl ReportHandler for GraphicalReportHandler {
 Support types
 */
 
+#[derive(Debug)]
 struct Line {
     line_number: usize,
     offset: usize,

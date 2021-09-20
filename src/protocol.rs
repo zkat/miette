@@ -252,6 +252,8 @@ pub trait SpanContents<'a> {
     /// The 0-indexed column in the associated [SourceCode] where the data begins,
     /// relative to `line`.
     fn column(&self) -> usize;
+    /// Total number of lines covered by this SpanContents.
+    fn line_count(&self) -> usize;
 }
 
 /**
@@ -265,17 +267,25 @@ pub struct MietteSpanContents<'a> {
     line: usize,
     // The 0-indexed column where the associated [SourceSpan] _starts_.
     column: usize,
+    // Number of line in this snippet.
+    line_count: usize,
     // Optional filename
     name: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [MietteSpanContents] object.
-    pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
+    pub fn new(
+        data: &'a [u8],
+        line: usize,
+        column: usize,
+        line_count: usize,
+    ) -> MietteSpanContents<'a> {
         MietteSpanContents {
             data,
             line,
             column,
+            line_count,
             name: None,
         }
     }
@@ -286,11 +296,13 @@ impl<'a> MietteSpanContents<'a> {
         data: &'a [u8],
         line: usize,
         column: usize,
+        line_count: usize,
     ) -> MietteSpanContents<'a> {
         MietteSpanContents {
             data,
             line,
             column,
+            line_count,
             name: Some(name),
         }
     }
@@ -305,6 +317,9 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     }
     fn column(&self) -> usize {
         self.column
+    }
+    fn line_count(&self) -> usize {
+        self.line_count
     }
 }
 

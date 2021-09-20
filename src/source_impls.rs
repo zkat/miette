@@ -14,8 +14,9 @@ fn context_info<'a>(
     span: &SourceSpan,
     context_lines_before: usize,
     context_lines_after: usize,
-) -> Result<(&'a [u8], usize, usize), MietteError> {
+) -> Result<MietteSpanContents<'a>, MietteError> {
     let mut offset = 0usize;
+    let mut line_count = 0usize;
     let mut start_line = 0usize;
     let mut start_column = 0usize;
     let mut before_lines_starts = Vec::new();
@@ -25,6 +26,7 @@ fn context_info<'a>(
     let mut iter = input.iter().copied().peekable();
     while let Some(char) = iter.next() {
         if matches!(char, b'\r' | b'\n') {
+            line_count += 1;
             if char == b'\r' && iter.next_if_eq(&b'\n').is_some() {
                 offset += 1;
             }
@@ -66,7 +68,7 @@ fn context_info<'a>(
     }
 
     if offset >= span.offset() + span.len() - 1 {
-        Ok((
+        Ok(MietteSpanContents::new(
             &input[before_lines_starts
                 .get(0)
                 .copied()
@@ -77,6 +79,7 @@ fn context_info<'a>(
             } else {
                 0
             },
+            line_count,
         ))
     } else {
         Err(MietteError::OutOfBounds)
@@ -90,13 +93,8 @@ impl SourceCode for [u8] {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
-        let (data, start_line, start_column) =
-            context_info(self, span, context_lines_before, context_lines_after)?;
-        return Ok(Box::new(MietteSpanContents::new(
-            data,
-            start_line,
-            start_column,
-        )));
+        let contents = context_info(self, span, context_lines_before, context_lines_after)?;
+        Ok(Box::new(contents))
     }
 }
 
