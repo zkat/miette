@@ -318,39 +318,6 @@ fn check_all(diag: &impl Diagnostic) {
     assert_eq!(diag.url().unwrap().to_string(), "https://example.com");
     assert_eq!(diag.help().unwrap().to_string(), "help");
     assert_eq!(diag.severity().unwrap(), miette::Severity::Warning);
-    check_snippets(diag);
-}
-
-fn check_snippets(diag: &impl Diagnostic) {
-    type Snip = (Option<String>, usize, usize);
-    let snips: Vec<(Snip, Vec<Snip>)> = diag
-        .snippets()
-        .unwrap()
-        .map(
-            |miette::DiagnosticSnippet {
-                 message,
-                 context,
-                 highlights,
-                 ..
-             }| {
-                (
-                    (message, context.offset(), context.len()),
-                    highlights
-                        .into_iter()
-                        .flatten()
-                        .map(|(msg, span)| (msg, span.offset(), span.len()))
-                        .collect(),
-                )
-            },
-        )
-        .collect();
-    assert_eq!(
-        &snips[..],
-        &[(
-            (Some("snippet text".into()), 0, SNIPPET_TEXT.len()),
-            vec![(Some("highlight text".into()), 11, 6)]
-        )]
-    );
 }
 
 #[test]
@@ -441,8 +408,6 @@ fn test_forward_struct_named() {
     assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.help().unwrap().to_string(), "overridden help please");
     assert_eq!(diag.severity(), Some(Severity::Advice));
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&diag);
 }
 
 #[test]
@@ -456,8 +421,6 @@ fn test_forward_struct_unnamed() {
     let diag = Struct(ForwardsTo::new(), "url here");
     assert_eq!(diag.code().unwrap().to_string(), "foo::bar::overridden");
     assert_eq!(diag.url().unwrap().to_string(), "url here");
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&diag);
 }
 
 #[test]
@@ -481,8 +444,6 @@ fn test_forward_enum_named() {
         variant.help().unwrap().to_string(),
         "overridden help please"
     );
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&variant);
 }
 
 #[test]
@@ -500,8 +461,6 @@ fn test_forward_enum_unnamed() {
         variant.help().unwrap().to_string(),
         "overridden help please"
     );
-    // this comes from <ForwardsTo as Diagnostic>::snippets()
-    check_snippets(&variant);
 }
 
 #[test]
