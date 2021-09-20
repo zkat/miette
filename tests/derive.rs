@@ -205,11 +205,12 @@ fn test_snippet_named_struct() {
         #[source_code]
         src: String,
         #[label("var 1")]
-        // label from SourceSpan is used, if any.
         var1: SourceSpan,
-        #[label("var 2")]
+        #[label = "var 2"]
         // Anything that's Clone + Into<SourceSpan> can be used here.
         var2: (usize, usize),
+        #[label]
+        var3: (usize, usize),
     }
 }
 
@@ -219,15 +220,10 @@ fn test_snippet_unnamed_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     struct Foo(
-        String,
-        #[snippet(0, message("hi"))] SourceSpan,
-        #[highlight(1)] SourceSpan,
-        #[highlight(1)] SourceSpan,
-        // referenced source name
-        String,
-        #[snippet(0, message("{}", self.4))] SourceSpan,
-        #[highlight(5)] SourceSpan,
-        #[highlight(5)] SourceSpan,
+        #[source_code] String,
+        #[label("{0}")] SourceSpan,
+        #[label = "idk"] SourceSpan,
+        #[label] SourceSpan,
     );
 }
 
@@ -239,24 +235,23 @@ fn test_snippet_enum() {
     enum Foo {
         #[diagnostic(code(foo::a))]
         A {
+            #[source_code]
             src: String,
-            #[snippet(src, message("hi this is where the thing went wrong"))]
-            snip: SourceSpan,
-            #[highlight(snip)]
+            msg: String,
+            #[label("hi this is where the thing went wrong ({msg})")]
+            var0: SourceSpan,
+            #[label = "blorp"]
             var1: SourceSpan,
-            #[highlight(snip)]
+            #[label]
             var2: SourceSpan,
         },
         #[diagnostic(code(foo::b))]
         B(
+            #[source_code] String,
             String,
-            #[snippet(0, message("hi"))] SourceSpan,
-            #[highlight(1)] SourceSpan,
-            #[highlight(1, label("var 2"))] SourceSpan,
-            // referenced source name
-            #[snippet(0)] SourceSpan,
-            #[highlight(4)] SourceSpan,
-            #[highlight(4)] SourceSpan,
+            #[label("{1}")] SourceSpan,
+            #[label = "blorp"] SourceSpan,
+            #[label] SourceSpan,
         ),
     }
 }
@@ -302,19 +297,17 @@ const SNIPPET_TEXT: &str = "hello from miette";
     severity(Warning)
 )]
 struct ForwardsTo {
+    #[source_code]
     src: String,
-    #[snippet(src, message("snippet text"))]
-    snip: miette::SourceSpan,
-    #[highlight(snip, label("highlight text"))]
-    highlight: miette::SourceSpan,
+    #[label("highlight text")]
+    label: miette::SourceSpan,
 }
 
 impl ForwardsTo {
     fn new() -> Self {
         ForwardsTo {
             src: SNIPPET_TEXT.into(),
-            snip: SourceSpan::new(0.into(), SNIPPET_TEXT.len().into()),
-            highlight: SourceSpan::new(11.into(), 6.into()),
+            label: SourceSpan::new(11.into(), 6.into()),
         }
     }
 }

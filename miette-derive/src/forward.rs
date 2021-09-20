@@ -45,7 +45,7 @@ impl WhichFn {
             Self::Help => quote! { help() },
             Self::Url => quote! { url() },
             Self::Severity => quote! { severity() },
-            Self::Labels => quote! { snippets() },
+            Self::Labels => quote! { labels() },
         }
     }
 
@@ -64,7 +64,7 @@ impl WhichFn {
                 fn severity(&self) -> std::option::Option<miette::Severity>
             },
             Self::Labels => quote! {
-                fn snippets(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::DiagnosticSnippet> + '_>>
+                fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>>
             },
         }
     }

@@ -210,7 +210,6 @@ impl Diagnostic {
                         let url_method = forward.gen_struct_method(WhichFn::Url);
                         let labels_method = forward.gen_struct_method(WhichFn::Labels);
                         let severity_method = forward.gen_struct_method(WhichFn::Severity);
-                        let snippets_method = forward.gen_struct_method(WhichFn::Labels);
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -219,7 +218,6 @@ impl Diagnostic {
                                 #url_method
                                 #labels_method
                                 #severity_method
-                                #snippets_method
                             }
                         }
                     }

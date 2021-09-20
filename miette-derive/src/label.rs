@@ -1,5 +1,5 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
@@ -46,7 +46,7 @@ impl Parse for LabelAttr {
                 };
                 Some(display)
             } else {
-                return Err(syn::Error::new(input.span(), "Invalid argument to label() sub-attribute. The first argument must be a literal string."));
+                return Err(syn::Error::new(input.span(), "Invalid argument to label() attribute. The first argument must be a literal string."));
             }
         } else if la.peek(Token![=]) {
             // #[label = "blabla"]
@@ -87,7 +87,7 @@ impl Labels {
                             span: field.span(),
                         })
                     };
-                    let LabelAttr { label } = attr.parse_args::<LabelAttr>()?;
+                    let LabelAttr { label } = syn::parse2::<LabelAttr>(attr.tokens.clone())?;
                     labels.push(Label { label, span });
                 }
             }
@@ -142,21 +142,27 @@ impl Labels {
                 labels.as_ref().and_then(|labels| {
                 let variant_labels = labels.0.iter().map(|label| {
                     let Label { span, label } = label;
+                    let field = match &span {
+                        syn::Member::Named(ident) => ident.clone(),
+                        syn::Member::Unnamed(syn::Index { index, .. }) => {
+                            format_ident!("_{}", index)
+                        }
+                    };
                     if let Some(display) = label {
                         let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                         quote! {
                             miette::LabeledSpan::new(
                                 std::option::Option::Some(format!(#fmt #args)),
-                                self.#span.offset(),
-                                self.#span.len(),
+                                #field.offset(),
+                                #field.len(),
                             )
                         }
                     } else {
                         quote! {
                             miette::LabeledSpan::new(
                                 std::option::Option::None,
-                                self.#span.offset(),
-                                self.#span.len(),
+                                #field.offset(),
+                                #field.len(),
                             )
                         }
                     }
