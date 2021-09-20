@@ -26,6 +26,7 @@ pub struct GraphicalReportHandler {
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
+    pub(crate) context_lines: usize,
 }
 
 impl GraphicalReportHandler {
@@ -37,6 +38,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme: GraphicalTheme::default(),
             footer: None,
+            context_lines: 1,
         }
     }
 
@@ -47,6 +49,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme,
             footer: None,
+            context_lines: 1,
         }
     }
 
@@ -71,6 +74,12 @@ impl GraphicalReportHandler {
     /// Sets the "global" footer for this handler.
     pub fn with_footer(mut self, footer: String) -> Self {
         self.footer = Some(footer);
+        self
+    }
+
+    /// Sets the number of lines of context to show around each error.
+    pub fn with_context_lines(mut self, lines: usize) -> Self {
+        self.context_lines = lines;
         self
     }
 }
@@ -241,7 +250,7 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         let contents = labels
             .iter()
-            .map(|label| source.read_span(label.inner(), 1, 1))
+            .map(|label| source.read_span(label.inner(), self.context_lines, self.context_lines))
             .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
             .map_err(|_| fmt::Error)?;
         let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
@@ -254,10 +263,13 @@ impl GraphicalReportHandler {
                         LabeledSpan::new(
                             left.label().map(String::from),
                             left.offset(),
+                            // TODO: This is definitely wrong
                             if right_end >= left_end {
-                                right_end - left_end
+                                // Right end goes past left end
+                                right_end - left.offset()
                             } else {
-                                left_end - right_end
+                                // right is contained inside left
+                                left.len()
                             },
                         ),
                         // We'll throw this away later
@@ -274,17 +286,16 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_context(
+    fn render_context<'a>(
         &self,
         f: &mut impl fmt::Write,
-        source: &dyn SourceCode,
+        source: &'a dyn SourceCode,
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
         // TODO: Actually do the rewrite against the new protocol.
         let (contents, lines) = self.get_lines(source, context.inner())?;
 
-        println!("{:?}", String::from_utf8(contents.data().into()));
         // sorting is your friend
         let labels = labels
             .iter()
@@ -324,19 +335,19 @@ impl GraphicalReportHandler {
             self.theme.characters.ltop,
             self.theme.characters.hbar,
         )?;
-        // TODO: filenames
-        // if let Some(source_name) = source.name() {
-        //     let source_name = source_name.style(self.theme.styles.link);
-        //     writeln!(
-        //         f,
-        //         "[{}:{}:{}]",
-        //         source_name,
-        //         contents.line() + 1,
-        //         contents.column() + 1
-        //     )?;
-        // } else {
-        //     writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
-        // }
+
+        if let Some(source_name) = contents.name() {
+            let source_name = source_name.style(self.theme.styles.link);
+            writeln!(
+                f,
+                "[{}:{}:{}]",
+                source_name,
+                contents.line() + 1,
+                contents.column() + 1
+            )?;
+        } else {
+            writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
+        }
 
         // Blank line to improve readability
         writeln!(
@@ -603,12 +614,12 @@ impl GraphicalReportHandler {
         context_span: &'a SourceSpan,
     ) -> Result<(Box<dyn SpanContents<'a> + 'a>, Vec<Line>), fmt::Error> {
         let context_data = source
-            .read_span(&context_span, 1, 1)
+            .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
-        let mut offset = context_span.offset();
+        let mut offset = context_data.span().offset();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
         let mut line_str = String::new();

@@ -73,11 +73,13 @@ fn context_info<'a>(
     }
 
     if offset >= span.offset() + span.len() - 1 {
+        let starting_offset = before_lines_starts
+            .get(0)
+            .copied()
+            .unwrap_or_else(|| span.offset());
         Ok(MietteSpanContents::new(
-            &input[before_lines_starts
-                .get(0)
-                .copied()
-                .unwrap_or_else(|| span.offset())..offset],
+            &input[starting_offset..offset],
+            (starting_offset, offset - starting_offset).into(),
             start_line,
             if context_lines_before == 0 {
                 start_column
@@ -236,6 +238,21 @@ mod tests {
         );
         assert_eq!(1, contents.line());
         assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn multiline_with_context() -> Result<(), MietteError> {
+        let src = String::from("aaa\nxxx\n\nfoo\nbar\nbaz\n\nyyy\nbbb\n");
+        let contents = src.read_span(&(9, 11).into(), 1, 1)?;
+        assert_eq!(
+            "\nfoo\nbar\nbaz\n\n",
+            std::str::from_utf8(contents.data()).unwrap()
+        );
+        assert_eq!(2, contents.line());
+        assert_eq!(0, contents.column());
+        let span: SourceSpan = (8, 14).into();
+        assert_eq!(&span, contents.span());
         Ok(())
     }
 }
