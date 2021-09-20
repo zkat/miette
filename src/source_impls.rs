@@ -61,7 +61,7 @@ fn context_info<'a>(
             start_column += 1;
         }
 
-        if offset >= span.offset() + span.len() - 1 {
+        if offset >= (span.offset() + span.len()).saturating_sub(1) {
             post_span = true;
             if end_lines >= context_lines_after {
                 offset += 1;
@@ -81,11 +81,14 @@ fn context_info<'a>(
     //
     // Old code is left here in case we change our minds and we want to bring back more strict calculation.
 
-    if offset >= span.offset() + span.len() - 1 {
-        let starting_offset = before_lines_starts
-            .get(0)
-            .copied()
-            .unwrap_or_else(|| span.offset());
+    if offset >= (span.offset() + span.len()).saturating_sub(1) {
+        let starting_offset = before_lines_starts.get(0).copied().unwrap_or_else(|| {
+            if line_count > 0 {
+                span.offset()
+            } else {
+                0
+            }
+        });
         Ok(MietteSpanContents::new(
             &input[starting_offset..offset],
             (starting_offset, offset - starting_offset).into(),
@@ -98,7 +101,7 @@ fn context_info<'a>(
             line_count,
         ))
     } else {
-        eprintln!("Out of bounds :(");
+        // eprintln!("Out of bounds :(");
         Err(MietteError::OutOfBounds)
     }
 }
@@ -203,6 +206,16 @@ mod tests {
         let src = String::from("foo\n");
         let contents = src.read_span(&(0, 4).into(), 0, 0)?;
         assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!(0, contents.line());
+        assert_eq!(0, contents.column());
+        Ok(())
+    }
+
+    #[test]
+    fn shifted() -> Result<(), MietteError> {
+        let src = String::from("foobar");
+        let contents = src.read_span(&(3, 3).into(), 1, 1)?;
+        assert_eq!("foobar", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(0, contents.line());
         assert_eq!(0, contents.column());
         Ok(())
