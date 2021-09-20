@@ -205,11 +205,7 @@ impl Default for MietteHandler {
 }
 
 impl ReportHandler for MietteHandler {
-    fn debug(
-        &self,
-        diagnostic: &(dyn Diagnostic + 'static),
-        f: &mut fmt::Formatter<'_>,
-    ) -> fmt::Result {
+    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }

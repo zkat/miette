@@ -26,11 +26,11 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
+#[cfg(not(feature = "fancy"))]
+use crate::DebugReportHandler;
 use crate::Diagnostic;
 #[cfg(feature = "fancy")]
 use crate::MietteHandler;
-#[cfg(not(feature = "fancy"))]
-use crate::DebugReportHandler;
 
 use error::ErrorImpl;
 
@@ -165,7 +165,7 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
     /// ```
     fn debug(
         &self,
-        error: &(dyn Diagnostic + 'static),
+        error: &(dyn Diagnostic),
         f: &mut core::fmt::Formatter<'_>,
     ) -> core::fmt::Result;
 

@@ -7,7 +7,7 @@ use unicode_width::UnicodeWidthStr;
 use crate::chain::Chain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
@@ -26,6 +26,7 @@ pub struct GraphicalReportHandler {
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
+    pub(crate) context_lines: usize,
 }
 
 impl GraphicalReportHandler {
@@ -37,6 +38,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme: GraphicalTheme::default(),
             footer: None,
+            context_lines: 1,
         }
     }
 
@@ -47,6 +49,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme,
             footer: None,
+            context_lines: 1,
         }
     }
 
@@ -71,6 +74,12 @@ impl GraphicalReportHandler {
     /// Sets the "global" footer for this handler.
     pub fn with_footer(mut self, footer: String) -> Self {
         self.footer = Some(footer);
+        self
+    }
+
+    /// Sets the number of lines of context to show around each error.
+    pub fn with_context_lines(mut self, lines: usize) -> Self {
+        self.context_lines = lines;
         self
     }
 }
@@ -239,25 +248,51 @@ impl GraphicalReportHandler {
         source: &dyn SourceCode,
         labels: Vec<LabeledSpan>,
     ) -> fmt::Result {
-        // TODO: Actually do the rewrite against the new protocol.
-        let contexts: Vec<_> = labels
+        let contents = labels
             .iter()
-            .cloned()
-            .coalesce(|left, right| {
-                if left.offset() + left.len() >= right.offset() {
-                    let left_end = left.offset() + left.len();
-                    let right_end = right.offset() + right.len();
-                    Ok(LabeledSpan::new(
-                        left.label().map(String::from),
-                        left.offset(),
-                        right_end - left_end,
+            .map(|label| source.read_span(label.inner(), self.context_lines, self.context_lines))
+            .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
+            .map_err(|_| fmt::Error)?;
+        let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
+            |(left, left_conts), (right, right_conts)| {
+                let left_end = left.offset() + left.len();
+                let right_end = right.offset() + right.len();
+                if left_conts.line() + left_conts.line_count() >= right_conts.line() {
+                    // The snippets will overlap, so we create one Big Chunky Boi
+                    Ok((
+                        LabeledSpan::new(
+                            left.label().map(String::from),
+                            left.offset(),
+                            if right_end >= left_end {
+                                // Right end goes past left end
+                                right_end - left.offset()
+                            } else {
+                                // right is contained inside left
+                                left.len()
+                            },
+                        ),
+                        // We'll throw this away later
+                        left_conts,
                     ))
                 } else {
-                    Err((left, right))
+                    Err(((left, left_conts), (right, right_conts)))
                 }
-            })
-            .collect();
-        let (contents, lines) = self.get_lines(source, &labels)?;
+            },
+        );
+        for (ctx, _) in contexts {
+            self.render_context(f, source, &ctx, &labels[..])?;
+        }
+        Ok(())
+    }
+
+    fn render_context<'a>(
+        &self,
+        f: &mut impl fmt::Write,
+        source: &'a dyn SourceCode,
+        context: &LabeledSpan,
+        labels: &[LabeledSpan],
+    ) -> fmt::Result {
+        let (contents, lines) = self.get_lines(source, context.inner())?;
 
         // sorting is your friend
         let labels = labels
@@ -298,19 +333,21 @@ impl GraphicalReportHandler {
             self.theme.characters.ltop,
             self.theme.characters.hbar,
         )?;
-        // TODO: filenames
-        // if let Some(source_name) = source.name() {
-        //     let source_name = source_name.style(self.theme.styles.link);
-        //     writeln!(
-        //         f,
-        //         "[{}:{}:{}]",
-        //         source_name,
-        //         contents.line() + 1,
-        //         contents.column() + 1
-        //     )?;
-        // } else {
-        //     writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
-        // }
+
+        if let Some(source_name) = contents.name() {
+            let source_name = source_name.style(self.theme.styles.link);
+            writeln!(
+                f,
+                "[{}:{}:{}]",
+                source_name,
+                contents.line() + 1,
+                contents.column() + 1
+            )?;
+        } else if lines.len() == 1 {
+            writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
+        } else {
+            writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
+        }
 
         // Blank line to improve readability
         writeln!(
@@ -574,22 +611,15 @@ impl GraphicalReportHandler {
     fn get_lines<'a>(
         &'a self,
         source: &'a dyn SourceCode,
-        labels: &'a [LabeledSpan],
+        context_span: &'a SourceSpan,
     ) -> Result<(Box<dyn SpanContents<'a> + 'a>, Vec<Line>), fmt::Error> {
-        let first = labels.first().expect("MIETTE BUG: This should be safe.");
-        let last = labels.last().expect("MIETTE BUG: This should be safe.");
-        let context_span = (
-            first.inner().offset(),
-            last.inner().offset() + last.inner().len(),
-        )
-            .into();
         let context_data = source
-            .read_span(&context_span, 1, 1)
+            .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
-        let mut offset = context_span.offset();
+        let mut offset = context_data.span().offset();
         let mut line_offset = offset;
         let mut iter = context.chars().peekable();
         let mut line_str = String::new();
@@ -653,6 +683,7 @@ impl ReportHandler for GraphicalReportHandler {
 Support types
 */
 
+#[derive(Debug)]
 struct Line {
     line_number: usize,
     offset: usize,

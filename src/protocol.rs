@@ -243,8 +243,10 @@ Includes line and column information to optimize highlight calculations.
 pub trait SpanContents<'a> {
     /// Reference to the data inside the associated span, in bytes.
     fn data(&self) -> &'a [u8];
+    /// [SourceSpan] representing the span covered by this SpanContents.
+    fn span(&self) -> &SourceSpan;
     /// An optional (file?) name for the container of this SpanContents.
-    fn name(&self) -> Option<&'a str> {
+    fn name(&self) -> Option<&str> {
         None
     }
     /// The 0-indexed line in the associated [SourceCode] where the data begins.
@@ -252,6 +254,8 @@ pub trait SpanContents<'a> {
     /// The 0-indexed column in the associated [SourceCode] where the data begins,
     /// relative to `line`.
     fn column(&self) -> usize;
+    /// Total number of lines covered by this SpanContents.
+    fn line_count(&self) -> usize;
 }
 
 /**
@@ -259,23 +263,35 @@ Basic implementation of the [SpanContents] trait, for convenience.
 */
 #[derive(Clone, Debug)]
 pub struct MietteSpanContents<'a> {
-    /// Data from a [SourceCode], in bytes.
+    // Data from a [SourceCode], in bytes.
     data: &'a [u8],
+    // span actually covered by this SpanContents.
+    span: SourceSpan,
     // The 0-indexed line where the associated [SourceSpan] _starts_.
     line: usize,
     // The 0-indexed column where the associated [SourceSpan] _starts_.
     column: usize,
+    // Number of line in this snippet.
+    line_count: usize,
     // Optional filename
     name: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [MietteSpanContents] object.
-    pub fn new(data: &'a [u8], line: usize, column: usize) -> MietteSpanContents<'a> {
+    pub fn new(
+        data: &'a [u8],
+        span: SourceSpan,
+        line: usize,
+        column: usize,
+        line_count: usize,
+    ) -> MietteSpanContents<'a> {
         MietteSpanContents {
             data,
+            span,
             line,
             column,
+            line_count,
             name: None,
         }
     }
@@ -284,13 +300,17 @@ impl<'a> MietteSpanContents<'a> {
     pub fn new_named(
         name: String,
         data: &'a [u8],
+        span: SourceSpan,
         line: usize,
         column: usize,
+        line_count: usize,
     ) -> MietteSpanContents<'a> {
         MietteSpanContents {
             data,
+            span,
             line,
             column,
+            line_count,
             name: Some(name),
         }
     }
@@ -300,18 +320,27 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     fn data(&self) -> &'a [u8] {
         self.data
     }
+    fn span(&self) -> &SourceSpan {
+        &self.span
+    }
     fn line(&self) -> usize {
         self.line
     }
     fn column(&self) -> usize {
         self.column
     }
+    fn line_count(&self) -> usize {
+        self.line_count
+    }
+    fn name(&self) -> Option<&str> {
+        self.name.as_deref()
+    }
 }
 
 /**
 Span within a [SourceCode] with an associated message.
 */
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct SourceSpan {
     /// The start of the span.
     offset: SourceOffset,
@@ -371,7 +400,7 @@ pub type ByteOffset = usize;
 /**
 Newtype that represents the [ByteOffset] from the beginning of a [SourceCode]
 */
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct SourceOffset(ByteOffset);
 
 impl SourceOffset {
