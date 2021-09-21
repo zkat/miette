@@ -2,7 +2,6 @@ use std::fmt::{self, Write};
 
 use itertools::Itertools;
 use owo_colors::{OwoColorize, Style};
-use unicode_width::UnicodeWidthStr;
 
 use crate::chain::Chain;
 use crate::handlers::theme::*;
@@ -126,13 +125,6 @@ impl GraphicalReportHandler {
             Some(Severity::Advice) => self.theme.styles.advice,
         };
         let mut header = String::new();
-        let mut width = 0;
-        write!(
-            header,
-            "{}",
-            self.theme.characters.hbar.to_string().repeat(4)
-        )?;
-        width += 4;
         if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = format!(
@@ -141,7 +133,6 @@ impl GraphicalReportHandler {
                     .code()
                     .expect("MIETTE BUG: already got checked for None")
             );
-            width += code[..].width();
             let link = format!(
                 "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
                 url,
@@ -151,30 +142,14 @@ impl GraphicalReportHandler {
                     "(link)".style(self.theme.styles.link)
                 )
             );
-            write!(header, "[{}]", link)?;
-            width += "(link)".width() + 3
+            write!(header, "{}", link)?;
         } else if let Some(code) = diagnostic.code() {
-            write!(header, "[{}", code.style(severity_style),)?;
-            width += &code.to_string()[..].width() + 1;
-
+            write!(header, "{}", code.style(severity_style),)?;
             if let Some(link) = diagnostic.url() {
-                write!(header, " ({})]", link.style(self.theme.styles.link))?;
-                width += &link.to_string()[..].width() + 4;
-            } else {
-                write!(header, "]")?;
-                width += 1;
+                write!(header, " ({})", link.style(self.theme.styles.link))?;
             }
         }
-        writeln!(
-            f,
-            "{}{}",
-            header,
-            self.theme.characters.hbar.to_string().repeat(
-                self.termwidth
-                    .saturating_sub(width)
-                    .saturating_sub("Error: ".width())
-            )
-        )?;
+        writeln!(f, "{}", header)?;
         Ok(())
     }
 
