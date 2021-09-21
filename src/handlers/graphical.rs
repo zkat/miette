@@ -197,7 +197,8 @@ impl GraphicalReportHandler {
         if let Some(cause) = diagnostic.source() {
             let mut cause_iter = Chain::new(cause).peekable();
             while let Some(error) = cause_iter.next() {
-                let char = if cause_iter.peek().is_some() {
+                let is_last = cause_iter.peek().is_none();
+                let char = if !is_last {
                     self.theme.characters.lcross
                 } else {
                     self.theme.characters.lbot
@@ -208,9 +209,16 @@ impl GraphicalReportHandler {
                 )
                 .style(severity_style)
                 .to_string();
-                let rest_indent = format!("  {}   ", self.theme.characters.vbar)
-                    .style(severity_style)
-                    .to_string();
+                let rest_indent = format!(
+                    "  {}   ",
+                    if is_last {
+                        ' '
+                    } else {
+                        self.theme.characters.vbar
+                    }
+                )
+                .style(severity_style)
+                .to_string();
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
