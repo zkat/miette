@@ -275,6 +275,53 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     struct MyBad {
         #[source_code]
         src: NamedSource,
+        #[label = "x"]
+        highlight1: SourceSpan,
+        #[label = "y"]
+        highlight2: SourceSpan,
+        #[label = "z"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n  text text text text text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
+        highlight3: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"
+────[oops::my::bad]──────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   text text text text text
+   ·   ──┬─ ──┬─
+   ·     ╰── this bit here
+   ·          ╰── also this bit
+ 3 │     here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiple_same_line_highlights_overlapping() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -285,7 +332,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
         highlight1: (9, 4).into(),
-        highlight2: (14, 4).into(),
+        highlight2: (12, 6).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
