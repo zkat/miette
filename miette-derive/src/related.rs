@@ -22,7 +22,6 @@ impl Related {
     }
 
     fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
-        let mut relateds = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path.is_ident("related") {
@@ -34,7 +33,7 @@ impl Related {
                             span: field.span(),
                         })
                     };
-                    relateds.push(Related(related));
+                    return Ok(Some(Related(related)));
                 }
             }
         }
@@ -57,7 +56,7 @@ impl Related {
                     quote! {
                         Self::#ident #display_pat => {
                             std::option::Option::Some(std::boxed::Box::new(
-                                #rel.iter()
+                                #rel.iter().map(|x| -> &(dyn Diagnostic) { &*x })
                             ))
                         }
                     }
@@ -70,7 +69,7 @@ impl Related {
         let rel = &self.0;
         Some(quote! {
             fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
-                std::option::Option::Some(std::boxed::Box::new(#rel.iter()))
+                std::option::Option::Some(std::boxed::Box::new(self.#rel.iter().map(|x| -> &(dyn Diagnostic) { &*x })))
             }
         })
     }

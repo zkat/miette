@@ -675,3 +675,50 @@ fn disable_url_links() -> Result<(), MietteError> {
     assert!(out.contains("oops::my::bad"));
     Ok(())
 }
+
+#[test]
+fn related() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[related]
+        related: Vec<MyBad>,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src.clone()),
+        highlight: (9, 4).into(),
+        related: vec![MyBad {
+            src: NamedSource::new("bad_file.rs", src),
+            highlight: (0, 6).into(),
+            related: vec![],
+        }],
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"
+────[oops::my::bad]──────────────────────────────────────────────────────
+
+    × oops!
+
+   ╭───[bad_file.rs:1:1] This is the part that broke:
+ 1 │ source
+ 2 │   text
+   ·   ──┬─
+   ·     ╰── this bit here
+ 3 │     here
+   ╰───
+
+    ‽ try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}

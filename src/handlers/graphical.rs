@@ -102,19 +102,17 @@ impl GraphicalReportHandler {
         self.render_header(f, diagnostic)?;
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
-
-        if let Some(source) = diagnostic.source_code() {
-            if let Some(labels) = diagnostic.labels() {
-                let mut labels = labels.collect::<Vec<_>>();
-                labels.sort_unstable_by_key(|l| l.inner().offset());
-                if !labels.is_empty() {
-                    writeln!(f)?;
-                    self.render_snippets(f, source, labels)?;
-                }
-            }
-        }
-
+        self.render_snippets(f, diagnostic)?;
         self.render_footer(f, diagnostic)?;
+        self.render_related(f, diagnostic)?;
+        if let Some(footer) = &self.footer {
+            writeln!(f)?;
+            let width = self.termwidth.saturating_sub(4);
+            let opts = textwrap::Options::new(width)
+                .initial_indent("  ")
+                .subsequent_indent("  ");
+            writeln!(f, "{}", textwrap::fill(footer, opts))?;
+        }
         Ok(())
     }
 
@@ -214,13 +212,23 @@ impl GraphicalReportHandler {
                 .subsequent_indent("        ");
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
-        if let Some(footer) = &self.footer {
+        Ok(())
+    }
+
+    fn render_related(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+    ) -> fmt::Result {
+        if let Some(related) = diagnostic.related() {
             writeln!(f)?;
-            let width = self.termwidth.saturating_sub(4);
-            let opts = textwrap::Options::new(width)
-                .initial_indent("  ")
-                .subsequent_indent("  ");
-            writeln!(f, "{}", textwrap::fill(footer, opts))?;
+            for rel in related {
+                self.render_header(f, rel)?;
+                self.render_causes(f, rel)?;
+                self.render_snippets(f, rel)?;
+                self.render_footer(f, rel)?;
+                self.render_related(f, rel)?;
+            }
         }
         Ok(())
     }
@@ -228,49 +236,63 @@ impl GraphicalReportHandler {
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        source: &dyn SourceCode,
-        labels: Vec<LabeledSpan>,
+        diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
-        let contents = labels
-            .iter()
-            .map(|label| source.read_span(label.inner(), self.context_lines, self.context_lines))
-            .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
-            .map_err(|_| fmt::Error)?;
-        let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
-            |(left, left_conts), (right, right_conts)| {
-                let left_end = left.offset() + left.len();
-                let right_end = right.offset() + right.len();
-                if left_conts.line() + left_conts.line_count() >= right_conts.line() {
-                    // The snippets will overlap, so we create one Big Chunky Boi
-                    let new_span = LabeledSpan::new(
-                        left.label().map(String::from),
-                        left.offset(),
-                        if right_end >= left_end {
-                            // Right end goes past left end
-                            right_end - left.offset()
-                        } else {
-                            // right is contained inside left
-                            left.len()
+        if let Some(source) = diagnostic.source_code() {
+            if let Some(labels) = diagnostic.labels() {
+                let mut labels = labels.collect::<Vec<_>>();
+                labels.sort_unstable_by_key(|l| l.inner().offset());
+                if !labels.is_empty() {
+                    writeln!(f)?;
+                    let contents = labels
+                        .iter()
+                        .map(|label| {
+                            source.read_span(label.inner(), self.context_lines, self.context_lines)
+                        })
+                        .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
+                        .map_err(|_| fmt::Error)?;
+                    let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
+                        |(left, left_conts), (right, right_conts)| {
+                            let left_end = left.offset() + left.len();
+                            let right_end = right.offset() + right.len();
+                            if left_conts.line() + left_conts.line_count() >= right_conts.line() {
+                                // The snippets will overlap, so we create one Big Chunky Boi
+                                let new_span = LabeledSpan::new(
+                                    left.label().map(String::from),
+                                    left.offset(),
+                                    if right_end >= left_end {
+                                        // Right end goes past left end
+                                        right_end - left.offset()
+                                    } else {
+                                        // right is contained inside left
+                                        left.len()
+                                    },
+                                );
+                                if source
+                                    .read_span(
+                                        new_span.inner(),
+                                        self.context_lines,
+                                        self.context_lines,
+                                    )
+                                    .is_ok()
+                                {
+                                    Ok((
+                                        new_span, // We'll throw this away later
+                                        left_conts,
+                                    ))
+                                } else {
+                                    Err(((left, left_conts), (right, right_conts)))
+                                }
+                            } else {
+                                Err(((left, left_conts), (right, right_conts)))
+                            }
                         },
                     );
-                    if source
-                        .read_span(new_span.inner(), self.context_lines, self.context_lines)
-                        .is_ok()
-                    {
-                        Ok((
-                            new_span, // We'll throw this away later
-                            left_conts,
-                        ))
-                    } else {
-                        Err(((left, left_conts), (right, right_conts)))
+                    for (ctx, _) in contexts {
+                        self.render_context(f, source, &ctx, &labels[..])?;
                     }
-                } else {
-                    Err(((left, left_conts), (right, right_conts)))
                 }
-            },
-        );
-        for (ctx, _) in contexts {
-            self.render_context(f, source, &ctx, &labels[..])?;
+            }
         }
         Ok(())
     }
