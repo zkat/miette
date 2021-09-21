@@ -223,7 +223,9 @@ impl GraphicalReportHandler {
         if let Some(related) = diagnostic.related() {
             writeln!(f)?;
             for rel in related {
+                write!(f, "Error: ")?;
                 self.render_header(f, rel)?;
+                writeln!(f)?;
                 self.render_causes(f, rel)?;
                 self.render_snippets(f, rel)?;
                 self.render_footer(f, rel)?;
