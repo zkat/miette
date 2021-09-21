@@ -8,7 +8,7 @@ fn related() {
     #[diagnostic(code(foo::bar::baz))]
     struct Foo {
         #[related]
-        related: Baz,
+        related: Vec<Baz>,
     }
 
     #[derive(Error, Debug, Diagnostic)]
@@ -18,13 +18,13 @@ fn related() {
         #[allow(dead_code)]
         Bad {
             #[related]
-            related: Baz,
+            related: Vec<Baz>,
         },
 
         #[error("variant2")]
         #[diagnostic(code(foo::bar::baz))]
         #[allow(dead_code)]
-        LessBad(#[related] Baz),
+        LessBad(#[related] Vec<Baz>),
     }
 
     #[derive(Error, Debug, Diagnostic)]

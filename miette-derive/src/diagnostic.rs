@@ -7,7 +7,7 @@ use crate::diagnostic_arg::DiagnosticArg;
 use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
 use crate::label::Labels;
-use crate::related::Relateds;
+use crate::related::Related;
 use crate::severity::Severity;
 use crate::source_code::SourceCode;
 use crate::url::Url;
@@ -65,7 +65,7 @@ pub struct DiagnosticConcreteArgs {
     pub source_code: Option<SourceCode>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
-    pub related: Option<Relateds>,
+    pub related: Option<Related>,
 }
 
 impl DiagnosticConcreteArgs {
@@ -105,7 +105,7 @@ impl DiagnosticConcreteArgs {
         }
         let labels = Labels::from_fields(fields)?;
         let source_code = SourceCode::from_fields(fields)?;
-        let related = Relateds::from_fields(fields)?;
+        let related = Related::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
             help,
@@ -300,7 +300,7 @@ impl Diagnostic {
                 let sev_body = Severity::gen_enum(variants);
                 let labels_body = Labels::gen_enum(variants);
                 let src_body = SourceCode::gen_enum(variants);
-                let rel_body = Relateds::gen_enum(variants);
+                let rel_body = Related::gen_enum(variants);
                 let url_body = Url::gen_enum(ident, variants);
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {

@@ -8,11 +8,9 @@ use crate::{
     utils::{display_pat_members, gen_all_variants_with},
 };
 
-pub struct Relateds(Vec<Related>);
-
 pub struct Related(syn::Member);
 
-impl Relateds {
+impl Related {
     pub(crate) fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
         match fields {
             syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
@@ -40,11 +38,7 @@ impl Relateds {
                 }
             }
         }
-        if relateds.is_empty() {
-            Ok(None)
-        } else {
-            Ok(Some(Relateds(relateds)))
-        }
+        Ok(None)
     }
 
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
@@ -53,22 +47,17 @@ impl Relateds {
             WhichFn::Related,
             |ident, fields, DiagnosticConcreteArgs { related, .. }| {
                 let (display_pat, _display_members) = display_pat_members(fields);
-                related.as_ref().map(|relateds| {
-                    let relateds = relateds.0.iter().map(|related| {
-                        let rel = match &related.0 {
-                            syn::Member::Named(ident) => ident.clone(),
-                            syn::Member::Unnamed(syn::Index { index, .. }) => {
-                                format_ident!("_{}", index)
-                            }
-                        };
-                        quote! { #rel }
-                    });
+                related.as_ref().map(|related| {
+                    let rel = match &related.0 {
+                        syn::Member::Named(ident) => ident.clone(),
+                        syn::Member::Unnamed(syn::Index { index, .. }) => {
+                            format_ident!("_{}", index)
+                        }
+                    };
                     quote! {
                         Self::#ident #display_pat => {
                             std::option::Option::Some(std::boxed::Box::new(
-                                vec![
-                                    #(#relateds),*
-                                ].into_iter().map(|x| -> &dyn Diagnostic { &*x as &Diagnostic })
+                                #rel.iter()
                             ))
                         }
                     }
@@ -78,22 +67,11 @@ impl Relateds {
     }
 
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
-        if self.0.is_empty() {
-            None
-        } else {
-            let relateds = self.0.iter().map(|related| {
-                let rel = &related.0;
-                quote! { &self.#rel }
-            });
-            Some(quote! {
-                fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
-                    std::option::Option::Some(std::boxed::Box::new(
-                        vec![
-                            #(#relateds),*
-                        ].into_iter().map(|x| -> &dyn Diagnostic { &*x })
-                    ))
-                }
-            })
-        }
+        let rel = &self.0;
+        Some(quote! {
+            fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
+                std::option::Option::Some(std::boxed::Box::new(#rel.iter()))
+            }
+        })
     }
 }
