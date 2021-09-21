@@ -10,6 +10,7 @@ pub use eyreish::*;
 pub use handler::*;
 pub use handlers::*;
 pub use named_source::*;
+pub use panic::*;
 pub use protocol::*;
 
 mod chain;
@@ -19,5 +20,6 @@ mod eyreish;
 mod handler;
 mod handlers;
 mod named_source;
+mod panic;
 mod protocol;
 mod source_impls;
