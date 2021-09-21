@@ -576,23 +576,39 @@ impl GraphicalReportHandler {
         }
         writeln!(f, "{}", underlines)?;
 
-        for hl in single_liners {
+        let vbar_offsets: Vec<_> = single_liners
+            .iter()
+            .map(|hl| {
+                (
+                    hl,
+                    (hl.offset() - line.offset) + (std::cmp::max(1, hl.len()) / 2),
+                )
+            })
+            .collect();
+        for hl in single_liners.iter().rev() {
             if let Some(label) = hl.label() {
                 self.write_no_linum(f, linum_width)?;
                 self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
-                let hl_len = std::cmp::max(1, hl.len());
-                let local_offset = hl.offset() - line.offset;
-                let vbar_offset = local_offset + (hl_len / 2);
-                let num_right = local_offset + hl_len - vbar_offset - 1;
-                let lines = format!(
-                    "{:width$}{}{} {}",
-                    "",
-                    chars.lbot,
-                    chars.hbar.to_string().repeat(num_right + 1),
-                    label,
-                    width = vbar_offset
-                );
-                writeln!(f, "{}", lines.style(hl.style))?;
+                let mut curr_offset = 1usize;
+                for (offset_hl, vbar_offset) in &vbar_offsets {
+                    while curr_offset < *vbar_offset + 1 {
+                        write!(f, " ")?;
+                        curr_offset += 1;
+                    }
+                    if *offset_hl != hl {
+                        write!(f, "{}", chars.vbar.to_string().style(offset_hl.style))?;
+                        curr_offset += 1;
+                    } else {
+                        let lines = format!(
+                            "{}{} {}",
+                            chars.lbot,
+                            chars.hbar.to_string().repeat(2),
+                            label,
+                        );
+                        writeln!(f, "{}", lines.style(hl.style))?;
+                        break;
+                    }
+                }
             }
         }
         Ok(())
@@ -729,10 +745,17 @@ impl Line {
     }
 }
 
+#[derive(Debug, Clone)]
 struct FancySpan {
     label: Option<String>,
     span: SourceSpan,
     style: Style,
+}
+
+impl PartialEq for FancySpan {
+    fn eq(&self, other: &Self) -> bool {
+        self.label == other.label && self.span == other.span
+    }
 }
 
 impl FancySpan {
