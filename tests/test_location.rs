@@ -17,11 +17,7 @@ impl LocationHandler {
 }
 
 impl miette::ReportHandler for LocationHandler {
-    fn debug(
-        &self,
-        _error: &(dyn Diagnostic + 'static),
-        _f: &mut std::fmt::Formatter<'_>,
-    ) -> std::fmt::Result {
+    fn debug(&self, _error: &dyn Diagnostic, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // we assume that if the compiler is new enough to support
         // `track_caller` that we will always have `actual` be `Some`, so we can
         // safely skip the assertion if the location is `None` which should only

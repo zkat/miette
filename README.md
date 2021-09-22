@@ -87,16 +87,16 @@ use thiserror::Error;
 #[error("oops!")]
 #[diagnostic(
     code(oops::my::bad),
+    url(docsrs),
     help("try doing it better next time?"),
 )]
 struct MyBad {
     // The Source that we're gonna be printing snippets out of.
     // This can be a String if you don't have or care about file names.
+    #[source_code]
     src: NamedSource,
     // Snippets and highlights can be included in the diagnostic!
-    #[snippet(src, message("This is the part that broke"))]
-    snip: SourceSpan,
-    #[highlight(snip, label("This bit here"))]
+    #[label("This bit here")]
     bad_bit: SourceSpan,
 }
 
@@ -116,7 +116,6 @@ fn this_fails() -> Result<()> {
 
     Err(MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        snip: (0, len).into(),
         bad_bit: (9, 4).into(),
     })?;
 
@@ -329,26 +328,17 @@ use thiserror::Error;
 #[diagnostic(code(my_lib::random_error))]
 pub struct MyErrorType {
     // The `Source` that miette will use.
+    #[source_code]
     src: String,
 
-    // A snippet that points to `src`, our `Source`.
-    #[snippet(
-        src,
-        message("This is the snippet")
-    )]
-    snip: SourceSpan,
-
-    // A highlight for the `snip` snippet we defined above. This will
-    // underline/mark the specific code inside the larger snippet context.
-    #[highlight(snip, label("This is the highlight"))]
+    // This will underline/mark the specific code inside the larger
+    // snippet context.
+    #[label = "This is the highlight"]
     err_span: SourceSpan,
 
-    // You can add as many snippets as you want against the same Source.
+    // You can add as many labels as you want.
     // They'll be rendered sequentially.
-    #[snippet(
-        src,
-        message("This is a warning")
-    )]
+    #[label("This is bad")]
     snip2: SourceSpan,
 }
 ```
