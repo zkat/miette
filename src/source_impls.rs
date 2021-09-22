@@ -92,7 +92,6 @@ fn context_info<'a>(
             line_count,
         ))
     } else {
-        // eprintln!("Out of bounds :(");
         Err(MietteError::OutOfBounds)
     }
 }
