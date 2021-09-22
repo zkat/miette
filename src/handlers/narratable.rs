@@ -58,6 +58,10 @@ impl NarratableReportHandler {
         self.render_causes(f, diagnostic)?;
         self.render_snippets(f, diagnostic)?;
         self.render_footer(f, diagnostic)?;
+        self.render_related(f, diagnostic)?;
+        if let Some(footer) = &self.footer {
+            writeln!(f, "{}", footer)?;
+        }
         Ok(())
     }
 
@@ -91,6 +95,26 @@ impl NarratableReportHandler {
         }
         if let Some(url) = diagnostic.url() {
             writeln!(f, "For more details, see {}", url)?;
+        }
+        Ok(())
+    }
+
+    fn render_related(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+    ) -> fmt::Result {
+        if let Some(related) = diagnostic.related() {
+            writeln!(f)?;
+            for rel in related {
+                write!(f, "Error: ")?;
+                self.render_header(f, rel)?;
+                writeln!(f)?;
+                self.render_causes(f, rel)?;
+                self.render_snippets(f, rel)?;
+                self.render_footer(f, rel)?;
+                self.render_related(f, rel)?;
+            }
         }
         Ok(())
     }
