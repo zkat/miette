@@ -513,7 +513,7 @@ impl GraphicalReportHandler {
         write!(
             f,
             " {:width$} {} ",
-            linum.dimmed(),
+            linum.style(self.theme.styles.linum),
             self.theme.characters.vbar,
             width = width
         )?;
