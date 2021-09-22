@@ -84,6 +84,8 @@ pub struct ThemeStyles {
     pub help: Style,
     /// Style to apply to filenames/links/URLs.
     pub link: Style,
+    /// Style to apply to line numbers.
+    pub linum: Style,
     /// Styles to cycle through (using `.iter().cycle()`), to render the lines
     /// and text for diagnostic highlights.
     pub highlights: Vec<Style>,
@@ -104,6 +106,7 @@ impl ThemeStyles {
             code: style().fg_rgb::<92, 157, 255>(),
             help: style().fg_rgb::<106, 159, 181>(),
             link: style().fg_rgb::<92, 157, 255>().underline().bold(),
+            linum: style().dimmed(),
             highlights: vec![
                 style().fg_rgb::<246, 87, 248>(),
                 style().fg_rgb::<30, 201, 212>(),
@@ -121,6 +124,7 @@ impl ThemeStyles {
             code: style().yellow(),
             help: style().cyan(),
             link: style().cyan().underline().bold(),
+            linum: style().dimmed(),
             highlights: vec![
                 style().red().bold(),
                 style().yellow().bold(),
@@ -138,6 +142,7 @@ impl ThemeStyles {
             code: style(),
             help: style(),
             link: style(),
+            linum: style(),
             highlights: vec![style()],
         }
     }
