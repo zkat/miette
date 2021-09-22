@@ -1,7 +1,5 @@
 use std::fmt;
 
-use itertools::Itertools;
-
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -114,8 +112,12 @@ impl NarratableReportHandler {
                         })
                         .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
                         .map_err(|_| fmt::Error)?;
-                    let contexts = labels.iter().cloned().zip(contents.iter()).coalesce(
-                        |(left, left_conts), (right, right_conts)| {
+                    let mut contexts = Vec::new();
+                    for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
+                        if contexts.is_empty() {
+                            contexts.push((right, right_conts));
+                        } else {
+                            let (left, left_conts) = contexts.last().unwrap().clone();
                             let left_end = left.offset() + left.len();
                             let right_end = right.offset() + right.len();
                             if left_conts.line() + left_conts.line_count() >= right_conts.line() {
@@ -139,18 +141,19 @@ impl NarratableReportHandler {
                                     )
                                     .is_ok()
                                 {
-                                    Ok((
+                                    contexts.pop();
+                                    contexts.push((
                                         new_span, // We'll throw this away later
                                         left_conts,
-                                    ))
+                                    ));
                                 } else {
-                                    Err(((left, left_conts), (right, right_conts)))
+                                    contexts.push((right, right_conts));
                                 }
                             } else {
-                                Err(((left, left_conts), (right, right_conts)))
+                                contexts.push((right, right_conts));
                             }
-                        },
-                    );
+                        }
+                    }
                     for (ctx, _) in contexts {
                         self.render_context(f, source, &ctx, &labels[..])?;
                     }
