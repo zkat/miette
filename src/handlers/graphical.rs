@@ -141,13 +141,14 @@ impl GraphicalReportHandler {
                 )
             );
             write!(header, "{}", link)?;
+            writeln!(f, "{}", header)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if let Some(link) = diagnostic.url() {
                 write!(header, " ({})", link.style(self.theme.styles.link))?;
             }
+            writeln!(f, "{}", header)?;
         }
-        writeln!(f, "{}", header)?;
         Ok(())
     }
 
