@@ -2,6 +2,37 @@ use miette::{Diagnostic, Severity, SourceSpan};
 use thiserror::Error;
 
 #[test]
+fn related() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
+    struct Foo {
+        #[related]
+        related: Vec<Baz>,
+    }
+
+    #[derive(Error, Debug, Diagnostic)]
+    enum Bar {
+        #[error("variant1")]
+        #[diagnostic(code(foo::bar::baz))]
+        #[allow(dead_code)]
+        Bad {
+            #[related]
+            related: Vec<Baz>,
+        },
+
+        #[error("variant2")]
+        #[diagnostic(code(foo::bar::baz))]
+        #[allow(dead_code)]
+        LessBad(#[related] Vec<Baz>),
+    }
+
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("welp2")]
+    struct Baz;
+}
+
+#[test]
 fn basic_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
