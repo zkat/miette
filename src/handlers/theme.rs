@@ -78,8 +78,6 @@ pub struct ThemeStyles {
     pub warning: Style,
     /// Style to apply to things highlighted as "advice".
     pub advice: Style,
-    /// Style to apply to the diagnostic code.
-    pub code: Style,
     /// Style to apply to the help text.
     pub help: Style,
     /// Style to apply to filenames/links/URLs.
@@ -103,7 +101,6 @@ impl ThemeStyles {
             error: style().fg_rgb::<255, 30, 30>(),
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
-            code: style().fg_rgb::<92, 157, 255>(),
             help: style().fg_rgb::<106, 159, 181>(),
             link: style().fg_rgb::<92, 157, 255>().underline().bold(),
             linum: style().dimmed(),
@@ -121,7 +118,6 @@ impl ThemeStyles {
             error: style().red(),
             warning: style().yellow(),
             advice: style().cyan(),
-            code: style().yellow(),
             help: style().cyan(),
             link: style().cyan().underline().bold(),
             linum: style().dimmed(),
@@ -139,7 +135,6 @@ impl ThemeStyles {
             error: style(),
             warning: style(),
             advice: style(),
-            code: style(),
             help: style(),
             link: style(),
             linum: style(),
