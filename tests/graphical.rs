@@ -47,20 +47,17 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   👼🏼text
-   ·   ──┬──
-   ·     ╰── this bit here
+   ·   ───┬──
+   ·      ╰── this bit here
  3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -87,20 +84,17 @@ fn single_line_highlight() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   text
    ·   ──┬─
    ·     ╰── this bit here
  3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -127,20 +121,16 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
    · ▲
-   · ╰─ this bit here
+   · ╰── this bit here
  2 │   text
- 3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -167,20 +157,17 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   text
    ·   ▲
-   ·   ╰─ this bit here
+   ·   ╰── this bit here
  3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -207,19 +194,16 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   text
    ·   ────
  3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -246,20 +230,17 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │ text
    · ──┬─
    ·   ╰── this bit here
  3 │   here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -292,65 +273,19 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   text text text text text
-   ·   ──┬─ ──┬─
-   ·     ╰── this bit here
-   ·          ╰── also this bit
+   ·   ──┬─ ──┬─      ──┬─
+   ·     │    │         ╰── z
+   ·     │    ╰── y
+   ·     ╰── x
  3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
-"#
-    .trim_start()
-    .to_string();
-    assert_eq!(expected, out);
-    Ok(())
-}
-
-#[test]
-fn multiple_same_line_highlights_overlapping() -> Result<(), MietteError> {
-    #[derive(Debug, Diagnostic, Error)]
-    #[error("oops!")]
-    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
-    struct MyBad {
-        #[source_code]
-        src: NamedSource,
-        #[label = "this bit here"]
-        highlight1: SourceSpan,
-        #[label = "also this bit"]
-        highlight2: SourceSpan,
-    }
-
-    let src = "source\n  text text text text text\n    here".to_string();
-    let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
-        highlight1: (9, 4).into(),
-        highlight2: (12, 6).into(),
-    };
-    let out = fmt_report(err.into());
-    println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
-
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
- 1 │ source
- 2 │   text text text text text
-   ·   ──┬─ ──┬─
-   ·     ╰── this bit here
-   ·          ╰── also this bit
- 3 │     here
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -377,19 +312,16 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │     source
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -426,12 +358,10 @@ line5
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ ╭──▶ line1
  2 │ │╭─▶ line2
  3 │ ││   line3
@@ -439,9 +369,8 @@ line5
    · │╰──── block 2
  5 │ ├──▶ line5
    · ╰───── block 1
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "#
     .trim_start()
     .to_string();
@@ -489,28 +418,25 @@ line5
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = "
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = "oops::my::bad
 
-    × wtf?!
-    │ it broke :(
-    ├─▶ something went wrong
-    │\u{20}\u{20}\u{20}
-    │   Here's a more detailed explanation of everything that actually went
-    │   wrong because it's actually important.
-    │\u{20}\u{20}\u{20}
-    ╰─▶ very much went wrong
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × wtf?!
+  │ it broke :(
+  ├─▶ something went wrong
+  │\u{20}\u{20}\u{20}
+  │   Here's a more detailed explanation of everything that actually went
+  │   wrong because it's actually important.
+  │\u{20}\u{20}\u{20}
+  ╰─▶ very much went wrong
+   ╭─[bad_file.rs:1:1]
  1 │ ╭──▶ line1
  2 │ │╭─▶ line2
  3 │ ││   line3
  4 │ │╰─▶ line4
  5 │ ├──▶ line5
    · ╰───── block 1
-   ╰───
-
-    ‽ try doing it better next time?
+   ╰────
+  help: try doing it better next time?
 "
     .trim_start()
     .to_string();
@@ -540,22 +466,19 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = "oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ ╭─▶ source
  2 │ ├─▶   text
    · ╰──── this bit here
  3 │ ╭─▶     here
  4 │ ├─▶ more here
    · ╰──── also this bit
-   ╰───
-
-    ‽ try doing it better next time?
-"#
+   ╰────
+  help: try doing it better next time?
+"
     .trim_start()
     .to_string();
     assert_eq!(expected, out);
@@ -634,7 +557,7 @@ fn url_links() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
     assert!(out.contains("https://example.com"));
-    assert!(out.contains("click for details"));
+    assert!(out.contains("(link)"));
     assert!(out.contains("oops::my::bad"));
     Ok(())
 }
@@ -649,7 +572,7 @@ fn url_links_no_code() -> Result<(), MietteError> {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
     assert!(out.contains("https://example.com"));
-    assert!(out.contains("click for details"));
+    assert!(out.contains("(link)"));
     Ok(())
 }
 
@@ -670,8 +593,8 @@ fn disable_url_links() -> Result<(), MietteError> {
         .render_report(&mut out, &err)
         .unwrap();
     println!("Error: {}", out);
-    assert!(out.contains("url: https://example.com"));
-    assert!(!out.contains("click for details"));
+    assert!(out.contains("https://example.com"));
+    assert!(!out.contains("(link)"));
     assert!(out.contains("oops::my::bad"));
     Ok(())
 }
@@ -702,20 +625,29 @@ fn related() -> Result<(), MietteError> {
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
-    let expected = r#"
-────[oops::my::bad]──────────────────────────────────────────────────────
+    let expected = r#"oops::my::bad
 
-    × oops!
-
-   ╭───[bad_file.rs:1:1] This is the part that broke:
+  × oops!
+   ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   text
    ·   ──┬─
    ·     ╰── this bit here
  3 │     here
-   ╰───
+   ╰────
+  help: try doing it better next time?
 
-    ‽ try doing it better next time?
+Error: oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │   text
+   ╰────
+  help: try doing it better next time?
+
 "#
     .trim_start()
     .to_string();
