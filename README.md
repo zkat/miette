@@ -141,19 +141,17 @@ And this is the output you'll get if you run this program:
 <img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="
 Narratable printout:
 \
-Error: oops!
+Error: Types mismatched for operation.
     Diagnostic severity: error
+Begin snippet starting at line 1, column 1
 \
-Begin snippet for bad_file.rs starting at line 1, column 1
-\
-snippet line 1: source
-snippet line 2:   text
-    highlight starting at line 2, column 3: these two lines
-snippet line 3:     here
-\
-diagnostic help: try doing it better next time?
-diagnostic error code: oops::my::bad
-">
+snippet line 1: 3 + &quot;5&quot;
+    label starting at line 1, column 1: int
+    label starting at line 1, column 1: doesn't support these values.
+    label starting at line 1, column 1: string
+diagnostic help: Change int or string to be the right types and try again.
+diagnostic code: nu::parser::unsupported_operation
+For more details, see https://docs.rs/nu-parser/0.1.0/nu-parser/enum.ParseError.html#variant.UnsupportedOperation">
 
 ## Using
 
@@ -265,7 +263,8 @@ an error code. The code is underlined and followed by text saying to 'click
 here'. A hover tooltip shows a full-fledged URL that can be Ctrl+Clicked to
 open in a browser.
 \
-This feature is also available in the narratable printer. It will add a line after printing the error code showing a plain URL that you can visit.
+This feature is also available in the narratable printer. It will add a line
+after printing the error code showing a plain URL that you can visit.
 ">
 
 To use this, you can add a `url()` sub-param to your `#[diagnostic]` attribute:
