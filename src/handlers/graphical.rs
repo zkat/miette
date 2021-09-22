@@ -739,7 +739,7 @@ impl Line {
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &FancySpan) -> bool {
-        span.offset() + span.len() >= self.offset
+        span.offset() + span.len() > self.offset
             && span.offset() + span.len() <= self.offset + self.length
     }
 }
