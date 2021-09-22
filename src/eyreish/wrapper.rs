@@ -94,6 +94,14 @@ impl Diagnostic for BoxedError {
     fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.0.labels()
     }
+
+    fn source_code(&self) -> Option<&dyn miette::SourceCode> {
+        self.0.source_code()
+    }
+
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        self.0.related()
+    }
 }
 
 impl Debug for BoxedError {
