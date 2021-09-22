@@ -123,19 +123,18 @@ impl GraphicalReportHandler {
             Some(Severity::Advice) => self.theme.styles.advice,
         };
         let mut header = String::new();
-        if self.linkify_code && diagnostic.url().is_some() && diagnostic.code().is_some() {
+        if self.linkify_code && diagnostic.url().is_some() {
             let url = diagnostic.url().unwrap(); // safe
-            let code = format!(
-                "{}",
-                diagnostic
-                    .code()
-                    .expect("MIETTE BUG: already got checked for None")
-            );
+            let code = if let Some(code) = diagnostic.code() {
+                format!("{} ", code)
+            } else {
+                "".to_string()
+            };
             let link = format!(
                 "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
                 url,
                 format!(
-                    "{} {}",
+                    "{}{}",
                     code.style(severity_style),
                     "(link)".style(self.theme.styles.link)
                 )
