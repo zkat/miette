@@ -24,6 +24,11 @@ but it's definitely a bug and should be reported.
 diagnostic error code: ruget::api::bad_json
 " />
 
+**NOTE: You must enable the `"fancy"` crate feature to get fancy report output
+like in the screenshots here.** You should only do this in your toplevel
+crate, as the fancy feature pulls in a number of dependencies that libraries
+and such might not want.
+
 ## Table of Contents <!-- omit in toc -->
 
 - [About](#about)
@@ -231,6 +236,11 @@ pub fn some_tool() -> Result<Version> {
 `main()` is just like any other part of your application-internal code. Use
 `Result` as your return value, and it will pretty-print your
 diagnostics automatically.
+
+**NOTE: You must enable the `"fancy"` crate feature to get fancy report output
+like in the screenshots here.** You should only do this in your toplevel
+crate, as the fancy feature pulls in a number of dependencies that libraries
+and such might not want.
 
 ```rust
 use miette::{Result, IntoDiagnostic};
