@@ -47,7 +47,7 @@ diagnostic error code: ruget::api::bad_json
 - Super handy derive macro for defining diagnostic metadata.
 - [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)-compatible error wrapper type, [Report],
   which can be returned from `main`.
-- Generic support for arbitrary [Source]s for snippet data, with default support for `String`s included.
+- Generic support for arbitrary [SourceCode]s for snippet data, with default support for `String`s included.
 
 The `miette` crate also comes bundled with a default [ReportHandler] with the following features:
 
@@ -306,14 +306,15 @@ struct MyErr;
 ### ... snippets
 
 Along with its general error handling and reporting features, `miette` also
-includes facilities for adding error spans and annotations/highlights to your
-output. This can be very useful when an error is syntax-related, but you can
-even use it to print out sections of your own source code!
+includes facilities for adding error spans/annotations/labels to your output.
+This can be very useful when an error is syntax-related, but you can even use
+it to print out sections of your own source code!
 
 To achieve this, `miette` defines its own lightweight [SourceSpan] type. This
-is a basic byte-offset and length into an associated [Source] and, along with
-the latter, gives `miette` all the information it needs to pretty-print some
-snippets!
+is a basic byte-offset and length into an associated [SourceCode] and, along
+with the latter, gives `miette` all the information it needs to pretty-print
+some snippets! You can also use your own `Into<SourceSpan>` types as label
+spans.
 
 The easiest way to define errors like this is to use the `derive(Diagnostic)`
 macro:
@@ -338,7 +339,7 @@ pub struct MyErrorType {
     // You can add as many labels as you want.
     // They'll be rendered sequentially.
     #[label("This is bad")]
-    snip2: SourceSpan,
+    snip2: (usize, usize), // (usize, usize) is Into<SourceSpan>!
 }
 ```
 
