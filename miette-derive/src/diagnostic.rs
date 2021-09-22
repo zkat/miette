@@ -7,6 +7,7 @@ use crate::diagnostic_arg::DiagnosticArg;
 use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
 use crate::label::Labels;
+use crate::related::Related;
 use crate::severity::Severity;
 use crate::source_code::SourceCode;
 use crate::url::Url;
@@ -64,6 +65,7 @@ pub struct DiagnosticConcreteArgs {
     pub source_code: Option<SourceCode>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
+    pub related: Option<Related>,
 }
 
 impl DiagnosticConcreteArgs {
@@ -103,9 +105,11 @@ impl DiagnosticConcreteArgs {
         }
         let labels = Labels::from_fields(fields)?;
         let source_code = SourceCode::from_fields(fields)?;
+        let related = Related::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
             help,
+            related,
             severity,
             labels,
             url,
@@ -215,6 +219,7 @@ impl Diagnostic {
                         let labels_method = forward.gen_struct_method(WhichFn::Labels);
                         let source_code_method = forward.gen_struct_method(WhichFn::SourceCode);
                         let severity_method = forward.gen_struct_method(WhichFn::Severity);
+                        let related_method = forward.gen_struct_method(WhichFn::Related);
 
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -224,6 +229,7 @@ impl Diagnostic {
                                 #labels_method
                                 #severity_method
                                 #source_code_method
+                                #related_method
                             }
                         }
                     }
@@ -249,6 +255,11 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::Severity));
+                        let rel_body = concrete
+                            .related
+                            .as_ref()
+                            .and_then(|x| x.gen_struct())
+                            .or_else(|| forward(WhichFn::Related));
                         let url_body = concrete
                             .url
                             .as_ref()
@@ -269,6 +280,7 @@ impl Diagnostic {
                                 #code_body
                                 #help_body
                                 #sev_body
+                                #rel_body
                                 #url_body
                                 #labels_body
                                 #src_body
@@ -288,6 +300,7 @@ impl Diagnostic {
                 let sev_body = Severity::gen_enum(variants);
                 let labels_body = Labels::gen_enum(variants);
                 let src_body = SourceCode::gen_enum(variants);
+                let rel_body = Related::gen_enum(variants);
                 let url_body = Url::gen_enum(ident, variants);
                 quote! {
                     impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
@@ -296,6 +309,7 @@ impl Diagnostic {
                         #sev_body
                         #labels_body
                         #src_body
+                        #rel_body
                         #url_body
                     }
                 }
