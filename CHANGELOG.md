@@ -1,5 +1,54 @@
 # `miette` Release Changelog
 
+<a name="3.0.0"></a>
+## 3.0.0 (2021-09-22)
+
+It's here! Have fun!
+
+It's a pretty significant change, so if you were using `miette`'s snippet
+support previously, you'll need to update your code.
+
+### Bug Fixes
+
+* **report:** miscellaneous, hacky tweaks to graphical rendering ([80036781](https://github.com/zkat/miette/commit/80036781cda11de071187d59127c6d1c7cafa879))
+* **protocol:** implement source/cause for Box<dyn Diagnostic> ([c3505fac](https://github.com/zkat/miette/commit/c3505fac269aebadc0fd62f9ee4e04bd00970dae))
+* **derive:** Code is no longer required ([92a31509](https://github.com/zkat/miette/commit/92a3150921d366e2850249be14259a550fcee3bb))
+* **graphical:** stop rendering red vbars before the last item ([e2e4027f](https://github.com/zkat/miette/commit/e2e4027fda55415ac07590e2d33e1f6d762df439))
+* **graphical:** fix coalescing adjacent things when they cross boundaries ([18e0ed77](https://github.com/zkat/miette/commit/18e0ed7749d33c5030a5fa2f8eabdc50a717573b))
+* **context:** get labels/snippets working when using .context() ([41cb710a](https://github.com/zkat/miette/commit/41cb710a7dff59a9bde126556be7f5a877c1dafd))
+* **api:** put panic handler properly behind a flag ([55ca8e0b](https://github.com/zkat/miette/commit/55ca8e0b7ff60cef8a7f75c29fa78edbb8114043))
+* **deps:** We do not use ci_info directly anymore ([8d1170e2](https://github.com/zkat/miette/commit/8d1170e2decee290f1679b823eb0f7ea04f3fb39))
+* **graphical:** Fix off-by-one span_applies calculation (#70) ([a6902042](https://github.com/zkat/miette/commit/a69020422e546efbe9256e30d9da10ad67f5ce03))
+* **theme:** remove code styling ([ce0dea54](https://github.com/zkat/miette/commit/ce0dea541a60f274bd97d3a1cfdaa9d217b632e2))
+* **graphical:** render URLs even without a code ([77c5899b](https://github.com/zkat/miette/commit/77c5899bbd7c46733ea208a7506c1d07b773bc2c))
+* **deps:** remove dep on itertools ([612967d3](https://github.com/zkat/miette/commit/612967d381f05e2e5a27e39a7a66942c7ec396f3))
+
+### Features
+
+* **report:** make a single big MietteHandler that can switch modes ([4c2463f9](https://github.com/zkat/miette/commit/4c2463f9aeaef43f69cac3abae059973f430bfa8))
+    * **BREAKING CHANGE**: linkification option method on GraphicalReportHandler has been changed to .with_links(bool)
+* **deps:** move fancy reporter (and its deps) to a feature ([247e8f8b](https://github.com/zkat/miette/commit/247e8f8b39271ffa7fd2c461e8ed769bebcbc589))
+    * **BREAKING CHANGE**: The default fancy reporter is no longer available unless you enable the "fancy" feature. This also means you will not be pulling in a bunch of deps if you are using miette for a library
+* **footer:** add footer support to graphical and narrated ([93374173](https://github.com/zkat/miette/commit/93374173e30c5d4ccdd0aa16557d68d54aaf3e59))
+* **theme:** rename some theme items for clarity ([c5c0576e](https://github.com/zkat/miette/commit/c5c0576ec69d5ccc3700dd6fc411d071bb0114a7))
+    * **BREAKING CHANGE**: These were part of the public API, so if you were using theming, this might have broken for you
+* **theme:** more styling changes ([2c437403](https://github.com/zkat/miette/commit/2c43740346da954fd71653a079c53a1e9612c06f))
+* **report:** add debug report as default, instead of narrated one ([9841d6fd](https://github.com/zkat/miette/commit/9841d6fd77ce665acb40f7459f410e83cdc131c0))
+* **labels:** replace snippet stuff with simpler labels (#62) ([f87b158b](https://github.com/zkat/miette/commit/f87b158b22f6f943cd7e52ca186b5f3c542194fd))
+* **protocol:** Make SourceCode Send+Sync ([9aa8ff0d](https://github.com/zkat/miette/commit/9aa8ff0d3190e0fb1ee5ad48cb540b961fc46366))
+* **handlers:** Update graphical handler to use new label protocol (#66) ([4bb9d121](https://github.com/zkat/miette/commit/4bb9d12102c1e24b6f063e43bd87e894f16683e8))
+* **report:** nicer, non-overlapping same-line highlights ([1a0f359e](https://github.com/zkat/miette/commit/1a0f359e3cd386f2738052d68790a3b54e64055b))
+* **panic:** Add basic panic handler and installation function ([c6daee7b](https://github.com/zkat/miette/commit/c6daee7b930ff7b76ce6ab394460c7659124f2d6))
+* **panic:** add backtrace support to panic handler and move set_panic_hook into fancy features ([858ac169](https://github.com/zkat/miette/commit/858ac169353e653ed0795fb1962f4ddde8fc3d06))
+* **graphical:** simplify graphical header and remove a dep ([6c648463](https://github.com/zkat/miette/commit/6c6484633ed1580047fb3dc820486f3264fb6a19))
+* **related:** Add related diagnostics (#68) ([8e11baab](https://github.com/zkat/miette/commit/8e11baab7b7b57d6220cf31a82715ac9b8b76f2f))
+* **graphical:** compact graphical display a bit ([db637a36](https://github.com/zkat/miette/commit/db637a366b1bcf54ff761a43ddb2cdfaaac0e481))
+* **graphical:** compact even more ([72c0bb9e](https://github.com/zkat/miette/commit/72c0bb9e65fa2fc7e8a1cf61ab1fe636ec063d2e))
+* **graphical:** add theming customization for linums ([717f8e3d](https://github.com/zkat/miette/commit/717f8e3d8837e14d76825603c0cbdcabb66950ff))
+* **handler:** context lines config support ([b33084bd](https://github.com/zkat/miette/commit/b33084bdbfeec90208f9dacd1976c8bde31642f3))
+* **narrated:** updated narrated handler ([fbf6664e](https://github.com/zkat/miette/commit/fbf6664ef5582c9a15bba881a6ee1ca058102d7f))
+* **narrated:** global footer and related diagnostics support ([3213fa61](https://github.com/zkat/miette/commit/3213fa610a17e3f52ece8c069eb123b2a38f1266))
+
 <a name="3.0.0-beta.0"></a>
 ## 3.0.0-beta.0 (2021-09-22)
 
