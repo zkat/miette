@@ -144,6 +144,14 @@ where
     fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.error.labels()
     }
+
+    fn source_code(&self) -> Option<&dyn crate::SourceCode> {
+        self.error.source_code()
+    }
+
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        self.error.related()
+    }
 }
 
 impl<D> Diagnostic for ContextError<D, Report>
@@ -168,6 +176,14 @@ where
 
     fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.error.inner.diagnostic().labels()
+    }
+
+    fn source_code(&self) -> Option<&dyn crate::SourceCode> {
+        self.error.source_code()
+    }
+
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        self.error.related()
     }
 }
 
