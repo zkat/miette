@@ -39,7 +39,7 @@ fn context_info<'a>(
                     start_line += 1;
                     before_lines_starts.remove(0);
                 }
-            } else if offset >= span.offset() + span.len() - 1 {
+            } else if offset >= span.offset() + span.len().saturating_sub(1) {
                 // We're after the end of the span, but haven't necessarily
                 // started collecting end lines yet (we might still be
                 // collecting context lines).
