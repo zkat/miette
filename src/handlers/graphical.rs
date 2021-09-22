@@ -713,11 +713,11 @@ impl Line {
 
     fn span_applies(&self, span: &FancySpan) -> bool {
         // Span starts in this line
-        (span.offset() >= self.offset && span.offset() < self.offset +self.length)
+        (span.offset() >= self.offset && span.offset() < self.offset + self.length)
         // Span passes through this line
         || (span.offset() < self.offset && span.offset() + span.len() > self.offset + self.length) //todo
         // Span ends on this line
-        || (span.offset() + span.len() >= self.offset && span.offset() + span.len() <= self.offset + self.length)
+        || (span.offset() + span.len() > self.offset && span.offset() + span.len() <= self.offset + self.length)
     }
 
     // A "flyby" is a multi-line span that technically covers this line, but
