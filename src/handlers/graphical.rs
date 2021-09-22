@@ -204,7 +204,6 @@ impl GraphicalReportHandler {
 
     fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
-            writeln!(f)?;
             let width = self.termwidth.saturating_sub(4);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
             let opts = textwrap::Options::new(width)
@@ -245,7 +244,6 @@ impl GraphicalReportHandler {
                 let mut labels = labels.collect::<Vec<_>>();
                 labels.sort_unstable_by_key(|l| l.inner().offset());
                 if !labels.is_empty() {
-                    writeln!(f)?;
                     let contents = labels
                         .iter()
                         .map(|label| {
@@ -363,14 +361,6 @@ impl GraphicalReportHandler {
             writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
         }
 
-        // Blank line to improve readability
-        writeln!(
-            f,
-            "{}{}",
-            " ".repeat(linum_width + 2),
-            self.theme.characters.vbar,
-        )?;
-
         // Now it's time for the fun part--actually rendering everything!
         for line in &lines {
             // Line number, appropriately padded.
@@ -413,12 +403,6 @@ impl GraphicalReportHandler {
                 }
             }
         }
-        writeln!(
-            f,
-            "{}{}",
-            " ".repeat(linum_width + 2),
-            self.theme.characters.vbar,
-        )?;
         writeln!(
             f,
             "{}{}{}",
