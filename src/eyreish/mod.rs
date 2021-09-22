@@ -148,7 +148,7 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
     /// impl ReportHandler for Handler {
     ///     fn debug(
     ///         &self,
-    ///         error: &(dyn Diagnostic + 'static),
+    ///         error: &dyn Diagnostic,
     ///         f: &mut core::fmt::Formatter<'_>,
     ///     ) -> core::fmt::Result {
     ///         use core::fmt::Write as _;
