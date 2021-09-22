@@ -10,6 +10,7 @@ pub use eyreish::*;
 pub use handler::*;
 pub use handlers::*;
 pub use named_source::*;
+#[cfg(feature = "fancy")]
 pub use panic::*;
 pub use protocol::*;
 
@@ -20,6 +21,7 @@ mod eyreish;
 mod handler;
 mod handlers;
 mod named_source;
+#[cfg(feature = "fancy")]
 mod panic;
 mod protocol;
 mod source_impls;
