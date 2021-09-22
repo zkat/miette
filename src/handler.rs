@@ -25,6 +25,7 @@ pub struct MietteHandlerOpts {
     pub(crate) color: Option<bool>,
     pub(crate) unicode: Option<bool>,
     pub(crate) footer: Option<String>,
+    pub(crate) context_lines: Option<usize>,
 }
 
 impl MietteHandlerOpts {
@@ -99,6 +100,12 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// Sets the number of context lines before and after a span to display.
+    pub fn context_lines(mut self, context_lines: usize) -> Self {
+        self.context_lines = Some(context_lines);
+        self
+    }
+
     /// Builds a [MietteHandler] from this builder.
     pub fn build(self) -> MietteHandler {
         let graphical = self.is_graphical();
@@ -107,6 +114,9 @@ impl MietteHandlerOpts {
             let mut handler = NarratableReportHandler::new();
             if let Some(footer) = self.footer {
                 handler = handler.with_footer(footer);
+            }
+            if let Some(context_lines) = self.context_lines {
+                handler = handler.with_context_lines(context_lines);
             }
             MietteHandler {
                 inner: Box::new(handler),
@@ -140,6 +150,9 @@ impl MietteHandlerOpts {
                 .with_theme(GraphicalTheme { characters, styles });
             if let Some(footer) = self.footer {
                 handler = handler.with_footer(footer);
+            }
+            if let Some(context_lines) = self.context_lines {
+                handler = handler.with_context_lines(context_lines);
             }
             MietteHandler {
                 inner: Box::new(handler),
