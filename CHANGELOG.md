@@ -1,5 +1,26 @@
 # `miette` Release Changelog
 
+<a name="3.0.0-beta.0"></a>
+## 3.0.0-beta.0 (2021-09-22)
+
+Time to get ready for release!
+
+### Bug Fixes
+
+* **graphical:** stop rendering red vbars before the last item ([dc2635e1](https://github.com/zkat/miette/commit/dc2635e15154ab33506bdeae46f34c99b403fff2))
+* **graphical:** fix coalescing adjacent things when they cross boundaries ([491ce7c0](https://github.com/zkat/miette/commit/491ce7c0ce1f04c9b6fc09c250f188c1ec77df53))
+* **context:** get labels/snippets working when using .context() ([e0296578](https://github.com/zkat/miette/commit/e02965787b5e6206dad46556a50edae578449789))
+
+### Features
+
+* **report:** nicer, non-overlapping same-line highlights ([338c885a](https://github.com/zkat/miette/commit/338c885a305035fc21f63e3566131af5befa14b3))
+* **panic:** Add basic panic handler and installation function ([11a708a2](https://github.com/zkat/miette/commit/11a708a2244f1838351b2b59bfc407febe3c2a0e))
+* **panic:** add backtrace support to panic handler and move set_panic_hook into fancy features ([183ecb9b](https://github.com/zkat/miette/commit/183ecb9b78a1c22d832e979db5054dcac36d8b7a))
+* **graphical:** simplify graphical header and remove a dep ([9f36a4c2](https://github.com/zkat/miette/commit/9f36a4c25362486dfcf9ad2bd66c45e47d6fa4d2))
+* **related:** Add related diagnostics (#68) ([25e434a2](https://github.com/zkat/miette/commit/25e434a2cec93e41f020372dedcf395adb2564de))
+* **graphical:** compact graphical display a bit ([9d07dc5a](https://github.com/zkat/miette/commit/9d07dc5a1c190b6d52770e4f3c4a1dabd53e0fd5))
+* **graphical:** compact even more ([712e75fd](https://github.com/zkat/miette/commit/712e75fd8c25c6309a49c7f81f83d5b6f855594c))
+
 <a name="3.0.0-alpha.0"></a>
 ## 3.0.0-alpha.0 (2021-09-20)
 
