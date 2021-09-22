@@ -242,21 +242,28 @@ impl GraphicalReportHandler {
                 let right_end = right.offset() + right.len();
                 if left_conts.line() + left_conts.line_count() >= right_conts.line() {
                     // The snippets will overlap, so we create one Big Chunky Boi
-                    Ok((
-                        LabeledSpan::new(
-                            left.label().map(String::from),
-                            left.offset(),
-                            if right_end >= left_end {
-                                // Right end goes past left end
-                                right_end - left.offset()
-                            } else {
-                                // right is contained inside left
-                                left.len()
-                            },
-                        ),
-                        // We'll throw this away later
-                        left_conts,
-                    ))
+                    let new_span = LabeledSpan::new(
+                        left.label().map(String::from),
+                        left.offset(),
+                        if right_end >= left_end {
+                            // Right end goes past left end
+                            right_end - left.offset()
+                        } else {
+                            // right is contained inside left
+                            left.len()
+                        },
+                    );
+                    if source
+                        .read_span(new_span.inner(), self.context_lines, self.context_lines)
+                        .is_ok()
+                    {
+                        Ok((
+                            new_span, // We'll throw this away later
+                            left_conts,
+                        ))
+                    } else {
+                        Err(((left, left_conts), (right, right_conts)))
+                    }
                 } else {
                     Err(((left, left_conts), (right, right_conts)))
                 }
