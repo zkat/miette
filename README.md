@@ -378,7 +378,7 @@ struct MyError {
 ### ... handler options
 
 [MietteHandler] is the default handler, and is very customizable. In most
-cases, you can simply use [MietteHandlerOptions] to tweak its behavior instead
+cases, you can simply use [MietteHandlerOpts] to tweak its behavior instead
 of falling back to your own custom handler.
 
 Usage is like so:
