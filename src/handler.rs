@@ -12,6 +12,18 @@ use crate::ThemeStyles;
 
 /**
 Create a custom [MietteHandler] from options.
+
+## Example
+
+```no_run
+miette::set_hook(|_| {
+    MietteHandlerOpts::new()
+        .terminal_links(true)
+        .unicode(false)
+        .context_lines(3)
+        .build()
+})
+```
 */
 #[derive(Default, Debug, Clone)]
 pub struct MietteHandlerOpts {

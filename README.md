@@ -41,6 +41,7 @@ and such might not want.
   - [... in `main()`](#-in-main)
   - [... diagnostic code URLs](#-diagnostic-code-urls)
   - [... snippets](#-snippets)
+  - [... handler options](#-handler-options)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
@@ -352,6 +353,26 @@ pub struct MyErrorType {
     snip2: (usize, usize), // (usize, usize) is Into<SourceSpan>!
 }
 ```
+
+### ... handler options
+
+[MietteHandler] is the default handler, and is very customizable. In most
+cases, you can simply use [MietteHandlerOptions] to tweak its behavior instead
+of falling back to your own custom handler.
+
+Usage is like so:
+
+```rust
+miette::set_hook(|_| {
+    MietteHandlerOpts::new()
+        .terminal_links(true)
+        .unicode(false)
+        .context_lines(3)
+        .build()
+})
+```
+
+See the docs for [MietteHandlerOptions] for more details on what you can customize!
 
 ## Acknowledgements
 
