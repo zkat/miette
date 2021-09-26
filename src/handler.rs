@@ -16,13 +16,14 @@ Create a custom [MietteHandler] from options.
 ## Example
 
 ```no_run
-miette::set_hook(|_| {
-    MietteHandlerOpts::new()
+miette::set_hook(Box::new(|_| {
+    Box::new(miette::MietteHandlerOpts::new()
         .terminal_links(true)
         .unicode(false)
         .context_lines(3)
-        .build()
-})
+        .build())
+}))
+# .unwrap();
 ```
 */
 #[derive(Default, Debug, Clone)]

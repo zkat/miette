@@ -371,7 +371,7 @@ use thiserror::Error;
 #[error("oops")]
 struct MyError {
     #[related]
-    Vec<MyError>,
+    others: Vec<MyError>,
 }
 ```
 
@@ -384,13 +384,15 @@ of falling back to your own custom handler.
 Usage is like so:
 
 ```rust
-miette::set_hook(|_| {
-    MietteHandlerOpts::new()
+miette::set_hook(Box::new(|_| {
+    Box::new(miette::MietteHandlerOpts::new()
         .terminal_links(true)
         .unicode(false)
         .context_lines(3)
-        .build()
-})
+        .build())
+}))
+
+# .unwrap()
 ```
 
 See the docs for [MietteHandlerOptions] for more details on what you can customize!
