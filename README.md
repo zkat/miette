@@ -41,6 +41,7 @@ and such might not want.
   - [... in `main()`](#-in-main)
   - [... diagnostic code URLs](#-diagnostic-code-urls)
   - [... snippets](#-snippets)
+  - [... multiple related errors](#-multiple-related-errors)
   - [... handler options](#-handler-options)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -351,6 +352,26 @@ pub struct MyErrorType {
     // They'll be rendered sequentially.
     #[label("This is bad")]
     snip2: (usize, usize), // (usize, usize) is Into<SourceSpan>!
+}
+```
+
+### ... multiple related errors
+
+`miette` supports collecting multiple errors into a single diagnostic, and
+printing them all together nicely.
+
+To do so, use the `#[related]` tag on any `IntoIter` field in your
+`Diagnostic` type:
+
+```rust
+use miette::Diagnostic;
+use thiserror::Error;
+
+#[derive(Debug, Error, Diagnostic)]
+#[error("oops")]
+struct MyError {
+    #[related]
+    Vec<MyError>,
 }
 ```
 
