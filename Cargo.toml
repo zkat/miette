@@ -50,3 +50,6 @@ fancy = [
 
 [workspace]
 members = ["miette-derive"]
+
+[package.metadata.docs.rs]
+all-features = true
