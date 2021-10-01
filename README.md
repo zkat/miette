@@ -395,7 +395,7 @@ miette::set_hook(Box::new(|_| {
 # .unwrap()
 ```
 
-See the docs for [MietteHandlerOptions] for more details on what you can customize!
+See the docs for [MietteHandlerOpts] for more details on what you can customize!
 
 ## Acknowledgements
 
