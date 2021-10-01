@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="3.1.0"></a>
+## 3.1.0 (2021-10-01)
+
+### Features
+
+* **SourceSpan:** add impl From<Range> (#78) ([0169fe20](https://github.com/zkat/miette/commit/0169fe20e7868cfee594b26b063267d17be0a84e))
+
 <a name="3.0.1"></a>
 ## 3.0.1 (2021-09-26)
 
