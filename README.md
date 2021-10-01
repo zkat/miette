@@ -133,7 +133,7 @@ fn this_fails() -> Result<()> {
 Now to get everything printed nicely, just return a Result<()>
 and you're all set!
 
-Note: You can swap out the default reporter for a custom one using `miette::set_reporter()`
+Note: You can swap out the default reporter for a custom one using `miette::set_hook()`
 */
 fn pretend_this_is_main() -> Result<()> {
     // kaboom~
