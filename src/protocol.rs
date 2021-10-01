@@ -397,6 +397,15 @@ impl From<(SourceOffset, SourceOffset)> for SourceSpan {
     }
 }
 
+impl From<std::ops::Range<ByteOffset>> for SourceSpan {
+    fn from(range: std::ops::Range<ByteOffset>) -> Self {
+        Self {
+            offset: range.start.into(),
+            length: range.len().into(),
+        }
+    }
+}
+
 /**
 "Raw" type for the byte offset from the beginning of a [SourceCode].
 */
