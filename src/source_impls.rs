@@ -74,7 +74,7 @@ fn context_info<'a>(
 
     if offset >= (span.offset() + span.len()).saturating_sub(1) {
         let starting_offset = before_lines_starts.get(0).copied().unwrap_or_else(|| {
-            if line_count > 0 {
+            if context_lines_before == 0 {
                 span.offset()
             } else {
                 0
@@ -268,4 +268,20 @@ mod tests {
         assert_eq!(&span, contents.span());
         Ok(())
     }
+
+    #[test]
+    fn multiline_with_context_line_start() -> Result<(), MietteError> {
+        let src = String::from("one\ntwo\n\nthree\nfour\nfive\n\nsix\nseven\n");
+        let contents = src.read_span(&(2, 0).into(), 2, 2)?;
+        assert_eq!(
+            "one\ntwo\n\n",
+            std::str::from_utf8(contents.data()).unwrap()
+        );
+        assert_eq!(0, contents.line());
+        assert_eq!(0, contents.column());
+        let span: SourceSpan = (0, 9).into();
+        assert_eq!(&span, contents.span());
+        Ok(())
+    }
+
 }
