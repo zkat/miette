@@ -283,5 +283,4 @@ mod tests {
         assert_eq!(&span, contents.span());
         Ok(())
     }
-
 }
