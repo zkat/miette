@@ -19,6 +19,12 @@ fn fmt_report(diag: Report) -> String {
         NarratableReportHandler::new()
             .render_report(&mut out, diag.as_ref())
             .unwrap();
+    } else if let Ok(w) = std::env::var("REPLACE_TABS") {
+        GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .with_width(80)
+            .with_tab_width(w.parse().expect("Invalid tab width."))
+            .render_report(&mut out, diag.as_ref())
+            .unwrap();
     } else {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
             .with_width(80)
@@ -55,6 +61,84 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
  2 │   👼🏼text
    ·   ───┬──
    ·      ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_with_two_tabs() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    std::env::set_var("REPLACE_TABS", "4");
+
+    let src = "source\n\t\ttext\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+ 2 │         text
+   ·         ──┬─
+   ·           ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    std::env::set_var("REPLACE_TABS", "4");
+
+    let src = "source\ntext\ttext\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (12, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+ 2 │ text    text
+   ·         ──┬─
+   ·           ╰── this bit here
  3 │     here
    ╰────
   help: try doing it better next time?
@@ -281,6 +365,53 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
  2 │   text text text text text
    ·   ──┬─ ──┬─      ──┬─
    ·     │    │         ╰── z
+   ·     │    ╰── y
+   ·     ╰── x
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "x"]
+        highlight1: SourceSpan,
+        #[label = "y"]
+        highlight2: SourceSpan,
+        #[label = "z"]
+        highlight3: SourceSpan,
+    }
+
+    std::env::set_var("REPLACE_TABS", "4");
+
+    let src = "source\n  text text text\ttext text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
+        highlight3: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+ 2 │   text text text    text text
+   ·   ──┬─ ──┬─         ──┬─
+   ·     │    │            ╰── z
    ·     │    ╰── y
    ·     ╰── x
  3 │     here
