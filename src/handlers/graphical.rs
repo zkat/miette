@@ -565,6 +565,7 @@ impl GraphicalReportHandler {
             let hl_len = std::cmp::max(1, hl.len());
 
             let local_offset = if let Some(w) = self.tab_width {
+                // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
                 let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
                 let tabs_as_spaces = tab_count * w - tab_count;
                 hl.offset() - line.offset + tabs_as_spaces
@@ -605,6 +606,7 @@ impl GraphicalReportHandler {
             .iter()
             .map(|hl| {
                 let local_offset = if let Some(w) = self.tab_width {
+                    // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
                     let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
                     let tabs_as_spaces = tab_count * w - tab_count;
                     hl.offset() - line.offset + tabs_as_spaces
