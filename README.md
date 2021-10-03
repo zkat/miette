@@ -389,6 +389,7 @@ miette::set_hook(Box::new(|_| {
         .terminal_links(true)
         .unicode(false)
         .context_lines(3)
+        .with_tab_width(4)
         .build())
 }))
 
