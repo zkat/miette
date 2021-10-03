@@ -30,7 +30,6 @@ impl miette::ReportHandler for LocationHandler {
     }
 
     fn track_caller(&mut self, location: &'static Location<'static>) {
-        dbg!(location);
         self.actual = Some(location.file());
     }
 }

@@ -565,9 +565,7 @@ impl GraphicalReportHandler {
             let hl_len = std::cmp::max(1, hl.len());
 
             let local_offset = if let Some(w) = self.tab_width {
-                dbg!(&line.text[..hl.offset() - line.offset]);
                 let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
-                dbg!(tab_count);
                 let tabs_as_spaces = tab_count * w - tab_count;
                 hl.offset() - line.offset + tabs_as_spaces
             } else {
@@ -702,7 +700,6 @@ impl GraphicalReportHandler {
             }
 
             if column == 0 || iter.peek().is_none() {
-                dbg!("Line");
                 lines.push(Line {
                     line_number: line,
                     offset: line_offset,
