@@ -39,6 +39,7 @@ pub struct MietteHandlerOpts {
     pub(crate) unicode: Option<bool>,
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: Option<usize>,
+    pub(crate) tab_width: Option<usize>,
 }
 
 impl MietteHandlerOpts {
@@ -119,6 +120,12 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// Set the displayed tab width in spaces.
+    pub fn tab_width(mut self, width: usize) -> Self {
+        self.tab_width = Some(width);
+        self
+    }
+
     /// Builds a [MietteHandler] from this builder.
     pub fn build(self) -> MietteHandler {
         let graphical = self.is_graphical();
@@ -166,6 +173,9 @@ impl MietteHandlerOpts {
             }
             if let Some(context_lines) = self.context_lines {
                 handler = handler.with_context_lines(context_lines);
+            }
+            if let Some(w) = self.tab_width {
+                handler = handler.tab_width(w);
             }
             MietteHandler {
                 inner: Box::new(handler),

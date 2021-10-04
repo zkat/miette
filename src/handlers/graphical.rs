@@ -54,8 +54,8 @@ impl GraphicalReportHandler {
         }
     }
 
-    /// Replace tabs with spaces.
-    pub fn with_tab_width(mut self, width: usize) -> Self {
+    /// Set the displayed tab width in spaces.
+    pub fn tab_width(mut self, width: usize) -> Self {
         self.tab_width = Some(width);
         self
     }
