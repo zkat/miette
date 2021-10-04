@@ -25,6 +25,7 @@ pub struct GraphicalReportHandler {
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: usize,
+    pub(crate) tab_width: Option<usize>,
 }
 
 impl GraphicalReportHandler {
@@ -37,6 +38,7 @@ impl GraphicalReportHandler {
             theme: GraphicalTheme::default(),
             footer: None,
             context_lines: 1,
+            tab_width: None,
         }
     }
 
@@ -48,7 +50,14 @@ impl GraphicalReportHandler {
             theme,
             footer: None,
             context_lines: 1,
+            tab_width: None,
         }
+    }
+
+    /// Set the displayed tab width in spaces.
+    pub fn tab_width(mut self, width: usize) -> Self {
+        self.tab_width = Some(width);
+        self
     }
 
     /// Whether to enable error code linkification using [Diagnostic::url].
@@ -376,7 +385,12 @@ impl GraphicalReportHandler {
             self.render_line_gutter(f, max_gutter, line, &labels)?;
 
             // And _now_ we can print out the line text itself!
-            writeln!(f, "{}", line.text)?;
+            if let Some(w) = self.tab_width {
+                let text = line.text.replace("\t", " ".repeat(w).as_str());
+                writeln!(f, "{}", text)?;
+            } else {
+                writeln!(f, "{}", line.text)?;
+            };
 
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
@@ -545,10 +559,20 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         let mut underlines = String::new();
         let mut highest = 0;
+
         let chars = &self.theme.characters;
         for hl in single_liners {
             let hl_len = std::cmp::max(1, hl.len());
-            let local_offset = hl.offset() - line.offset;
+
+            let local_offset = if let Some(w) = self.tab_width {
+                // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
+                let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
+                let tabs_as_spaces = tab_count * w - tab_count;
+                hl.offset() - line.offset + tabs_as_spaces
+            } else {
+                hl.offset() - line.offset
+            };
+
             let vbar_offset = local_offset + (hl_len / 2);
             let num_left = vbar_offset - local_offset;
             let num_right = local_offset + hl_len - vbar_offset - 1;
@@ -581,10 +605,15 @@ impl GraphicalReportHandler {
         let vbar_offsets: Vec<_> = single_liners
             .iter()
             .map(|hl| {
-                (
-                    hl,
-                    (hl.offset() - line.offset) + (std::cmp::max(1, hl.len()) / 2),
-                )
+                let local_offset = if let Some(w) = self.tab_width {
+                    // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
+                    let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
+                    let tabs_as_spaces = tab_count * w - tab_count;
+                    hl.offset() - line.offset + tabs_as_spaces
+                } else {
+                    hl.offset() - line.offset
+                };
+                (hl, local_offset + (std::cmp::max(1, hl.len()) / 2))
             })
             .collect();
         for hl in single_liners.iter().rev() {
