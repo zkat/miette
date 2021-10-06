@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="3.2.0"></a>
+## 3.2.0 (2021-10-06)
+
+### Features
+
+* **tabs:** Add replace tabs with spaces option (#82) ([1f70140c](https://github.com/zkat/miette/commit/1f70140c2e6a57237de78dab022e29440f98ae33))
+
+### Bug Fixes
+
+* **read_span** prevent multiline MietteSpanContents from skipping lines (#81) ([cb5a919d](https://github.com/zkat/miette/commit/cb5a919deb87f8fba748bed73b6f22ebe4e3390f))
+
 <a name="3.1.0"></a>
 ## 3.1.0 (2021-10-01)
 
