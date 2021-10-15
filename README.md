@@ -384,6 +384,7 @@ of falling back to your own custom handler.
 Usage is like so:
 
 ```rust
+#[cfg(feature = "fancy")]
 miette::set_hook(Box::new(|_| {
     Box::new(miette::MietteHandlerOpts::new()
         .terminal_links(true)
