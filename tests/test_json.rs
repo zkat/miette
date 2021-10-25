@@ -1,4 +1,3 @@
-#[cfg(feature = "json")]
 mod json_report_handler {
 
     use miette::{Diagnostic, MietteError, NamedSource, Report, SourceSpan};
@@ -9,12 +8,9 @@ mod json_report_handler {
 
     fn fmt_report(diag: Report) -> String {
         let mut out = String::new();
-        if cfg!(feature = "json") {
-            #[cfg(feature = "json")]
-            JSONReportHandler::new()
-                .render_report(&mut out, diag.as_ref())
-                .unwrap();
-        }
+        JSONReportHandler::new()
+            .render_report(&mut out, diag.as_ref())
+            .unwrap();
         out
     }
 

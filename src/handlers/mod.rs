@@ -8,7 +8,6 @@ pub use debug::*;
 #[cfg(feature = "fancy")]
 pub use graphical::*;
 #[allow(unreachable_pub)]
-#[cfg(feature = "json")]
 pub use json::*;
 #[allow(unreachable_pub)]
 pub use narratable::*;
@@ -19,7 +18,6 @@ pub use theme::*;
 mod debug;
 #[cfg(feature = "fancy")]
 mod graphical;
-#[cfg(feature = "json")]
 mod json;
 mod narratable;
 #[cfg(feature = "fancy")]

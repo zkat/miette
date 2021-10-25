@@ -47,7 +47,6 @@ fancy = [
     "supports-unicode",
     "backtrace"
 ]
-json = []
 
 [workspace]
 members = ["miette-derive"]
