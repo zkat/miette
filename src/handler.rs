@@ -188,8 +188,8 @@ impl MietteHandlerOpts {
             !force_narrated
         } else if let Some(force_graphical) = self.force_graphical {
             force_graphical
-        } else if let Some(info) = supports_color::on(Stream::Stderr) {
-            info.has_basic
+        } else if let Ok(env) = std::env::var("NO_GRAPHICS") {
+            env == "0"
         } else {
             false
         }
