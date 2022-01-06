@@ -10,7 +10,7 @@ struct DiagnosticError(Box<dyn std::error::Error + Send + Sync + 'static>);
 impl Diagnostic for DiagnosticError {}
 
 /**
-Convenience trait that adds a `.into_diagnostic()` method that converts a type to a `Result<T, DiagnosticError>`.
+Convenience trait that adds a `.into_diagnostic()` method that converts a type to a `Result<T, Report>`.
 */
 pub trait IntoDiagnostic<T, E> {
     /// Converts [Result]-like types that return regular errors into a
