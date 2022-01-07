@@ -191,31 +191,6 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
     fn track_caller(&mut self, location: &'static std::panic::Location<'static>) {}
 }
 
-/// Iterator of a chain of source errors.
-///
-/// This type is the iterator returned by [`Report::chain`].
-///
-/// # Example
-///
-/// ```
-/// use miette::Report;
-/// use std::io;
-///
-/// pub fn underlying_io_error_kind(error: &Report) -> Option<io::ErrorKind> {
-///     for cause in error.chain() {
-///         if let Some(io_error) = cause.downcast_ref::<io::Error>() {
-///             return Some(io_error.kind());
-///         }
-///     }
-///     None
-/// }
-/// ```
-#[derive(Clone)]
-#[allow(missing_debug_implementations)]
-pub struct Chain<'a> {
-    state: crate::chain::ChainState<'a>,
-}
-
 /// type alias for `Result<T, Report>`
 ///
 /// This is a reasonable return type to use throughout your application but also for `fn main`; if

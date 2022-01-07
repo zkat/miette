@@ -4,6 +4,7 @@
 
 pub use miette_derive::*;
 
+pub use chain::*;
 pub use error::*;
 pub use eyreish::*;
 #[cfg(feature = "fancy")]
