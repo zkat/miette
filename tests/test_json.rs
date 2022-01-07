@@ -737,11 +737,18 @@ mod json_report_handler {
         let err = MyBad {
             src: NamedSource::new("bad_file.rs", src.clone()),
             highlight: (9, 4).into(),
-            related: vec![MyBad {
-                src: NamedSource::new("bad_file2.rs", src),
-                highlight: (0, 6).into(),
-                related: vec![],
-            }],
+            related: vec![
+                MyBad {
+                    src: NamedSource::new("bad_file2.rs", src.clone()),
+                    highlight: (0, 6).into(),
+                    related: vec![],
+                },
+                MyBad {
+                    src: NamedSource::new("bad_file3.rs", src),
+                    highlight: (0, 6).into(),
+                    related: vec![],
+                },
+            ],
         };
         let out = fmt_report(err.into());
         println!("Error: {}", out);
@@ -767,6 +774,22 @@ mod json_report_handler {
                 "severity": "error",
                 "help": "try doing it better next time?",
                 "filename": "bad_file2.rs",
+                "labels": [
+                    {
+                        "label": "this bit here",
+                        "span": {
+                            "offset": 0,
+                            "length": 6
+                        }
+                    }
+                ],
+                "related": []
+            },{
+                "message": "oops!",
+                "code": "oops::my::bad",
+                "severity": "error",
+                "help": "try doing it better next time?",
+                "filename": "bad_file3.rs",
                 "labels": [
                     {
                         "label": "this bit here",
