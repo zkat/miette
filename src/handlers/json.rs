@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Write};
 
 use crate::{protocol::Diagnostic, ReportHandler, Severity};
 
@@ -23,20 +23,34 @@ impl Default for JSONReportHandler {
     }
 }
 
-fn escape(input: &str) -> String {
-    input
-        .chars()
-        .map(|c| match c {
-            '"' => "\\\\\"".to_string(),
-            '\'' => "\\\\'".to_string(),
-            '\r' => "\\\\r".to_string(),
-            '\n' => "\\\\n".to_string(),
-            '\t' => "\\\\t".to_string(),
-            '\u{08}' => "\\\\b".to_string(),
-            '\u{0c}' => "\\\\f".to_string(),
-            c => format!("{}", c),
-        })
-        .collect()
+struct Escape<'a>(&'a str);
+
+impl fmt::Display for Escape<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for c in self.0.chars() {
+            let escape = match c {
+                '\\' => Some(r"\\"),
+                '"' => Some(r#"\""#),
+                '\'' => Some(r"\'"),
+                '\r' => Some(r"\r"),
+                '\n' => Some(r"\n"),
+                '\t' => Some(r"\t"),
+                '\u{08}' => Some(r"\b"),
+                '\u{0c}' => Some(r"\f"),
+                _ => None,
+            };
+            if let Some(escape) = escape {
+                f.write_str(escape)?;
+            } else {
+                f.write_char(c)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+fn escape(input: &'_ str) -> Escape<'_> {
+    Escape(input)
 }
 
 impl JSONReportHandler {
@@ -126,4 +140,10 @@ impl ReportHandler for JSONReportHandler {
     fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.render_report(f, diagnostic)
     }
+}
+
+#[test]
+fn test_escape() {
+    assert_eq!(escape("a\nb").to_string(), r"a\nb");
+    assert_eq!(escape("C:\\Miette").to_string(), r"C:\\Miette");
 }

@@ -497,7 +497,7 @@ mod json_report_handler {
         println!("Error: {}", out);
         let expected: String = r#"
         {
-            "message": "wtf?!\\nit broke :(",
+            "message": "wtf?!\nit broke :(",
             "code": "oops::my::bad",
             "severity": "error",
             "help": "try doing it better next time?",
