@@ -1,5 +1,19 @@
 # `miette` Release Changelog
 
+<a name="3.3.0"></a>
+## 3.3.0 (2022-01-08)
+
+### Features
+
+* **deps:** Bump owo-colors to 3.0.0 ([fe77d8c7](https://github.com/zkat/miette/commit/fe77d8c75478e9915a61613ec94b3de0a70e5e26))
+* **handlers:** Add JSON handler (#90) ([53b24682](https://github.com/zkat/miette/commit/53b246829a2cf6317fe1ac0cf7603e37ffde349f))
+
+### Bug Fixes
+
+* **chain:** correct `Chain` structure exported (#102) ([52e5ec80](https://github.com/zkat/miette/commit/52e5ec806457c2784d85dc4e4a332c07e6eea818))
+* **json:** proper escapes for JSON strings (#101) ([645ef6a1](https://github.com/zkat/miette/commit/645ef6a1b66a9a05f97883535f162cab4d0483f5))
+* **deps:** switch to terminal_size ([51146535](https://github.com/zkat/miette/commit/51146535f5ea9eeaff1163d99d8b89a2567e93dd))
+
 <a name="3.2.0"></a>
 ## 3.2.0 (2021-10-06)
 
