@@ -206,8 +206,12 @@ impl MietteHandlerOpts {
     }
 
     pub(crate) fn get_width(&self) -> usize {
-        self.width
-            .unwrap_or_else(|| term_size::dimensions().unwrap_or((80, 0)).0)
+        self.width.unwrap_or_else(|| {
+            terminal_size::terminal_size()
+                .unwrap_or((terminal_size::Width(80), terminal_size::Height(0)))
+                .0
+                 .0 as usize
+        })
     }
 }
 
