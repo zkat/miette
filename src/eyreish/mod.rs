@@ -322,7 +322,7 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 /// After attaching a message of type `D` onto an error of type `E`, the resulting
 /// `miette::Error` may be downcast to `D` **or** to `E`.
 ///
-/// That is, in codebases that rely on downcasting, Eyre's wrap_err supports
+/// That is, in codebases that rely on downcasting, miette's wrap_err supports
 /// both of the following use cases:
 ///
 ///   - **Attaching messages whose type is insignificant onto errors whose type
@@ -330,7 +330,7 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///
 ///     In other error libraries whose wrap_err is not designed this way, it can
 ///     be risky to introduce messages to existing code because new message might
-///     break existing working downcasts. In Eyre, any downcast that worked
+///     break existing working downcasts. In miette, any downcast that worked
 ///     before adding the message will continue to work after you add a message, so
 ///     you should freely wrap errors wherever it would be helpful.
 ///
