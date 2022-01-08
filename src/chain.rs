@@ -8,6 +8,25 @@ use std::vec;
 
 use ChainState::*;
 
+/// Iterator of a chain of source errors.
+///
+/// This type is the iterator returned by [`Report::chain`].
+///
+/// # Example
+///
+/// ```
+/// use miette::Report;
+/// use std::io;
+///
+/// pub fn underlying_io_error_kind(error: &Report) -> Option<io::ErrorKind> {
+///     for cause in error.chain() {
+///         if let Some(io_error) = cause.downcast_ref::<io::Error>() {
+///             return Some(io_error.kind());
+///         }
+///     }
+///     None
+/// }
+/// ```
 #[derive(Clone)]
 #[allow(missing_debug_implementations)]
 pub struct Chain<'a> {
@@ -25,7 +44,7 @@ pub(crate) enum ChainState<'a> {
 }
 
 impl<'a> Chain<'a> {
-    pub fn new(head: &'a (dyn StdError + 'static)) -> Self {
+    pub(crate) fn new(head: &'a (dyn StdError + 'static)) -> Self {
         Chain {
             state: ChainState::Linked { next: Some(head) },
         }
