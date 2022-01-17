@@ -1,5 +1,7 @@
 use std::fmt;
 
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
+
 use crate::chain::Chain;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -208,23 +210,44 @@ impl NarratableReportHandler {
         writeln!(f)?;
         for line in &lines {
             writeln!(f, "snippet line {}: {}", line.line_number, line.text)?;
-            let relevant = labels.iter().filter(|l| line.span_starts(l.inner()));
-            for label in relevant {
-                let contents = source
-                    .read_span(label.inner(), self.context_lines, self.context_lines)
-                    .map_err(|_| fmt::Error)?;
-                if contents.line() + 1 == line.line_number {
-                    write!(
-                        f,
-                        "    label starting at line {}, column {}",
-                        contents.line() + 1,
-                        contents.column() + 1
-                    )?;
-                    if let Some(label) = label.label() {
-                        write!(f, ": {}", label)?;
+            let relevant = labels
+                .iter()
+                .filter_map(|l| line.span_attach(l.inner()).map(|a| (a, l)));
+            for (attach, label) in relevant {
+                match attach {
+                    SpanAttach::Contained { col_start, col_end } if col_start == col_end => {
+                        write!(
+                            f,
+                            "    label at line {}, column {}",
+                            line.line_number, col_start,
+                        )?;
                     }
-                    writeln!(f)?;
+                    SpanAttach::Contained { col_start, col_end } => {
+                        write!(
+                            f,
+                            "    label at line {}, columns {} to {}",
+                            line.line_number, col_start, col_end,
+                        )?;
+                    }
+                    SpanAttach::Starts { col_start } => {
+                        write!(
+                            f,
+                            "    label starting at line {}, column {}",
+                            line.line_number, col_start,
+                        )?;
+                    }
+                    SpanAttach::Ends { col_end } => {
+                        write!(
+                            f,
+                            "    label ending at line {}, column {}",
+                            line.line_number, col_end,
+                        )?;
+                    }
                 }
+                if let Some(label) = label.label() {
+                    write!(f, ": {}", label)?;
+                }
+                writeln!(f)?;
             }
         }
         Ok(())
@@ -281,6 +304,7 @@ impl NarratableReportHandler {
                     line_number: line,
                     offset: line_offset,
                     text: line_str.clone(),
+                    at_end_of_file,
                 });
                 line_str.clear();
                 line_offset = offset;
@@ -308,12 +332,62 @@ struct Line {
     line_number: usize,
     offset: usize,
     text: String,
+    at_end_of_file: bool,
+}
+
+enum SpanAttach {
+    Contained { col_start: usize, col_end: usize },
+    Starts { col_start: usize },
+    Ends { col_end: usize },
+}
+
+/// Returns column at offset, and nearest boundary if offset is in the middle of the character
+fn safe_get_column(text: &str, offset: usize, start: bool) -> usize {
+    let mut column = text.get(0..offset).map(|s| s.width()).unwrap_or_else(|| {
+        let mut column = 0;
+        for (idx, c) in text.char_indices() {
+            if offset <= idx {
+                break;
+            }
+            column += c.width().unwrap_or(0);
+        }
+        column
+    });
+    if start {
+        // Offset are zero-based, so plus one
+        column += 1;
+    } // On the other hand for end span, offset refers for the next column
+      // So we should do -1. column+1-1 == column
+    column
 }
 
 impl Line {
-    // Does this line contain the *beginning* of this multiline span?
-    // This assumes self.span_applies() is true already.
-    fn span_starts(&self, span: &SourceSpan) -> bool {
-        span.offset() >= self.offset
+    fn span_attach(&self, span: &SourceSpan) -> Option<SpanAttach> {
+        let span_end = span.offset() + span.len();
+        let line_end = self.offset + self.text.len();
+
+        let start_after = span.offset() >= self.offset;
+        let end_before = self.at_end_of_file || span_end <= line_end;
+
+        if start_after && end_before {
+            let col_start = safe_get_column(&self.text, span.offset() - self.offset, true);
+            let col_end = if span.is_empty() {
+                col_start
+            } else {
+                // span_end refers to the next character after token
+                // while col_end refers to the exact character, so -1
+                safe_get_column(&self.text, span_end - self.offset, false)
+            };
+            return Some(SpanAttach::Contained { col_start, col_end });
+        }
+        if start_after && span.offset() <= line_end {
+            let col_start = safe_get_column(&self.text, span.offset() - self.offset, true);
+            return Some(SpanAttach::Starts { col_start });
+        }
+        if end_before && span_end >= self.offset {
+            let col_end = safe_get_column(&self.text, span_end - self.offset, false);
+            return Some(SpanAttach::Ends { col_end });
+        }
+        None
     }
 }

@@ -46,8 +46,8 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
 snippet line 2:   👼🏼text
+    label at line 2, columns 3 to 6: this bit here
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -82,8 +82,8 @@ fn single_line_highlight() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
 snippet line 2:   text
+    label at line 2, columns 3 to 6: this bit here
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -118,7 +118,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
+    label at line 1, column 1: this bit here
 snippet line 2:   text
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -153,8 +153,8 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
 snippet line 2:   text
+    label at line 2, column 3: this bit here
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -189,8 +189,8 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1
 snippet line 2:   text
+    label at line 2, columns 3 to 6
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -225,8 +225,8 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
 snippet line 2: text
+    label at line 2, columns 1 to 4: this bit here
 snippet line 3:   here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -267,10 +267,10 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: x
-    label starting at line 1, column 1: y
-    label starting at line 1, column 1: z
 snippet line 2:   text text text text text
+    label at line 2, columns 3 to 6: x
+    label at line 2, columns 8 to 11: y
+    label at line 2, columns 18 to 21: z
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -305,9 +305,10 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: these two lines
 snippet line 2:   text
+    label starting at line 2, column 3: these two lines
 snippet line 3:     here
+    label ending at line 3, column 6: these two lines
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
 "#
@@ -352,11 +353,13 @@ Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: line1
     label starting at line 1, column 1: block 1
-    label starting at line 1, column 1: block 2
 snippet line 2: line2
+    label starting at line 2, column 5: block 2
 snippet line 3: line3
 snippet line 4: line4
+    label ending at line 4, column 1: block 2
 snippet line 5: line5
+    label ending at line 5, column 5: block 1
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
 "#
@@ -418,11 +421,13 @@ Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: line1
     label starting at line 1, column 1: block 1
-    label starting at line 1, column 1
 snippet line 2: line2
+    label starting at line 2, column 5
 snippet line 3: line3
 snippet line 4: line4
+    label ending at line 4, column 1
 snippet line 5: line5
+    label ending at line 5, column 5: block 1
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
 "
@@ -461,9 +466,11 @@ Begin snippet for bad_file.rs starting at line 1, column 1
 snippet line 1: source
     label starting at line 1, column 1: this bit here
 snippet line 2:   text
-    label starting at line 2, column 1: also this bit
+    label ending at line 2, column 3: this bit here
 snippet line 3:     here
+    label starting at line 3, column 7: also this bit
 snippet line 4: more here
+    label ending at line 4, column 3: also this bit
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
 "
@@ -575,8 +582,8 @@ fn related() -> Result<(), MietteError> {
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
 snippet line 2:   text
+    label at line 2, columns 3 to 6: this bit here
 snippet line 3:     here
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
@@ -587,7 +594,7 @@ Error: oops!
 Begin snippet for bad_file.rs starting at line 1, column 1
 
 snippet line 1: source
-    label starting at line 1, column 1: this bit here
+    label at line 1, columns 1 to 6: this bit here
 snippet line 2:   text
 diagnostic help: try doing it better next time?
 diagnostic code: oops::my::bad
