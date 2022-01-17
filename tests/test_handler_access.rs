@@ -1,7 +1,7 @@
 #[test]
-fn test_context() {
+fn test_handler() {
     use miette::{miette, Report};
 
     let error: Report = miette!("oh no!");
-    let _ = error.context();
+    let _ = error.handler();
 }

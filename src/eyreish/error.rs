@@ -220,6 +220,14 @@ impl Report {
         unsafe { Report::construct(error, vtable, handler) }
     }
 
+    /// Compatibility re-export of wrap_err for interop with `anyhow`
+    pub fn context<D>(self, msg: D) -> Self
+    where
+        D: Display + Send + Sync + 'static,
+    {
+        self.wrap_err(msg)
+    }
+
     /// An iterator of the chain of source errors contained by this Report.
     ///
     /// This iterator will visit every error in the cause chain of this error
@@ -376,18 +384,6 @@ impl Report {
 
     /// Get a mutable reference to the Handler for this Report.
     pub fn handler_mut(&mut self) -> &mut dyn ReportHandler {
-        self.inner.handler.as_mut().unwrap().as_mut()
-    }
-
-    /// Get a reference to the Handler for this Report.
-    #[doc(hidden)]
-    pub fn context(&self) -> &dyn ReportHandler {
-        self.inner.handler.as_ref().unwrap().as_ref()
-    }
-
-    /// Get a mutable reference to the Handler for this Report.
-    #[doc(hidden)]
-    pub fn context_mut(&mut self) -> &mut dyn ReportHandler {
         self.inner.handler.as_mut().unwrap().as_mut()
     }
 }
