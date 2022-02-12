@@ -288,6 +288,56 @@ fn test_snippet_enum() {
 }
 
 #[test]
+fn field_help() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
+    struct FooStruct {
+        #[help]
+        help: &'static str,
+    }
+
+    assert_eq!(
+        "try doing it better".to_string(),
+        FooStruct {
+            help: "try doing it better"
+        }
+        .help()
+        .unwrap()
+        .to_string()
+    );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    enum FooEnum {
+        #[diagnostic(code(foo::x))]
+        X(#[help] String),
+        #[diagnostic(code(foo::y))]
+        Y {
+            #[help]
+            help: String,
+        },
+    }
+
+    assert_eq!(
+        "try doing it better".to_string(),
+        FooEnum::X("try doing it better".to_string())
+            .help()
+            .unwrap()
+            .to_string()
+    );
+    assert_eq!(
+        "try doing it better".to_string(),
+        FooEnum::Y {
+            help: "try doing it better".to_string()
+        }
+        .help()
+        .unwrap()
+        .to_string()
+    );
+}
+
+#[test]
 fn url_basic() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]

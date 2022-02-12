@@ -4,6 +4,7 @@ use syn::{punctuated::Punctuated, DeriveInput, Token};
 
 use crate::code::Code;
 use crate::diagnostic_arg::DiagnosticArg;
+use crate::field_help::FieldHelp;
 use crate::forward::{Forward, WhichFn};
 use crate::help::Help;
 use crate::label::Labels;
@@ -63,6 +64,7 @@ pub struct DiagnosticConcreteArgs {
     pub help: Option<Help>,
     pub labels: Option<Labels>,
     pub source_code: Option<SourceCode>,
+    pub field_help: Option<FieldHelp>,
     pub url: Option<Url>,
     pub forward: Option<Forward>,
     pub related: Option<Related>,
@@ -105,6 +107,7 @@ impl DiagnosticConcreteArgs {
         }
         let labels = Labels::from_fields(fields)?;
         let source_code = SourceCode::from_fields(fields)?;
+        let field_help = FieldHelp::from_fields(fields)?;
         let related = Related::from_fields(fields)?;
         let concrete = DiagnosticConcreteArgs {
             code,
@@ -115,6 +118,7 @@ impl DiagnosticConcreteArgs {
             url,
             forward,
             source_code,
+            field_help,
         };
         Ok(concrete)
     }
@@ -245,11 +249,6 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::Code));
-                        let help_body = concrete
-                            .help
-                            .as_ref()
-                            .and_then(|x| x.gen_struct(fields))
-                            .or_else(|| forward(WhichFn::Help));
                         let sev_body = concrete
                             .severity
                             .as_ref()
@@ -275,6 +274,23 @@ impl Diagnostic {
                             .as_ref()
                             .and_then(|x| x.gen_struct(fields))
                             .or_else(|| forward(WhichFn::SourceCode));
+
+                        let help_body = match &**concrete {
+                            DiagnosticConcreteArgs {
+                                help: Some(_),
+                                field_help: Some(_),
+                                ..
+                            } => {
+                                panic!("help and field_help are mutually exclusive")
+                            }
+                            DiagnosticConcreteArgs { help: Some(x), .. } => x.gen_struct(fields),
+                            DiagnosticConcreteArgs {
+                                field_help: Some(x),
+                                ..
+                            } => x.gen_struct(fields),
+                            _ => forward(WhichFn::Help),
+                        };
+
                         quote! {
                             impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
                                 #code_body
@@ -296,7 +312,7 @@ impl Diagnostic {
             } => {
                 let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
                 let code_body = Code::gen_enum(variants);
-                let help_body = Help::gen_enum(variants);
+                let help_body = FieldHelp::gen_enum(variants).or_else(|| Help::gen_enum(variants));
                 let sev_body = Severity::gen_enum(variants);
                 let labels_body = Labels::gen_enum(variants);
                 let src_body = SourceCode::gen_enum(variants);
