@@ -155,9 +155,10 @@ impl DiagnosticDefArgs {
 
 impl Diagnostic {
     pub fn from_derive_input(input: DeriveInput) -> Result<Self, syn::Error> {
+        let input_attr = input.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
-                if let Some(attr) = input.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
+                if let Some(attr) = input_attr {
                     let args =
                         DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?;
                     Diagnostic::Struct {
@@ -178,7 +179,8 @@ impl Diagnostic {
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 let mut vars = Vec::new();
                 for var in variants {
-                    if let Some(attr) = var.attrs.iter().find(|x| x.path.is_ident("diagnostic")) {
+                    let variant_attr = var.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
+                    if let Some(attr) = variant_attr.or(input_attr) {
                         let args = DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?;
                         vars.push(DiagnosticDef {
                             ident: var.ident,
