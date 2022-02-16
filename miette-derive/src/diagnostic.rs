@@ -158,36 +158,33 @@ impl Diagnostic {
         let input_attr = input.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
-                if let Some(attr) = input_attr {
-                    let args =
-                        DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?;
-                    Diagnostic::Struct {
-                        fields: data_struct.fields,
-                        ident: input.ident,
-                        generics: input.generics,
-                        args,
-                    }
+                let args = if let Some(attr) = input_attr {
+                    DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?
                 } else {
-                    Diagnostic::Struct {
-                        fields: data_struct.fields,
-                        ident: input.ident,
-                        generics: input.generics,
-                        args: DiagnosticDefArgs::Concrete(Default::default()),
-                    }
+                    DiagnosticDefArgs::Concrete(Default::default())
+                };
+
+                Diagnostic::Struct {
+                    fields: data_struct.fields,
+                    ident: input.ident,
+                    generics: input.generics,
+                    args,
                 }
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 let mut vars = Vec::new();
                 for var in variants {
                     let variant_attr = var.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
-                    if let Some(attr) = variant_attr.or(input_attr) {
-                        let args = DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?;
-                        vars.push(DiagnosticDef {
-                            ident: var.ident,
-                            fields: var.fields,
-                            args,
-                        });
-                    }
+                    let args = if let Some(attr) = variant_attr.or(input_attr) {
+                        DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?
+                    } else {
+                        DiagnosticDefArgs::Concrete(Default::default())
+                    };
+                    vars.push(DiagnosticDef {
+                        ident: var.ident,
+                        fields: var.fields,
+                        args,
+                    });
                 }
                 Diagnostic::Enum {
                     ident: input.ident,
