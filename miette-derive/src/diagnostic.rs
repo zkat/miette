@@ -69,100 +69,133 @@ pub struct DiagnosticConcreteArgs {
 }
 
 impl DiagnosticConcreteArgs {
-    fn parse(
-        _ident: &syn::Ident,
-        fields: &syn::Fields,
-        attr: &syn::Attribute,
-        args: impl Iterator<Item = DiagnosticArg>,
-    ) -> Result<Self, syn::Error> {
-        let mut code = None;
-        let mut severity = None;
-        let mut help = None;
-        let mut url = None;
-        let mut forward = None;
-        for arg in args {
-            match arg {
-                DiagnosticArg::Transparent => {
-                    return Err(syn::Error::new_spanned(attr, "transparent not allowed"));
-                }
-                DiagnosticArg::Forward(to_field) => {
-                    forward = Some(to_field);
-                }
-                DiagnosticArg::Code(new_code) => {
-                    // TODO: error on multiple?
-                    code = Some(new_code);
-                }
-                DiagnosticArg::Severity(sev) => {
-                    severity = Some(sev);
-                }
-                DiagnosticArg::Help(hl) => {
-                    help = Some(hl);
-                }
-                DiagnosticArg::Url(u) => {
-                    url = Some(u);
-                }
-            }
-        }
+    fn for_fields(fields: &syn::Fields) -> Result<Self, syn::Error> {
         let labels = Labels::from_fields(fields)?;
         let source_code = SourceCode::from_fields(fields)?;
         let related = Related::from_fields(fields)?;
-        let concrete = DiagnosticConcreteArgs {
-            code,
-            help,
+        Ok(DiagnosticConcreteArgs {
+            code: None,
+            help: None,
             related,
-            severity,
+            severity: None,
             labels,
-            url,
-            forward,
+            url: None,
+            forward: None,
             source_code,
-        };
-        Ok(concrete)
+        })
+    }
+
+    fn add_args(
+        &mut self,
+        attr: &syn::Attribute,
+        args: impl Iterator<Item = DiagnosticArg>,
+        errors: &mut Vec<syn::Error>,
+    ) {
+        for arg in args {
+            match arg {
+                DiagnosticArg::Transparent => {
+                    errors.push(syn::Error::new_spanned(attr, "transparent not allowed"));
+                }
+                DiagnosticArg::Forward(to_field) => {
+                    self.forward = Some(to_field);
+                }
+                DiagnosticArg::Code(new_code) => {
+                    // TODO: error on multiple?
+                    self.code = Some(new_code);
+                }
+                DiagnosticArg::Severity(sev) => {
+                    self.severity = Some(sev);
+                }
+                DiagnosticArg::Help(hl) => {
+                    self.help = Some(hl);
+                }
+                DiagnosticArg::Url(u) => {
+                    self.url = Some(u);
+                }
+            }
+        }
     }
 }
 
 impl DiagnosticDefArgs {
     fn parse(
-        ident: &syn::Ident,
+        _ident: &syn::Ident,
         fields: &syn::Fields,
-        attr: &syn::Attribute,
+        attrs: &[&syn::Attribute],
         allow_transparent: bool,
     ) -> syn::Result<Self> {
-        let args =
-            attr.parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated)?;
-        if allow_transparent
-            && args.len() == 1
-            && matches!(args.first(), Some(DiagnosticArg::Transparent))
-        {
-            let forward = Forward::for_transparent_field(fields)?;
-            return Ok(Self::Transparent(forward));
-        } else if args.iter().any(|x| matches!(x, DiagnosticArg::Transparent)) {
-            return Err(syn::Error::new_spanned(
-                attr,
-                if allow_transparent {
-                    "diagnostic(transparent) not allowed in combination with other args"
-                } else {
-                    "diagnostic(transparent) not allowed here"
-                },
-            ));
+        let mut errors = Vec::new();
+
+        // Handle the only condition where Transparent is allowed
+        if allow_transparent && attrs.len() == 1 {
+            if let Ok(args) =
+                attrs[0].parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated)
+            {
+                if matches!(args.first(), Some(DiagnosticArg::Transparent)) {
+                    let forward = Forward::for_transparent_field(fields)?;
+                    return Ok(Self::Transparent(forward));
+                }
+            }
         }
-        let args = args
-            .into_iter()
-            .filter(|x| !matches!(x, DiagnosticArg::Transparent));
-        let concrete = DiagnosticConcreteArgs::parse(ident, fields, attr, args)?;
-        Ok(DiagnosticDefArgs::Concrete(Box::new(concrete)))
+
+        // Create errors for any appearances of Transparent
+        let error_message = if allow_transparent {
+            "diagnostic(transparent) not allowed in combination with other args"
+        } else {
+            "diagnostic(transparent) not allowed here"
+        };
+        fn is_transparent(d: &DiagnosticArg) -> bool {
+            matches!(d, DiagnosticArg::Transparent)
+        }
+
+        let mut concrete = DiagnosticConcreteArgs::for_fields(fields)?;
+        for attr in attrs {
+            let args =
+                attr.parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated);
+            let args = match args {
+                Ok(args) => args,
+                Err(error) => {
+                    errors.push(error);
+                    continue;
+                }
+            };
+
+            if args.iter().any(is_transparent) {
+                errors.push(syn::Error::new_spanned(attr, error_message));
+            }
+
+            let args = args
+                .into_iter()
+                .filter(|x| !matches!(x, DiagnosticArg::Transparent));
+
+            concrete.add_args(attr, args, &mut errors);
+        }
+
+        let combined_error = errors.into_iter().reduce(|mut lhs, rhs| {
+            lhs.combine(rhs);
+            lhs
+        });
+        if let Some(error) = combined_error {
+            Err(error)
+        } else {
+            Ok(DiagnosticDefArgs::Concrete(Box::new(concrete)))
+        }
     }
 }
 
 impl Diagnostic {
     pub fn from_derive_input(input: DeriveInput) -> Result<Self, syn::Error> {
-        let input_attr = input.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
+        let input_attrs = input.attrs.iter()
+            .filter(|x| x.path.is_ident("diagnostic"))
+            .collect::<Vec<&syn::Attribute>>();
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
-                let args = if let Some(attr) = input_attr {
-                    DiagnosticDefArgs::parse(&input.ident, &data_struct.fields, attr, true)?
-                } else {
-                    DiagnosticDefArgs::Concrete(Default::default())
-                };
+                let args = DiagnosticDefArgs::parse(
+                    &input.ident,
+                    &data_struct.fields,
+                    &input_attrs,
+                    true,
+                )?;
 
                 Diagnostic::Struct {
                     fields: data_struct.fields,
@@ -174,12 +207,11 @@ impl Diagnostic {
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 let mut vars = Vec::new();
                 for var in variants {
-                    let variant_attr = var.attrs.iter().find(|x| x.path.is_ident("diagnostic"));
-                    let args = if let Some(attr) = variant_attr.or(input_attr) {
-                        DiagnosticDefArgs::parse(&var.ident, &var.fields, attr, true)?
-                    } else {
-                        DiagnosticDefArgs::Concrete(Default::default())
-                    };
+                    let mut variant_attrs = input_attrs.clone();
+                    variant_attrs.extend(var.attrs.iter()
+                    .filter(|x| x.path.is_ident("diagnostic")));
+                    let args =
+                        DiagnosticDefArgs::parse(&var.ident, &var.fields, &variant_attrs, true)?;
                     vars.push(DiagnosticDef {
                         ident: var.ident,
                         fields: var.fields,
