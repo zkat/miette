@@ -1,5 +1,25 @@
 # `miette` Release Changelog
 
+<a name="4.0.0"></a>
+## 4.0.0 (2022-02-18)
+
+### Breaking Changes
+
+* **colors:** treat no-color mode as no-color instead of narratable (#94) ([9dcce5f1](https://github.com/zkat/miette/commit/9dcce5f1bdd76e7564d604ab8b87bbc7caad310a))
+    * **BREAKING CHANGE**: NO_COLOR no longer triggers the narrated handler. Use
+NO_GRAPHICS instead.
+* **derive:** Make derive macro `diagnostic` attribute more flexible. (#115) ([5b8b5478](https://github.com/zkat/miette/commit/5b8b5478b63e91a51fadec87c6fed3e60d192b60))
+    * **BREAKING CHANGE**: `diagnostic` attribute duplication will now error.
+
+### Features
+
+* **Report:** adds `.context()` method to the `Report` (#109) ([2649fd27](https://github.com/zkat/miette/commit/2649fd27c47893dc3ba2445a9932600d1b3d3e63))
+
+### Bug Fixes
+
+* **handlers:** Fix label position (#107) ([f158f4e3](https://github.com/zkat/miette/commit/f158f4e370bd25d589136a69058a6dff5e8aa468))
+
+
 <a name="3.3.0"></a>
 ## 3.3.0 (2022-01-08)
 
