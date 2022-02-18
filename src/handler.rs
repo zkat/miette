@@ -191,7 +191,7 @@ impl MietteHandlerOpts {
         } else if let Ok(env) = std::env::var("NO_GRAPHICS") {
             env == "0"
         } else {
-            false
+            true
         }
     }
 
