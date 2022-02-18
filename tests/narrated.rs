@@ -605,3 +605,62 @@ diagnostic code: oops::my::bad
     assert_eq!(expected, out);
     Ok(())
 }
+
+#[test]
+fn related_source_code_propagation() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[related]
+        related: Vec<InnerError>,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad))]
+    struct InnerError {
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src.clone()),
+        highlight: (9, 4).into(),
+        related: vec![InnerError {
+            highlight: (0, 6).into(),
+        }],
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops!
+    Diagnostic severity: error
+Begin snippet for bad_file.rs starting at line 1, column 1
+
+snippet line 1: source
+snippet line 2:   text
+    label at line 2, columns 3 to 6: this bit here
+snippet line 3:     here
+diagnostic help: try doing it better next time?
+diagnostic code: oops::my::bad
+
+Error: oops!
+    Diagnostic severity: error
+
+Begin snippet for bad_file.rs starting at line 1, column 1
+
+snippet line 1: source
+    label at line 1, columns 1 to 6: this bit here
+snippet line 2:   text
+diagnostic code: oops::my::bad
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
