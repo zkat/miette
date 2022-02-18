@@ -7,7 +7,8 @@ use std::error::Error as StdError;
 use super::Report;
 use super::ReportHandler;
 use crate::chain::Chain;
-use crate::Diagnostic;
+use crate::eyreish::wrapper::WithSourceCode;
+use crate::{Diagnostic, SourceCode};
 use core::ops::{Deref, DerefMut};
 
 impl Report {
@@ -385,6 +386,15 @@ impl Report {
     /// Get a mutable reference to the Handler for this Report.
     pub fn handler_mut(&mut self) -> &mut dyn ReportHandler {
         self.inner.handler.as_mut().unwrap().as_mut()
+    }
+
+    /// Provide source code for this error
+    pub fn with_source_code(self, source_code: impl SourceCode + Send + Sync + 'static) -> Report {
+        WithSourceCode {
+            source_code,
+            error: self,
+        }
+        .into()
     }
 }
 
