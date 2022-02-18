@@ -97,19 +97,33 @@ impl DiagnosticConcreteArgs {
                     errors.push(syn::Error::new_spanned(attr, "transparent not allowed"));
                 }
                 DiagnosticArg::Forward(to_field) => {
+                    if self.forward.is_some() {
+                        errors.push(syn::Error::new_spanned(attr, "forward has already been specified"));
+                    }
                     self.forward = Some(to_field);
                 }
                 DiagnosticArg::Code(new_code) => {
-                    // TODO: error on multiple?
+                    if self.code.is_some() {
+                        errors.push(syn::Error::new_spanned(attr, "code has already been specified"));
+                    }
                     self.code = Some(new_code);
                 }
                 DiagnosticArg::Severity(sev) => {
+                    if self.severity.is_some() {
+                        errors.push(syn::Error::new_spanned(attr, "severity has already been specified"));
+                    }
                     self.severity = Some(sev);
                 }
                 DiagnosticArg::Help(hl) => {
+                    if self.help.is_some() {
+                        errors.push(syn::Error::new_spanned(attr, "help has already been specified"));
+                    }
                     self.help = Some(hl);
                 }
                 DiagnosticArg::Url(u) => {
+                    if self.url.is_some() {
+                        errors.push(syn::Error::new_spanned(attr, "url has already been specified"));
+                    }
                     self.url = Some(u);
                 }
             }

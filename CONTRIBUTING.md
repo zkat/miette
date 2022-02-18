@@ -88,9 +88,11 @@ If you want to go the usual route and run the project locally, though:
 
 Then in your terminal:
 * `cd path/to/your/clone`
-* `cargo test`
+* `cargo test --features fancy`
 
 And you should be ready to go!
+
+**Note:** If you don't include the "fancy" feature, one of the doc-tests will fail.
 
 ## Contribute Documentation
 

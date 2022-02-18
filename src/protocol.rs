@@ -191,7 +191,7 @@ pub trait SourceCode: Send + Sync {
 /**
 A labeled [SourceSpan].
 */
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LabeledSpan {
     label: Option<String>,
     span: SourceSpan,
