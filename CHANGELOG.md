@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="4.0.1"></a>
+## 4.0.1 (2022-02-18)
+
+### Bug Fixes
+
+* **graphical:** boolean was messing up graphical display ([5c085b39](https://github.com/zkat/miette/commit/5c085b39e28ad87777135bcca30d2ac99039de39))
+
 <a name="4.0.0"></a>
 ## 4.0.0 (2022-02-18)
 
