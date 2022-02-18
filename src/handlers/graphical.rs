@@ -110,9 +110,10 @@ impl GraphicalReportHandler {
         self.render_header(f, diagnostic)?;
         writeln!(f)?;
         self.render_causes(f, diagnostic)?;
-        self.render_snippets(f, diagnostic)?;
+        let src = diagnostic.source_code();
+        self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
-        self.render_related(f, diagnostic)?;
+        self.render_related(f, diagnostic, src)?;
         if let Some(footer) = &self.footer {
             writeln!(f)?;
             let width = self.termwidth.saturating_sub(4);
@@ -226,6 +227,7 @@ impl GraphicalReportHandler {
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
+        parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
             writeln!(f)?;
@@ -234,9 +236,10 @@ impl GraphicalReportHandler {
                 self.render_header(f, rel)?;
                 writeln!(f)?;
                 self.render_causes(f, rel)?;
-                self.render_snippets(f, rel)?;
+                let src = rel.source_code().or(parent_src);
+                self.render_snippets(f, rel, src)?;
                 self.render_footer(f, rel)?;
-                self.render_related(f, rel)?;
+                self.render_related(f, rel, src)?;
             }
         }
         Ok(())
@@ -246,8 +249,9 @@ impl GraphicalReportHandler {
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
+        opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
-        if let Some(source) = diagnostic.source_code() {
+        if let Some(source) = opt_source {
             if let Some(labels) = diagnostic.labels() {
                 let mut labels = labels.collect::<Vec<_>>();
                 labels.sort_unstable_by_key(|l| l.inner().offset());

@@ -58,9 +58,10 @@ impl NarratableReportHandler {
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
         self.render_causes(f, diagnostic)?;
-        self.render_snippets(f, diagnostic)?;
+        let src = diagnostic.source_code();
+        self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
-        self.render_related(f, diagnostic)?;
+        self.render_related(f, diagnostic, src)?;
         if let Some(footer) = &self.footer {
             writeln!(f, "{}", footer)?;
         }
@@ -105,6 +106,7 @@ impl NarratableReportHandler {
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
+        parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
             writeln!(f)?;
@@ -113,9 +115,10 @@ impl NarratableReportHandler {
                 self.render_header(f, rel)?;
                 writeln!(f)?;
                 self.render_causes(f, rel)?;
-                self.render_snippets(f, rel)?;
+                let src = rel.source_code().or(parent_src);
+                self.render_snippets(f, rel, src)?;
                 self.render_footer(f, rel)?;
-                self.render_related(f, rel)?;
+                self.render_related(f, rel, src)?;
             }
         }
         Ok(())
@@ -125,8 +128,9 @@ impl NarratableReportHandler {
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
+        source_code: Option<&dyn SourceCode>,
     ) -> fmt::Result {
-        if let Some(source) = diagnostic.source_code() {
+        if let Some(source) = source_code {
             if let Some(labels) = diagnostic.labels() {
                 let mut labels = labels.collect::<Vec<_>>();
                 labels.sort_unstable_by_key(|l| l.inner().offset());
