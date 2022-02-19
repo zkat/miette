@@ -56,7 +56,7 @@ impl Related {
                     quote! {
                         Self::#ident #display_pat => {
                             std::option::Option::Some(std::boxed::Box::new(
-                                #rel.iter().map(|x| -> &(dyn Diagnostic) { &*x })
+                                #rel.iter().map(|x| -> &(dyn miette::Diagnostic) { &*x })
                             ))
                         }
                     }
@@ -69,7 +69,7 @@ impl Related {
         let rel = &self.0;
         Some(quote! {
             fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
-                std::option::Option::Some(std::boxed::Box::new(self.#rel.iter().map(|x| -> &(dyn Diagnostic) { &*x })))
+                std::option::Option::Some(std::boxed::Box::new(self.#rel.iter().map(|x| -> &(dyn miette::Diagnostic) { &*x })))
             }
         })
     }
