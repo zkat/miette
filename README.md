@@ -42,6 +42,7 @@ and such might not want.
   - [... diagnostic code URLs](#-diagnostic-code-urls)
   - [... snippets](#-snippets)
   - [... multiple related errors](#-multiple-related-errors)
+  - [... delayed source code](#-delayed-source-code)
   - [... handler options](#-handler-options)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
@@ -372,6 +373,86 @@ use thiserror::Error;
 struct MyError {
     #[related]
     others: Vec<MyError>,
+}
+```
+
+### ... delayed source code
+
+Sometimes it makes sense to add source code to the error message later. One
+option is to use [`with_source_code`](Report::with_source_code) method for
+that:
+
+```rust,no_run
+use miette::{Diagnostic, SourceSpan};
+use thiserror::Error;
+
+#[derive(Diagnostic, Debug, Error)]
+#[error("oops")]
+#[diagnostic()]
+pub struct MyErrorType {
+    // Note: label but no source code
+    #[label]
+    err_span: SourceSpan,
+}
+
+fn do_something() -> miette::Result<()> {
+    // This function emits actual error with label
+    return Err(MyErrorType { err_span: (7..11).into() })?;
+}
+
+fn main() -> miette::Result<()> {
+    do_something().map_err(|error| {
+        // And this code provides the source code for inner error
+        error.with_source_code(String::from("source code"))
+    })
+}
+
+```
+
+Also source code can be provided by a wrapper type. This is especially useful
+in combination with `related`, when multiple errors should be emitted at the
+same time:
+
+```rust,no_run
+use miette::{Report, Diagnostic, SourceSpan};
+use thiserror::Error;
+
+#[derive(Diagnostic, Debug, Error)]
+#[error("oops")]
+#[diagnostic()]
+pub struct InnerError {
+    // Note: label but no source code
+    #[label]
+    err_span: SourceSpan,
+}
+
+#[derive(Diagnostic, Debug, Error)]
+#[error("oops: multiple errors")]
+#[diagnostic()]
+pub struct MultiError {
+    // Note source code by no labels
+    #[source_code]
+    source_code: String,
+    // The source code above is used for these errors
+    #[related]
+    related: Vec<InnerError>,
+}
+
+fn do_something() -> Result<(), Vec<InnerError>> {
+    Err(vec![
+        InnerError { err_span: (0..6).into() },
+        InnerError { err_span: (7..11).into() },
+    ])
+}
+
+fn main() -> miette::Result<()> {
+    do_something().map_err(|err_list| {
+        MultiError {
+            source_code: "source code".into(),
+            related: err_list,
+        }
+    })?;
+    Ok(())
 }
 ```
 
