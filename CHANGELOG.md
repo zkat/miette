@@ -1,5 +1,19 @@
 # `miette` Release Changelog
 
+<a name="4.1.0"></a>
+## 4.1.0 (2022-02-20)
+
+`.with_source_code()` is here!!
+
+### Features
+
+* **report:** add `with_source_code` ([50519264](https://github.com/zkat/miette/commit/50519264d47d35ecbbe4846cf7d64139854adf6c))
+* **handlers:** propagate source code to related errors ([3a17fcea](https://github.com/zkat/miette/commit/3a17fceabb0641c3d44f73a62b8116cc87d3c6bb))
+
+### Bug Fixes
+
+* **derive:** absolute path references to Diagnostic (#118) ([6eb3d2d8](https://github.com/zkat/miette/commit/6eb3d2d8a63bc38a53a472932a476b78c4fdb34c))
+
 <a name="4.0.1"></a>
 ## 4.0.1 (2022-02-18)
 
