@@ -1,6 +1,6 @@
 use std::fmt::{self, Write};
 
-use crate::{protocol::Diagnostic, ReportHandler, Severity};
+use crate::{protocol::Diagnostic, ReportHandler, Severity, SourceCode};
 
 /**
 [ReportHandler] that renders json output.
@@ -63,6 +63,15 @@ impl JSONReportHandler {
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
+        self._render_report(f, diagnostic, None)
+    }
+
+    fn _render_report(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+        parent_src: Option<&dyn SourceCode>,
+    ) -> fmt::Result {
         write!(f, r#"{{"message": "{}","#, escape(&diagnostic.to_string()))?;
         if let Some(code) = diagnostic.code() {
             write!(f, r#""code": "{}","#, escape(&code.to_string()))?;
@@ -79,8 +88,9 @@ impl JSONReportHandler {
         if let Some(help) = diagnostic.help() {
             write!(f, r#""help": "{}","#, escape(&help.to_string()))?;
         }
-        if diagnostic.source_code().is_some() {
-            self.render_snippets(f, diagnostic)?;
+        let src = diagnostic.source_code().or(parent_src);
+        if let Some(src) = src {
+            self.render_snippets(f, diagnostic, src)?;
         }
         if let Some(labels) = diagnostic.labels() {
             write!(f, r#""labels": ["#)?;
@@ -114,7 +124,7 @@ impl JSONReportHandler {
                 } else {
                     add_comma = true;
                 }
-                self.render_report(f, related)?;
+                self._render_report(f, related, src)?;
             }
             write!(f, "]")?;
         } else {
@@ -127,14 +137,13 @@ impl JSONReportHandler {
         &self,
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
+        source: &dyn SourceCode,
     ) -> fmt::Result {
-        if let Some(source) = diagnostic.source_code() {
-            if let Some(mut labels) = diagnostic.labels() {
-                if let Some(label) = labels.next() {
-                    if let Ok(span_content) = source.read_span(label.inner(), 0, 0) {
-                        let filename = span_content.name().unwrap_or_default();
-                        return write!(f, r#""filename": "{}","#, escape(filename));
-                    }
+        if let Some(mut labels) = diagnostic.labels() {
+            if let Some(label) = labels.next() {
+                if let Ok(span_content) = source.read_span(label.inner(), 0, 0) {
+                    let filename = span_content.name().unwrap_or_default();
+                    return write!(f, r#""filename": "{}","#, escape(filename));
                 }
             }
         }
