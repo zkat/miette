@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="4.2.0"></a>
+## 4.2.0 (2022-02-22)
+
+### Features
+
+* **derive:** allow `Report` in `related` (#121) ([75d4505e](https://github.com/zkat/miette/commit/75d4505e7d55e816cac071eb126213b72bf48982))
+
 <a name="4.1.0"></a>
 ## 4.1.0 (2022-02-20)
 
