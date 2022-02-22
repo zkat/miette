@@ -727,3 +727,9 @@ impl AsRef<dyn Diagnostic> for Report {
         &**self
     }
 }
+
+impl std::borrow::Borrow<dyn Diagnostic> for Report {
+    fn borrow(&self) -> &(dyn Diagnostic + 'static) {
+        self.as_ref()
+    }
+}

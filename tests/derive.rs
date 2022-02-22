@@ -1,4 +1,4 @@
-use miette::{Diagnostic, Severity, SourceSpan};
+use miette::{Diagnostic, Report, Severity, SourceSpan};
 use thiserror::Error;
 
 #[test]
@@ -30,6 +30,17 @@ fn related() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("welp2")]
     struct Baz;
+}
+
+#[test]
+fn related_report() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("welp")]
+    #[diagnostic(code(foo::bar::baz))]
+    struct Foo {
+        #[related]
+        related: Vec<Report>,
+    }
 }
 
 #[test]
