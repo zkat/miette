@@ -809,4 +809,99 @@ mod json_report_handler {
         assert_eq!(expected, out);
         Ok(())
     }
+
+    #[test]
+    fn related_source_code_propagation() -> Result<(), MietteError> {
+        #[derive(Debug, Diagnostic, Error)]
+        #[error("oops!")]
+        #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+        struct MyBad {
+            #[source_code]
+            src: NamedSource,
+            #[label("this bit here")]
+            highlight: SourceSpan,
+            #[related]
+            related: Vec<InnerError>,
+        }
+
+        #[derive(Debug, Diagnostic, Error)]
+        #[error("oops!")]
+        #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+        struct InnerError {
+            #[label("this bit here")]
+            highlight: SourceSpan,
+        }
+
+        let src = "source\n  text\n    here".to_string();
+        let err = MyBad {
+            src: NamedSource::new("bad_file.rs", src.clone()),
+            highlight: (9, 4).into(),
+            related: vec![
+                InnerError {
+                    highlight: (0, 6).into(),
+                },
+                InnerError {
+                    highlight: (0, 6).into(),
+                },
+            ],
+        };
+        let out = fmt_report(err.into());
+        println!("Error: {}", out);
+        let expected: String = r#"
+        {
+            "message": "oops!",
+            "code": "oops::my::bad",
+            "severity": "error",
+            "help": "try doing it better next time?",
+            "filename": "bad_file.rs",
+            "labels": [
+                {
+                    "label": "this bit here",
+                    "span": {
+                        "offset": 9,
+                        "length": 4
+                    }
+                }
+            ],
+            "related": [{
+                "message": "oops!",
+                "code": "oops::my::bad",
+                "severity": "error",
+                "help": "try doing it better next time?",
+                "filename": "bad_file.rs",
+                "labels": [
+                    {
+                        "label": "this bit here",
+                        "span": {
+                            "offset": 0,
+                            "length": 6
+                        }
+                    }
+                ],
+                "related": []
+            },{
+                "message": "oops!",
+                "code": "oops::my::bad",
+                "severity": "error",
+                "help": "try doing it better next time?",
+                "filename": "bad_file.rs",
+                "labels": [
+                    {
+                        "label": "this bit here",
+                        "span": {
+                            "offset": 0,
+                            "length": 6
+                        }
+                    }
+                ],
+                "related": []
+            }]
+        }"#
+        .lines()
+        .into_iter()
+        .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
+        .collect();
+        assert_eq!(expected, out);
+        Ok(())
+    }
 }
