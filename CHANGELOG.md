@@ -1,5 +1,14 @@
 # `miette` Release Changelog
 
+<a name="4.2.1"></a>
+## 4.2.1 (2022-02-25)
+
+### Bug Fixes
+
+* **handlers:** source code propagation for JSON handler (#122) ([50bcec90](https://github.com/zkat/miette/commit/50bcec909aa60c20d4981484195130fbb9f3cacb))
+* **clippy:** 1.59.0 clippy fix ([fa5b5fee](https://github.com/zkat/miette/commit/fa5b5fee549e53e9cf0c1d946bef242eebee6c48))
+* **docs:** Docs overhaul (#124) ([5d23c0d6](https://github.com/zkat/miette/commit/5d23c0d61d0c7e778579d4d290b1f6e2c53fba31))
+
 <a name="4.2.0"></a>
 ## 4.2.0 (2022-02-22)
 
