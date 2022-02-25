@@ -1,12 +1,15 @@
-you run miette? You run her code like the software? Oh. Oh! Error code for
+
+# `miette`
+
+You run miette? You run her code like the software? Oh. Oh! Error code for
 coder! Error code for One Thousand Lines!
 
-## About
+### About
 
 `miette` is a diagnostic library for Rust. It includes a series of
 traits/protocols that allow you to hook into its error reporting facilities,
-and even write your own error reports! It lets you define error types that can
-print out like this (or in any format you like!):
+and even write your own error reports! It lets you define error types that
+can print out like this (or in any format you like!):
 
 <img src="https://raw.githubusercontent.com/zkat/miette/main/images/serde_json.png" alt="Hi! miette also includes a screen-reader-oriented diagnostic printer that's enabled in various situations, such as when you use NO_COLOR or CLICOLOR settings, or on CI. This behavior is also fully configurable and customizable. For example, this is what this particular diagnostic will look like when the narrated printer is enabled:
 \
@@ -19,17 +22,17 @@ at line 1, column 1659
 snippet line 1: gs&quot;:[&quot;json&quot;],&quot;title&quot;:&quot;&quot;,&quot;version&quot;:&quot;1.0.0&quot;},&quot;packageContent&quot;:&quot;https://api.nuget.o
     highlight starting at line 1, column 1699: last parsing location
 \
-diagnostic help: This is a bug. It might be in ruget, or it might be in the source you're using,
-but it's definitely a bug and should be reported.
+diagnostic help: This is a bug. It might be in ruget, or it might be in the
+source you're using, but it's definitely a bug and should be reported.
 diagnostic error code: ruget::api::bad_json
 " />
 
 > **NOTE: You must enable the `"fancy"` crate feature to get fancy report
-output like in the screenshots above.** You should only do this in your toplevel
-crate, as the fancy feature pulls in a number of dependencies that libraries
-and such might not want.
+output like in the screenshots above.** You should only do this in your
+toplevel crate, as the fancy feature pulls in a number of dependencies that
+libraries and such might not want.
 
-## Table of Contents <!-- omit in toc -->
+### Table of Contents <!-- omit in toc -->
 
 - [About](#about)
 - [Features](#features)
@@ -47,30 +50,32 @@ and such might not want.
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
-## Features
+### Features
 
-- Generic [`Diagnostic`] protocol, compatible (and dependent on) `std::error::Error`.
+- Generic [`Diagnostic`] protocol, compatible (and dependent on)
+  [`std::error::Error`].
 - Unique error codes on every [`Diagnostic`].
 - Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
 - Replacements for [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)
-  types [`Result`], [`Report`] and the [`miette!`] macro for the `anyhow!`/`eyre!`
-  macros.
-- Generic support for arbitrary [`SourceCode`]s for snippet data, with default
-  support for `String`s included.
+  types [`Result`], [`Report`] and the [`miette!`] macro for the
+  `anyhow!`/`eyre!` macros.
+- Generic support for arbitrary [`SourceCode`]s for snippet data, with
+  default support for `String`s included.
 
-The `miette` crate also comes bundled with a default [`ReportHandler`] with the following features:
+The `miette` crate also comes bundled with a default [`ReportHandler`] with
+the following features:
 
 - Fancy graphical [diagnostic output](#about), using ANSI/Unicode text
 - single- and multi-line highlighting support
 - Screen reader/braille support, gated on [`NO_COLOR`](http://no-color.org/),
   and other heuristics.
-- Fully customizable graphical theming (or overriding the printers entirely).
+- Fully customizable graphical theming (or overriding the printers
+  entirely).
 - Cause chain printing
-- Turns diagnostic codes into links in [supported
-  terminals](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda).
+- Turns diagnostic codes into links in [supported terminals](https://gist.github.com/egmontkob/eb114294efbcd5adb1944c9f3cb5feda).
 
-## Installing
+### Installing
 
 Using [`cargo-edit`](https://crates.io/crates/cargo-edit):
 
@@ -84,7 +89,7 @@ If you want to use the fancy printer in all these screenshots:
 $ cargo add miette --features fancy
 ```
 
-## Example
+### Example
 
 ```rust
 /*
@@ -100,7 +105,7 @@ use thiserror::Error;
 #[diagnostic(
     code(oops::my::bad),
     url(docsrs),
-    help("try doing it better next time?"),
+    help("try doing it better next time?")
 )]
 struct MyBad {
     // The Source that we're gonna be printing snippets out of.
@@ -119,7 +124,7 @@ Use this `Result` type (or its expanded version) as the return type
 throughout your app (but NOT your libraries! Those should always return
 concrete types!).
 */
-use miette::{Result, NamedSource};
+use miette::{NamedSource, Result};
 fn this_fails() -> Result<()> {
     // You can use plain strings as a `Source`, or anything that implements
     // the one-method `Source` trait.
@@ -166,9 +171,9 @@ diagnostic help: Change int or string to be the right types and try again.
 diagnostic code: nu::parser::unsupported_operation
 For more details, see https://docs.rs/nu-parser/0.1.0/nu-parser/enum.ParseError.html#variant.UnsupportedOperation">
 
-## Using
+### Using
 
-### ... in libraries
+#### ... in libraries
 
 `miette` is _fully compatible_ with library usage. Consumers who don't know
 about, or don't want, `miette` features can safely use its error types as
@@ -177,14 +182,14 @@ regular [`std::error::Error`].
 We highly recommend using something like [`thiserror`](https://docs.rs/thiserror)
 to define unique error types and error wrappers for your library.
 
-While `miette` integrates smoothly with `thiserror`, it is _not required_. If
-you don't want to use the [`Diagnostic`] derive macro, you can implement the
-trait directly, just like with `std::error::Error`.
+While `miette` integrates smoothly with `thiserror`, it is _not required_.
+If you don't want to use the [`Diagnostic`] derive macro, you can implement
+the trait directly, just like with `std::error::Error`.
 
 ```rust
 // lib/error.rs
-use thiserror::Error;
 use miette::Diagnostic;
+use thiserror::Error;
 
 #[derive(Error, Diagnostic, Debug)]
 pub enum MyLibError {
@@ -202,19 +207,19 @@ Then, return this error type from all your fallible public APIs. It's a best
 practice to wrap any "external" error types in your error `enum` instead of
 using something like [`Report`] in a library.
 
-### ... in application code
+#### ... in application code
 
-Application code tends to work a little differently than libraries. You don't
-always need or care to define dedicated error wrappers for errors coming from
-external libraries and tools.
+Application code tends to work a little differently than libraries. You
+don't always need or care to define dedicated error wrappers for errors
+coming from external libraries and tools.
 
 For this situation, `miette` includes two tools: [`Report`] and
 [`IntoDiagnostic`]. They work in tandem to make it easy to convert regular
 `std::error::Error`s into [`Diagnostic`]s. Additionally, there's a
 [`Result`] type alias that you can use to be more terse.
 
-When dealing with non-`Diagnostic` types, you'll want to `.into_diagnostic()`
-them:
+When dealing with non-`Diagnostic` types, you'll want to
+`.into_diagnostic()` them:
 
 ```rust
 // my_app/lib/my_internal_file.rs
@@ -226,9 +231,10 @@ pub fn some_tool() -> Result<Version> {
 }
 ```
 
-`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` traits that
-you can import to add ad-hoc context messages to your `Diagnostic`s, as well,
-though you'll still need to use `.into_diagnostic()` to make use of it:
+`miette` also includes an `anyhow`/`eyre`-style `Context`/`WrapErr` traits
+that you can import to add ad-hoc context messages to your `Diagnostic`s, as
+well, though you'll still need to use `.into_diagnostic()` to make use of
+it:
 
 ```rust
 // my_app/lib/my_internal_file.rs
@@ -236,23 +242,26 @@ use miette::{IntoDiagnostic, Result, WrapErr};
 use semver::Version;
 
 pub fn some_tool() -> Result<Version> {
-    Ok("1.2.x".parse().into_diagnostic().wrap_err("Parsing this tool's semver version failed.")?)
+    Ok("1.2.x"
+        .parse()
+        .into_diagnostic()
+        .wrap_err("Parsing this tool's semver version failed.")?)
 }
 ```
 
-### ... in `main()`
+#### ... in `main()`
 
 `main()` is just like any other part of your application-internal code. Use
 `Result` as your return value, and it will pretty-print your diagnostics
 automatically.
 
 > **NOTE:** You must enable the `"fancy"` crate feature to get fancy report
-output like in the screenshots here.** You should only do this in your toplevel
-crate, as the fancy feature pulls in a number of dependencies that libraries
-and such might not want.
+output like in the screenshots here.** You should only do this in your
+toplevel crate, as the fancy feature pulls in a number of dependencies that
+libraries and such might not want.
 
 ```rust
-use miette::{Result, IntoDiagnostic};
+use miette::{IntoDiagnostic, Result};
 use semver::Version;
 
 fn pretend_this_is_main() -> Result<()> {
@@ -270,23 +279,24 @@ enabled:
 miette = { version = "X.Y.Z", features = ["fancy"] }
 ```
 
-### ... diagnostic code URLs
+#### ... diagnostic code URLs
 
-`miette` supports providing a URL for individual diagnostics. This URL will be
-displayed as an actual link in supported terminals, like so:
+`miette` supports providing a URL for individual diagnostics. This URL will
+be displayed as an actual link in supported terminals, like so:
 
 <img
 src="https://raw.githubusercontent.com/zkat/miette/main/images/code_linking.png"
-alt=" Example showing the graphical report printer for miette pretty-printing
-an error code. The code is underlined and followed by text saying to 'click
-here'. A hover tooltip shows a full-fledged URL that can be Ctrl+Clicked to
-open in a browser.
+alt=" Example showing the graphical report printer for miette
+pretty-printing an error code. The code is underlined and followed by text
+saying to 'click here'. A hover tooltip shows a full-fledged URL that can be
+Ctrl+Clicked to open in a browser.
 \
 This feature is also available in the narratable printer. It will add a line
 after printing the error code showing a plain URL that you can visit.
 ">
 
-To use this, you can add a `url()` sub-param to your `#[diagnostic]` attribute:
+To use this, you can add a `url()` sub-param to your `#[diagnostic]`
+attribute:
 
 ```rust
 use miette::Diagnostic;
@@ -303,10 +313,10 @@ struct MyErr;
 ```
 
 Additionally, if you're developing a library and your error type is exported
-from your crate's top level, you can use a special `url(docsrs)` option instead
-of manually constructing the URL. This will automatically create a link to this
-diagnostic on `docs.rs`, so folks can just go straight to your (very high
-quality and detailed!) documentation on this diagnostic:
+from your crate's top level, you can use a special `url(docsrs)` option
+instead of manually constructing the URL. This will automatically create a
+link to this diagnostic on `docs.rs`, so folks can just go straight to your
+(very high quality and detailed!) documentation on this diagnostic:
 
 ```rust
 use miette::Diagnostic;
@@ -322,21 +332,21 @@ use thiserror::Error;
 struct MyErr;
 ```
 
-### ... snippets
+#### ... snippets
 
 Along with its general error handling and reporting features, `miette` also
-includes facilities for adding error spans/annotations/labels to your output.
-This can be very useful when an error is syntax-related, but you can even use
-it to print out sections of your own source code!
+includes facilities for adding error spans/annotations/labels to your
+output. This can be very useful when an error is syntax-related, but you can
+even use it to print out sections of your own source code!
 
-To achieve this, `miette` defines its own lightweight [`SourceSpan`] type. This
-is a basic byte-offset and length into an associated [`SourceCode`] and, along
-with the latter, gives `miette` all the information it needs to pretty-print
-some snippets! You can also use your own `Into<SourceSpan>` types as label
-spans.
+To achieve this, `miette` defines its own lightweight [`SourceSpan`] type.
+This is a basic byte-offset and length into an associated [`SourceCode`]
+and, along with the latter, gives `miette` all the information it needs to
+pretty-print some snippets! You can also use your own `Into<SourceSpan>`
+types as label spans.
 
-The easiest way to define errors like this is to use the `derive(Diagnostic)`
-macro:
+The easiest way to define errors like this is to use the
+`derive(Diagnostic)` macro:
 
 ```rust
 use miette::{Diagnostic, SourceSpan};
@@ -362,13 +372,13 @@ pub struct MyErrorType {
 }
 ```
 
-### ... multiple related errors
+#### ... multiple related errors
 
 `miette` supports collecting multiple errors into a single diagnostic, and
 printing them all together nicely.
 
-To do so, use the `#[related]` tag on any `IntoIter` field in your `Diagnostic`
-type:
+To do so, use the `#[related]` tag on any `IntoIter` field in your
+`Diagnostic` type:
 
 ```rust
 use miette::Diagnostic;
@@ -382,13 +392,13 @@ struct MyError {
 }
 ```
 
-### ... delayed source code
+#### ... delayed source code
 
 Sometimes it makes sense to add source code to the error message later. One
 option is to use [`with_source_code()`](Report::with_source_code) method for
 that:
 
-```rust,no_run
+```rust
 use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
@@ -403,7 +413,9 @@ pub struct MyErrorType {
 
 fn do_something() -> miette::Result<()> {
     // This function emits actual error with label
-    return Err(MyErrorType { err_span: (7..11).into() })?;
+    return Err(MyErrorType {
+        err_span: (7..11).into(),
+    })?;
 }
 
 fn main() -> miette::Result<()> {
@@ -412,15 +424,14 @@ fn main() -> miette::Result<()> {
         error.with_source_code(String::from("source code"))
     })
 }
-
 ```
 
-Also source code can be provided by a wrapper type. This is especially useful
-in combination with `related`, when multiple errors should be emitted at the
-same time:
+Also source code can be provided by a wrapper type. This is especially
+useful in combination with `related`, when multiple errors should be emitted
+at the same time:
 
-```rust,no_run
-use miette::{Report, Diagnostic, SourceSpan};
+```rust
+use miette::{Diagnostic, Report, SourceSpan};
 use thiserror::Error;
 
 #[derive(Diagnostic, Debug, Error)]
@@ -446,56 +457,59 @@ pub struct MultiError {
 
 fn do_something() -> Result<(), Vec<InnerError>> {
     Err(vec![
-        InnerError { err_span: (0..6).into() },
-        InnerError { err_span: (7..11).into() },
+        InnerError {
+            err_span: (0..6).into(),
+        },
+        InnerError {
+            err_span: (7..11).into(),
+        },
     ])
 }
 
 fn main() -> miette::Result<()> {
-    do_something().map_err(|err_list| {
-        MultiError {
-            source_code: "source code".into(),
-            related: err_list,
-        }
+    do_something().map_err(|err_list| MultiError {
+        source_code: "source code".into(),
+        related: err_list,
     })?;
     Ok(())
 }
 ```
 
-### ... handler options
+#### ... handler options
 
 [`MietteHandler`] is the default handler, and is very customizable. In most
-cases, you can simply use [`MietteHandlerOpts`] to tweak its behavior instead
-of falling back to your own custom handler.
+cases, you can simply use [`MietteHandlerOpts`] to tweak its behavior
+instead of falling back to your own custom handler.
 
 Usage is like so:
 
 ```rust
 miette::set_hook(Box::new(|_| {
-    Box::new(miette::MietteHandlerOpts::new()
-        .terminal_links(true)
-        .unicode(false)
-        .context_lines(3)
-        .tab_width(4)
-        .build())
+    Box::new(
+        miette::MietteHandlerOpts::new()
+            .terminal_links(true)
+            .unicode(false)
+            .context_lines(3)
+            .tab_width(4)
+            .build(),
+    )
 }))
 
-# .unwrap()
 ```
 
 See the docs for [`MietteHandlerOpts`] for more details on what you can
 customize!
 
-## Acknowledgements
+### Acknowledgements
 
-`miette` was not developed in a void. It owes enormous credit to various other
-projects and their authors:
+`miette` was not developed in a void. It owes enormous credit to various
+other projects and their authors:
 
-- [`anyhow`](http://crates.io/crates/anyhow) and
-  [`color-eyre`](https://crates.io/crates/color-eyre): these two enormously
-  influential error handling libraries have pushed forward the experience of
-  application-level error handling and error reporting. `miette`'s `Report`
-  type is an attempt at a very very rough version of their `Report` types.
+- [`anyhow`](http://crates.io/crates/anyhow) and [`color-eyre`](https://crates.io/crates/color-eyre):
+  these two enormously influential error handling libraries have pushed
+  forward the experience of application-level error handling and error
+  reporting. `miette`'s `Report` type is an attempt at a very very rough
+  version of their `Report` types.
 - [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
   for library-level error definitions, and for being the inspiration behind
   `miette`'s derive macro.
@@ -504,7 +518,7 @@ projects and their authors:
 - [`ariadne`](https://crates.io/crates/ariadne) for pushing forward how
   _pretty_ these diagnostics can really look!
 
-## License
+### License
 
 `miette` is released to the Rust community under the
 [Apache license 2.0](./LICENSE).
@@ -513,3 +527,15 @@ It also includes code taken from [`eyre`](https://github.com/yaahc/eyre),
 and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
 the Apache License. Some code is taken from
 [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
+
+[`miette!`]: https://docs.rs/miette/latest/miette/macro.miette.html
+[`std::error::Error`]: https://doc.rust-lang.org/nightly/std/error/trait.Error.html
+[`Diagnostic`]: https://docs.rs/miette/latest/miette/struct.Diagnostic.html
+[`IntoDiagnostic`]: https://docs.rs/miette/latest/miette/trait.IntoDiagnostic.html
+[`MietteHandlerOpts`]: https://docs.rs/miette/latest/miette/struct.MietteHandlerOpts.html
+[`MietteHandler`]: https://docs.rs/miette/latest/miette/struct.MietteHandler.html
+[`Report`]: https://docs.rs/miette/latest/miette/struct.Report.html
+[`ReportHandler`]: https://docs.rs/miette/latest/miette/struct.ReportHandler.html
+[`Result`]: https://docs.rs/miette/latest/miette/type.Result.html
+[`SourceCode`]: https://docs.rs/miette/latest/miette/struct.SourceCode.html
+[`SourceSpan`]: https://docs.rs/miette/latest/miette/struct.SourceSpan.html
