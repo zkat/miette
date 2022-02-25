@@ -44,6 +44,10 @@ mod wrapper;
 
 /**
 Core Diagnostic wrapper type.
+
+## `eyre` Users
+
+You can just replace `use`s of `eyre::Report` with `miette::Report`.
 */
 pub struct Report {
     inner: ManuallyDrop<Box<ErrorImpl<()>>>,
@@ -241,6 +245,11 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
 ///     Ok(())
 /// }
 /// ```
+///
+/// ## `anyhow`/`eyre` Users
+///
+/// You can just replace `use`s of `anyhow::Result`/`eyre::Result` with
+/// `miette::Result`.
 pub type Result<T, E = Report> = core::result::Result<T, E>;
 
 /// Provides the `wrap_err` method for `Result`.

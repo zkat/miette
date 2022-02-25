@@ -53,8 +53,9 @@ and such might not want.
 - Unique error codes on every [`Diagnostic`].
 - Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
-- [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre) error
-  wrapper type, [`Report`], which can be returned from `main()`.
+- Replacements for [`anyhow`](https://docs.rs/anyhow)/[`eyre`](https://docs.rs/eyre)
+  types [`Result`], [`Report`] and the [`miette!`] macro for the `anyhow!`/`eyre!`
+  macros.
 - Generic support for arbitrary [`SourceCode`]s for snippet data, with default
   support for `String`s included.
 
