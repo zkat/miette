@@ -1,8 +1,8 @@
 use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 
-/// Utility struct for when you have a regular [`SourceCode`] type, such as a
-/// String, that doesn't implement `name`, or if you want to override the
-/// `.name()` returned by the `SourceCode`.
+/// Utility struct for when you have a regular [`SourceCode`] type that doesn't
+/// implement `name`. For example [`String`]. Or if you want to override the
+/// `name` returned by the `SourceCode`.
 pub struct NamedSource {
     source: Box<dyn SourceCode + 'static>,
     name: String,

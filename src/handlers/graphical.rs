@@ -14,10 +14,10 @@ other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a
+This printer can be customized by using [`new_themed()`](GraphicalReportHandler::new_themed) and handing it a
 [`GraphicalTheme`] of your own creation (or using one of its own defaults!)
 
-See [`set_hook`](crate::set_hook) for more details on customizing your global
+See [`set_hook()`](crate::set_hook) for more details on customizing your global
 printer.
 */
 #[derive(Debug, Clone)]
