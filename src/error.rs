@@ -24,11 +24,4 @@ pub enum MietteError {
         url(docsrs)
     )]
     OutOfBounds,
-
-    /// Returned when installing a [`ReportHandler`](crate::ReportHandler)
-    /// failed. Typically, this will be because [`set_hook`](crate::set_hook)
-    /// was called twice.
-    #[error("Failed to install ReportHandler")]
-    #[diagnostic(code(miette::set_printer_failed), url(docsrs))]
-    SetPrinterFailure,
 }
