@@ -282,7 +282,10 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///     let path = &it.path;
 ///     let content = fs::read(path)
 ///         .into_diagnostic()
-///         .wrap_err_with(|| format!("Failed to read instrs from {}", path.display()))?;
+///         .wrap_err_with(|| format!(
+///             "Failed to read instrs from {}",
+///             path.display())
+///         )?;
 ///
 ///     Ok(content)
 /// }
@@ -314,7 +317,9 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 /// use std::error::Error;
 /// use miette::{WrapErr, Report};
 ///
-/// fn wrap_example(err: Result<(), Box<dyn Error + Send + Sync + 'static>>) -> Result<(), Report> {
+/// fn wrap_example(err: Result<(), Box<dyn Error + Send + Sync + 'static>>)
+///     -> Result<(), Report>
+/// {
 ///     err.wrap_err("saw a downstream error")
 /// }
 /// ```
@@ -343,10 +348,10 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///     is used in downcasts.**
 ///
 ///     In other error libraries whose `wrap_err()` is not designed this way, it
-/// can     be risky to introduce messages to existing code because new message
-/// might     break existing working downcasts. In miette, any downcast that
-/// worked     before adding the message will continue to work after you add a
-/// message, so     you should freely wrap errors wherever it would be helpful.
+///     can be risky to introduce messages to existing code because new message
+///     might break existing working downcasts. In miette, any downcast that
+///     worked before adding the message will continue to work after you add a
+///     message, so you should freely wrap errors wherever it would be helpful.
 ///
 ///     ```
 ///     # use miette::bail;
