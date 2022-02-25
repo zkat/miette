@@ -48,13 +48,12 @@ pub(crate) fn gen_all_variants_with(
 ) -> Option<TokenStream> {
     let pairs = variants
         .iter()
-        .map(|def| {
+        .filter_map(|def| {
             def.args
                 .forward_or_override_enum(&def.ident, which_fn, |concrete| {
                     f(&def.ident, &def.fields, concrete)
                 })
         })
-        .flatten()
         .collect::<Vec<_>>();
     if pairs.is_empty() {
         return None;
