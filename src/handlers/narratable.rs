@@ -7,7 +7,7 @@ use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
-[ReportHandler] that renders plain text and avoids extraneous graphics.
+[`ReportHandler`] that renders plain text and avoids extraneous graphics.
 It's optimized for screen readers and braille users, but is also used in any
 non-graphical environments, such as non-TTY output.
 */
@@ -18,7 +18,7 @@ pub struct NarratableReportHandler {
 }
 
 impl NarratableReportHandler {
-    /// Create a new [NarratableReportHandler]. There are no customization
+    /// Create a new [`NarratableReportHandler`]. There are no customization
     /// options.
     pub fn new() -> Self {
         Self {
@@ -47,8 +47,8 @@ impl Default for NarratableReportHandler {
 }
 
 impl NarratableReportHandler {
-    /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [ReportHandler] handler, but is
+    /// Render a [`Diagnostic`]. This function is mostly internal and meant to
+    /// be called by the toplevel [`ReportHandler`] handler, but is
     /// made public to make it easier (possible) to test in isolation from
     /// global state.
     pub fn render_report(
@@ -345,7 +345,8 @@ enum SpanAttach {
     Ends { col_end: usize },
 }
 
-/// Returns column at offset, and nearest boundary if offset is in the middle of the character
+/// Returns column at offset, and nearest boundary if offset is in the middle of
+/// the character
 fn safe_get_column(text: &str, offset: usize, start: bool) -> usize {
     let mut column = text.get(0..offset).map(|s| s.width()).unwrap_or_else(|| {
         let mut column = 0;

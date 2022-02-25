@@ -9,13 +9,14 @@ Error enum for miette. Used by certain operations in the protocol.
 */
 #[derive(Debug, Diagnostic, Error)]
 pub enum MietteError {
-    /// Wrapper around [std::io::Error]. This is returned when something went
-    /// wrong while reading a [crate::Source].
+    /// Wrapper around [`std::io::Error`]. This is returned when something went
+    /// wrong while reading a [`SourceCode`](crate::SourceCode).
     #[error(transparent)]
     #[diagnostic(code(miette::io_error), url(docsrs))]
     IoError(#[from] io::Error),
 
-    /// Returned when a [crate::SourceSpan] extends beyond the bounds of a given [crate::Source].
+    /// Returned when a [`SourceSpan`](crate::SourceSpan) extends beyond the
+    /// bounds of a given [`SourceCode`](crate::SourceCode).
     #[error("The given offset is outside the bounds of its Source")]
     #[diagnostic(
         code(miette::span_out_of_bounds),
@@ -24,8 +25,9 @@ pub enum MietteError {
     )]
     OutOfBounds,
 
-    /// Returned when installing a [crate::ReportHandler] failed.
-    /// Typically, this will be because [crate::set_printer] was called twice.
+    /// Returned when installing a [`ReportHandler`](crate::ReportHandler)
+    /// failed. Typically, this will be because [`set_hook`](crate::set_hook)
+    /// was called twice.
     #[error("Failed to install ReportHandler")]
     #[diagnostic(code(miette::set_printer_failed), url(docsrs))]
     SetPrinterFailure,

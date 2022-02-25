@@ -3,14 +3,13 @@ use std::fmt::{self, Write};
 use crate::{protocol::Diagnostic, ReportHandler, Severity, SourceCode};
 
 /**
-[ReportHandler] that renders json output.
-It's a machine-readable output.
+[`ReportHandler`] that renders JSON output. It's a machine-readable output.
 */
 #[derive(Debug, Clone)]
 pub struct JSONReportHandler;
 
 impl JSONReportHandler {
-    /// Create a new [JSONReportHandler]. There are no customization
+    /// Create a new [`JSONReportHandler`]. There are no customization
     /// options.
     pub fn new() -> Self {
         Self
@@ -54,10 +53,9 @@ fn escape(input: &'_ str) -> Escape<'_> {
 }
 
 impl JSONReportHandler {
-    /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [ReportHandler] handler, but is
-    /// made public to make it easier (possible) to test in isolation from
-    /// global state.
+    /// Render a [`Diagnostic`]. This function is mostly internal and meant to
+    /// be called by the toplevel [`ReportHandler`] handler, but is made public
+    /// to make it easier (possible) to test in isolation from global state.
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,

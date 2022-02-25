@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{protocol::Diagnostic, ReportHandler};
 
 /**
-[ReportHandler] that renders plain text and avoids extraneous graphics.
+[`ReportHandler`] that renders plain text and avoids extraneous graphics.
 It's optimized for screen readers and braille users, but is also used in any
 non-graphical environments, such as non-TTY output.
 */
@@ -11,8 +11,8 @@ non-graphical environments, such as non-TTY output.
 pub struct DebugReportHandler;
 
 impl DebugReportHandler {
-    /// Create a new [NarratableReportHandler]. There are no customization
-    /// options.
+    /// Create a new [`NarratableReportHandler`](crate::NarratableReportHandler)
+    /// There are no customization options.
     pub fn new() -> Self {
         Self
     }
@@ -25,10 +25,9 @@ impl Default for DebugReportHandler {
 }
 
 impl DebugReportHandler {
-    /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [ReportHandler] handler, but is
-    /// made public to make it easier (possible) to test in isolation from
-    /// global state.
+    /// Render a [`Diagnostic`]. This function is mostly internal and meant to
+    /// be called by the toplevel [`ReportHandler`] handler, but is made public
+    /// to make it easier (possible) to test in isolation from global state.
     pub fn render_report(
         &self,
         f: &mut fmt::Formatter<'_>,

@@ -1,5 +1,5 @@
 /*!
-Default trait implementations for [SourceCode].
+Default trait implementations for [`SourceCode`].
 */
 use std::{
     borrow::{Cow, ToOwned},
@@ -172,8 +172,11 @@ impl<T: SourceCode> SourceCode for Arc<T> {
 
 impl<T: ?Sized + SourceCode + ToOwned> SourceCode for Cow<'_, T>
 where
-    // The minimal bounds are used here. `T::Owned` need not be `SourceCode`,
-    // because `&T` can always be obtained from `Cow<'_, T>`.
+    // The minimal bounds are used here.
+    // `T::Owned` need not be
+    // `SourceCode`, because `&T`
+    // can always be obtained from
+    // `Cow<'_, T>`.
     T::Owned: Debug + Send + Sync,
 {
     fn read_span<'a>(

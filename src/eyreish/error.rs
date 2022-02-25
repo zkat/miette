@@ -50,8 +50,8 @@ impl Report {
     /// #
     /// # use ffi::{Input, Output};
     /// #
-    /// use miette::{Report, Result};
     /// use futures::stream::{Stream, StreamExt, TryStreamExt};
+    /// use miette::{Report, Result};
     ///
     /// async fn demo<S>(stream: S) -> Result<Vec<Output>>
     /// where
@@ -193,13 +193,13 @@ impl Report {
 
     /// Create a new error from an error message to wrap the existing error.
     ///
-    /// For attaching a higher level error message to a `Result` as it is propagated, the
-    /// [crate::WrapErr] extension trait may be more convenient than this function.
+    /// For attaching a higher level error message to a `Result` as it is
+    /// propagated, the [crate::WrapErr] extension trait may be more
+    /// convenient than this function.
     ///
-    /// The primary reason to use `error.wrap_err(...)` instead of `result.wrap_err(...)` via the
-    /// `WrapErr` trait would be if the message needs to depend on some data held by the underlying
-    /// error:
-    ///
+    /// The primary reason to use `error.wrap_err(...)` instead of
+    /// `result.wrap_err(...)` via the `WrapErr` trait would be if the
+    /// message needs to depend on some data held by the underlying error:
     pub fn wrap_err<D>(mut self, msg: D) -> Self
     where
         D: Display + Send + Sync + 'static,
@@ -258,7 +258,7 @@ impl Report {
     /// cause's cause etc.
     ///
     /// The root cause is the last error in the iterator produced by
-    /// [`chain()`][Report::chain].
+    /// [`chain()`](Report::chain).
     pub fn root_cause(&self) -> &(dyn StdError + 'static) {
         let mut chain = self.chain();
         let mut root_cause = chain.next().unwrap();
@@ -270,9 +270,10 @@ impl Report {
 
     /// Returns true if `E` is the type held by this error object.
     ///
-    /// For errors constructed from messages, this method returns true if `E` matches the type of
-    /// the message `D` **or** the type of the error on which the message has been attached. For
-    /// details about the interaction between message and downcasting, [see here].
+    /// For errors constructed from messages, this method returns true if `E`
+    /// matches the type of the message `D` **or** the type of the error on
+    /// which the message has been attached. For details about the
+    /// interaction between message and downcasting, [see here].
     ///
     /// [see here]: trait.WrapErr.html#effect-on-downcasting
     pub fn is<E>(&self) -> bool

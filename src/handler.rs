@@ -11,7 +11,7 @@ use crate::ThemeCharacters;
 use crate::ThemeStyles;
 
 /**
-Create a custom [MietteHandler] from options.
+Create a custom [`MietteHandler`] from options.
 
 ## Example
 
@@ -43,7 +43,7 @@ pub struct MietteHandlerOpts {
 }
 
 impl MietteHandlerOpts {
-    /// Create a new [MietteHandlerOpts].
+    /// Create a new `MietteHandlerOpts`.
     pub fn new() -> Self {
         Default::default()
     }
@@ -56,15 +56,16 @@ impl MietteHandlerOpts {
         self
     }
 
-    /// Set a graphical theme for the handler when rendering in graphical
-    /// mode. Use [MietteHandlerOpts::force_graphical] to force graphical
-    /// mode. This option overrides [MietteHandlerOpts::color].
+    /// Set a graphical theme for the handler when rendering in graphical mode.
+    /// Use [`force_graphical()`](`MietteHandlerOpts::force_graphical) to force
+    /// graphical mode. This option overrides
+    /// [`color()`](`MietteHandlerOpts::color).
     pub fn graphical_theme(mut self, theme: GraphicalTheme) -> Self {
         self.theme = Some(theme);
         self
     }
 
-    /// Sets the width to wrap the report at. Defaults
+    /// Sets the width to wrap the report at. Defaults to 80.
     pub fn width(mut self, width: usize) -> Self {
         self.width = Some(width);
         self
@@ -126,7 +127,7 @@ impl MietteHandlerOpts {
         self
     }
 
-    /// Builds a [MietteHandler] from this builder.
+    /// Builds a [`MietteHandler`] from this builder.
     pub fn build(self) -> MietteHandler {
         let graphical = self.is_graphical();
         let width = self.get_width();
@@ -216,15 +217,18 @@ impl MietteHandlerOpts {
 }
 
 /**
-A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
-way, using terminal colors, unicode drawing characters, and other such things.
+A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
+quasi-graphical way, using terminal colors, unicode drawing characters, and
+other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a
-[GraphicalTheme] of your own creation (or using one of its own defaults!)
+This printer can be customized by using
+[`GraphicalReportHandler::new_themed()`] and handing it a [`GraphicalTheme`] of
+your own creation (or using one of its own defaults).
 
-See [crate::set_hook] for more details on customizing your global printer.
+See [`set_hook`](crate::set_hook) for more details on customizing your global
+printer.
 */
 #[allow(missing_debug_implementations)]
 pub struct MietteHandler {
@@ -232,7 +236,7 @@ pub struct MietteHandler {
 }
 
 impl MietteHandler {
-    /// Creates a new [MietteHandler] with default settings.
+    /// Creates a new [`MietteHandler`] with default settings.
     pub fn new() -> Self {
         Default::default()
     }

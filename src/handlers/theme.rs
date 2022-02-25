@@ -2,10 +2,12 @@ use atty::Stream;
 use owo_colors::Style;
 
 /**
-Theme used by [crate::GraphicalReportHandler] to render fancy [crate::Diagnostic] reports.
+Theme used by [`GraphicalReportHandler`](crate::GraphicalReportHandler) to
+render fancy [`Diagnostic`](crate::Diagnostic) reports.
 
 A theme consists of two things: the set of characters to be used for drawing,
-and the [owo_colors::Style]s to be used to paint various items.
+and the
+[`owo_colors::Style`](https://docs.rs/owo-colors/latest/owo_colors/struct.Style.html)s to be used to paint various items.
 
 You can create your own custom graphical theme using this type, or you can use
 one of the predefined ones using the methods below.
@@ -27,7 +29,8 @@ impl GraphicalTheme {
         }
     }
 
-    /// Graphical theme that draws using both ansi colors and unicode characters.
+    /// Graphical theme that draws using both ansi colors and unicode
+    /// characters.
     pub fn unicode() -> Self {
         Self {
             characters: ThemeCharacters::unicode(),
@@ -95,7 +98,7 @@ fn style() -> Style {
 
 impl ThemeStyles {
     /// Nice RGB colors.
-    /// Credit: http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1
+    /// [Credit](http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1).
     pub fn rgb() -> Self {
         Self {
             error: style().fg_rgb::<255, 30, 30>(),
@@ -143,11 +146,12 @@ impl ThemeStyles {
     }
 }
 
-// ---------------------------------------
+// ----------------------------------------
 // Most of these characters were taken from
 // https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
 
-/// Characters to be used when drawing when using [crate::GraphicalReportHandler].
+/// Characters to be used when drawing when using
+/// [crate::GraphicalReportHandler].
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ThemeCharacters {

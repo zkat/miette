@@ -1,8 +1,8 @@
 use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 
-/// Utility struct for when you have a regular [Source] type, such as a String,
-/// that doesn't implement `name`, or if you want to override the `.name()`
-/// returned by the `Source`.
+/// Utility struct for when you have a regular [`SourceCode`] type, such as a
+/// String, that doesn't implement `name`, or if you want to override the
+/// `.name()` returned by the `SourceCode`.
 pub struct NamedSource {
     source: Box<dyn SourceCode + 'static>,
     name: String,
@@ -18,7 +18,8 @@ impl std::fmt::Debug for NamedSource {
 }
 
 impl NamedSource {
-    /// Create a new [NamedSource] using a regular [SourceCode] and giving its returned [SpanContents] a name.
+    /// Create a new `NamedSource` using a regular [`SourceCode`] and giving
+    /// its returned [`SpanContents`] a name.
     pub fn new(name: impl AsRef<str>, source: impl SourceCode + Send + Sync + 'static) -> Self {
         Self {
             source: Box::new(source),
@@ -26,7 +27,8 @@ impl NamedSource {
         }
     }
 
-    /// Returns a reference the inner [SourceCode] type for this [NamedSource].
+    /// Returns a reference the inner [`SourceCode`] type for this
+    /// `NamedSource`.
     pub fn inner(&self) -> &(dyn SourceCode + 'static) {
         &*self.source
     }
