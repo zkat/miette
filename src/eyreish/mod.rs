@@ -44,17 +44,23 @@ mod wrapper;
 
 /**
 Core Diagnostic wrapper type.
+
+## `eyre` Users
+
+You can just replace `use`s of `eyre::Report` with `miette::Report`.
 */
 pub struct Report {
     inner: ManuallyDrop<Box<ErrorImpl<()>>>,
 }
 
-type ErrorHook =
+///
+pub type ErrorHook =
     Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
 
 static HOOK: OnceCell<ErrorHook> = OnceCell::new();
 
-/// Error indicating that `set_hook` was unable to install the provided ErrorHook
+/// Error indicating that [`set_hook()`] was unable to install the provided
+/// [`ErrorHook`].
 #[derive(Debug)]
 pub struct InstallError;
 
@@ -68,7 +74,7 @@ impl StdError for InstallError {}
 impl Diagnostic for InstallError {}
 
 /**
-Set the hook?
+Set the error hook.
 */
 pub fn set_hook(hook: ErrorHook) -> Result<(), InstallError> {
     HOOK.set(hook).map_err(|_| InstallError)
@@ -139,9 +145,8 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
     /// # Example
     ///
     /// ```rust
-    /// use miette::Diagnostic;
-    /// use miette::ReportHandler;
     /// use indenter::indented;
+    /// use miette::{Diagnostic, ReportHandler};
     ///
     /// pub struct Handler;
     ///
@@ -193,8 +198,9 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
 
 /// type alias for `Result<T, Report>`
 ///
-/// This is a reasonable return type to use throughout your application but also for `fn main`; if
-/// you do, failures will be printed along with a backtrace if one was captured.
+/// This is a reasonable return type to use throughout your application but also
+/// for `main()`. If you do, failures will be printed along with a backtrace if
+/// one was captured.
 ///
 /// `miette::Result` may be used with one *or* two type parameters.
 ///
@@ -239,9 +245,14 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
 ///     Ok(())
 /// }
 /// ```
+///
+/// ## `anyhow`/`eyre` Users
+///
+/// You can just replace `use`s of `anyhow::Result`/`eyre::Result` with
+/// `miette::Result`.
 pub type Result<T, E = Report> = core::result::Result<T, E>;
 
-/// Provides the `wrap_err` method for `Result`.
+/// Provides the [`wrap_err()`](WrapErr::wrap_err) method for [`Result`].
 ///
 /// This trait is sealed and cannot be implemented for types outside of
 /// `miette`.
@@ -250,8 +261,7 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///
 /// ```
 /// use miette::{WrapErr, IntoDiagnostic, Result};
-/// use std::fs;
-/// use std::path::PathBuf;
+/// use std::{fs, path::PathBuf};
 ///
 /// pub struct ImportantThing {
 ///     path: PathBuf,
@@ -272,7 +282,10 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///     let path = &it.path;
 ///     let content = fs::read(path)
 ///         .into_diagnostic()
-///         .wrap_err_with(|| format!("Failed to read instrs from {}", path.display()))?;
+///         .wrap_err_with(|| format!(
+///             "Failed to read instrs from {}",
+///             path.display())
+///         )?;
 ///
 ///     Ok(content)
 /// }
@@ -288,12 +301,15 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///     No such file or directory (os error 2)
 /// ```
 ///
-/// # Wrapping Types That Don't impl `Error` (e.g. `&str` and `Box<dyn Error>`)
+/// # Wrapping Types That Do Not Implement `Error`
 ///
-/// Due to restrictions for coherence `Report` cannot impl `From` for types that don't impl
-/// `Error`. Attempts to do so will give "this type might implement Error in the future" as an
-/// error. As such, `wrap_err`, which uses `From` under the hood, cannot be used to wrap these
-/// types. Instead we encourage you to use the combinators provided for `Result` in `std`/`core`.
+/// For example `&str` and `Box<dyn Error>`.
+///
+/// Due to restrictions for coherence `Report` cannot implement `From` for types
+/// that don't implement `Error`. Attempts to do so will give `"this type might
+/// implement Error in the future"` as an error. As such, `wrap_err()`, which
+/// uses `From` under the hood, cannot be used to wrap these types. Instead we
+/// encourage you to use the combinators provided for `Result` in `std`/`core`.
 ///
 /// For example, instead of this:
 ///
@@ -301,7 +317,9 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 /// use std::error::Error;
 /// use miette::{WrapErr, Report};
 ///
-/// fn wrap_example(err: Result<(), Box<dyn Error + Send + Sync + 'static>>) -> Result<(), Report> {
+/// fn wrap_example(err: Result<(), Box<dyn Error + Send + Sync + 'static>>)
+///     -> Result<(), Report>
+/// {
 ///     err.wrap_err("saw a downstream error")
 /// }
 /// ```
@@ -309,30 +327,31 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 /// We encourage you to write this:
 ///
 /// ```rust
+/// use miette::{miette, Report, WrapErr};
 /// use std::error::Error;
-/// use miette::{WrapErr, Report, miette};
 ///
 /// fn wrap_example(err: Result<(), Box<dyn Error + Send + Sync + 'static>>) -> Result<(), Report> {
-///     err.map_err(|e| miette!(e)).wrap_err("saw a downstream error")
+///     err.map_err(|e| miette!(e))
+///         .wrap_err("saw a downstream error")
 /// }
 /// ```
 ///
-/// # Effect on downcasting
+/// # Effect on Downcasting
 ///
-/// After attaching a message of type `D` onto an error of type `E`, the resulting
-/// `miette::Error` may be downcast to `D` **or** to `E`.
+/// After attaching a message of type `D` onto an error of type `E`, the
+/// resulting `miette::Error` may be downcast to `D` **or** to `E`.
 ///
-/// That is, in codebases that rely on downcasting, miette's wrap_err supports
-/// both of the following use cases:
+/// That is, in codebases that rely on downcasting, `miette`'s `wrap_err()`
+/// supports both of the following use cases:
 ///
 ///   - **Attaching messages whose type is insignificant onto errors whose type
 ///     is used in downcasts.**
 ///
-///     In other error libraries whose wrap_err is not designed this way, it can
-///     be risky to introduce messages to existing code because new message might
-///     break existing working downcasts. In miette, any downcast that worked
-///     before adding the message will continue to work after you add a message, so
-///     you should freely wrap errors wherever it would be helpful.
+///     In other error libraries whose `wrap_err()` is not designed this way, it
+///     can be risky to introduce messages to existing code because new message
+///     might break existing working downcasts. In miette, any downcast that
+///     worked before adding the message will continue to work after you add a
+///     message, so you should freely wrap errors wherever it would be helpful.
 ///
 ///     ```
 ///     # use miette::bail;
@@ -422,13 +441,13 @@ pub trait WrapErr<T, E>: context::private::Sealed {
         D: Display + Send + Sync + 'static,
         F: FnOnce() -> D;
 
-    /// Compatibility re-export of wrap_err for interop with `anyhow`
+    /// Compatibility re-export of `wrap_err()` for interop with `anyhow`
     #[cfg_attr(track_caller, track_caller)]
     fn context<D>(self, msg: D) -> Result<T, Report>
     where
         D: Display + Send + Sync + 'static;
 
-    /// Compatibility re-export of wrap_err_with for interop with `anyhow`
+    /// Compatibility re-export of `wrap_err_with()` for interop with `anyhow`
     #[cfg_attr(track_caller, track_caller)]
     fn with_context<D, F>(self, f: F) -> Result<T, Report>
     where
@@ -436,7 +455,7 @@ pub trait WrapErr<T, E>: context::private::Sealed {
         F: FnOnce() -> D;
 }
 
-// Not public API. Referenced by macro-generated code.
+// Private API. Referenced by macro-generated code.
 #[doc(hidden)]
 pub mod private {
     use super::Report;

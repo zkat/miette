@@ -8,15 +8,17 @@ use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
-A [ReportHandler] that displays a given [crate::Report] in a quasi-graphical
-way, using terminal colors, unicode drawing characters, and other such things.
+A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
+quasi-graphical way, using terminal colors, unicode drawing characters, and
+other such things.
 
 This is the default reporter bundled with `miette`.
 
-This printer can be customized by using `new_themed()` and handing it a
-[GraphicalTheme] of your own creation (or using one of its own defaults!)
+This printer can be customized by using [`new_themed()`](GraphicalReportHandler::new_themed) and handing it a
+[`GraphicalTheme`] of your own creation (or using one of its own defaults!)
 
-See [crate::set_hook] for more details on customizing your global printer.
+See [`set_hook()`](crate::set_hook) for more details on customizing your global
+printer.
 */
 #[derive(Debug, Clone)]
 pub struct GraphicalReportHandler {
@@ -29,8 +31,8 @@ pub struct GraphicalReportHandler {
 }
 
 impl GraphicalReportHandler {
-    /// Create a new [GraphicalReportHandler] with the default
-    /// [GraphicalTheme]. This will use both unicode characters and colors.
+    /// Create a new `GraphicalReportHandler` with the default
+    /// [`GraphicalTheme`]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
             linkify_code: true,
@@ -42,7 +44,7 @@ impl GraphicalReportHandler {
         }
     }
 
-    ///Create a new [GraphicalReportHandler] with a given [GraphicalTheme].
+    ///Create a new `GraphicalReportHandler` with a given [`GraphicalTheme`].
     pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self {
             linkify_code: true,
@@ -60,7 +62,7 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Whether to enable error code linkification using [Diagnostic::url].
+    /// Whether to enable error code linkification using [`Diagnostic::url()`].
     pub fn with_links(mut self, links: bool) -> Self {
         self.linkify_code = links;
         self
@@ -78,7 +80,7 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Sets the "global" footer for this handler.
+    /// Sets the 'global' footer for this handler.
     pub fn with_footer(mut self, footer: String) -> Self {
         self.footer = Some(footer);
         self
@@ -98,10 +100,9 @@ impl Default for GraphicalReportHandler {
 }
 
 impl GraphicalReportHandler {
-    /// Render a [Diagnostic]. This function is mostly internal and meant to
-    /// be called by the toplevel [ReportHandler] handler, but is
-    /// made public to make it easier (possible) to test in isolation from
-    /// global state.
+    /// Render a [`Diagnostic`]. This function is mostly internal and meant to
+    /// be called by the toplevel [`ReportHandler`] handler, but is made public
+    /// to make it easier (possible) to test in isolation from global state.
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
@@ -294,8 +295,8 @@ impl GraphicalReportHandler {
                                 {
                                     contexts.pop();
                                     contexts.push((
-                                        new_span, // We'll throw this away later
-                                        left_conts,
+                                        // We'll throw this away later
+                                        new_span, left_conts,
                                     ));
                                 } else {
                                     contexts.push((right, right_conts));
@@ -346,7 +347,8 @@ impl GraphicalReportHandler {
             max_gutter = std::cmp::max(max_gutter, num_highlights);
         }
 
-        // Oh and one more thing: We need to figure out how much room our line numbers need!
+        // Oh and one more thing: We need to figure out how much room our line
+        // numbers need!
         let linum_width = lines[..]
             .last()
             .expect("get_lines should always return at least one line?")
@@ -569,7 +571,8 @@ impl GraphicalReportHandler {
             let hl_len = std::cmp::max(1, hl.len());
 
             let local_offset = if let Some(w) = self.tab_width {
-                // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
+                // Only count tabs that affect the position of the highlighted
+                // line and ignore tabs past the span.
                 let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
                 let tabs_as_spaces = tab_count * w - tab_count;
                 hl.offset() - line.offset + tabs_as_spaces
@@ -610,7 +613,8 @@ impl GraphicalReportHandler {
             .iter()
             .map(|hl| {
                 let local_offset = if let Some(w) = self.tab_width {
-                    // Only count tabs that affect the position of the highlighted line and ignore tabs past the span.
+                    // Only count tabs that affect the position of the
+                    // highlighted line and ignore tabs past the span.
                     let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
                     let tabs_as_spaces = tab_count * w - tab_count;
                     hl.offset() - line.offset + tabs_as_spaces
@@ -756,11 +760,12 @@ impl Line {
         || (span.offset() + span.len() > self.offset && span.offset() + span.len() <= self.offset + self.length)
     }
 
-    // A "flyby" is a multi-line span that technically covers this line, but
+    // A 'flyby' is a multi-line span that technically covers this line, but
     // does not begin or end within the line itself. This method is used to
     // calculate gutters.
     fn span_flyby(&self, span: &FancySpan) -> bool {
-        // the span itself starts before this line's starting offset (so, in a prev line)
+        // The span itself starts before this line's starting offset (so, in a
+        // prev line).
         span.offset() < self.offset
             // ...and it stops after this line's end.
             && span.offset() + span.len() > self.offset + self.length

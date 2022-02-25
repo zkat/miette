@@ -82,7 +82,8 @@ pub(crate) fn gen_unused_pat(fields: &syn::Fields) -> TokenStream {
     }
 }
 
-/// Goes in the slot `let Self #pat = self;` or `match self { Self #pat => ... }`.
+/// Goes in the slot `let Self #pat = self;` or `match self { Self #pat => ...
+/// }`.
 fn gen_fields_pat(fields: &syn::Fields) -> TokenStream {
     let member_idents = fields.iter().enumerate().map(|(i, field)| {
         field
@@ -102,8 +103,9 @@ fn gen_fields_pat(fields: &syn::Fields) -> TokenStream {
     }
 }
 
-/// The returned tokens go in the slot `let Self #pat = self;` or `match self { Self #pat => ... }`.
-/// The members can be passed to `Display::expand_shorthand[_cloned]`.
+/// The returned tokens go in the slot `let Self #pat = self;` or `match self {
+/// Self #pat => ... }`. The members can be passed to
+/// `Display::expand_shorthand[_cloned]`.
 pub(crate) fn display_pat_members(fields: &syn::Fields) -> (TokenStream, HashSet<syn::Member>) {
     let pat = gen_fields_pat(fields);
     let members: HashSet<syn::Member> = fields
@@ -124,7 +126,8 @@ pub(crate) fn display_pat_members(fields: &syn::Fields) -> (TokenStream, HashSet
 }
 
 impl Display {
-    /// Returns `(fmt, args)` which must be passed to some kind of format macro without tokens in between, i.e. `format!(#fmt #args)`.
+    /// Returns `(fmt, args)` which must be passed to some kind of format macro
+    /// without tokens in between, i.e. `format!(#fmt #args)`.
     pub(crate) fn expand_shorthand_cloned(
         &self,
         members: &HashSet<syn::Member>,

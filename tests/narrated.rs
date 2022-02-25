@@ -481,7 +481,8 @@ diagnostic code: oops::my::bad
 }
 
 #[test]
-// TODO: This breaks because those highlights aren't "truly" overlapping (in absolute byte offset), but they ARE overlapping in lines. Need to detect the latter case better
+// TODO: This breaks because those highlights aren't "truly" overlapping (in absolute byte offset),
+// but they ARE overlapping in lines. Need to detect the latter case better
 #[ignore]
 /// Lines are overlapping, but the offsets themselves aren't, so they _look_
 /// disjunct if you only look at offsets.

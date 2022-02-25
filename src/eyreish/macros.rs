@@ -146,6 +146,10 @@ macro_rules! ensure {
 ///     # Ok(())
 /// }
 /// ```
+///
+/// ## `anyhow`/`eyre` Users
+///
+/// You can just replace `use`s of the `anyhow!`/`eyre!` macros with `miette!`.
 #[macro_export]
 macro_rules! miette {
     ($msg:literal $(,)?) => {
