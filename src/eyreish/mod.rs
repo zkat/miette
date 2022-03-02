@@ -54,8 +54,7 @@ pub struct Report {
 }
 
 ///
-pub type ErrorHook =
-    Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
+pub type ErrorHook = Box<dyn Fn(&dyn Diagnostic) -> Box<dyn ReportHandler> + Sync + Send>;
 
 static HOOK: OnceCell<ErrorHook> = OnceCell::new();
 
@@ -80,10 +79,19 @@ pub fn set_hook(hook: ErrorHook) -> Result<(), InstallError> {
     HOOK.set(hook).map_err(|_| InstallError)
 }
 
+/**
+Get the error hook.
+
+If the error hook has not been set, it is set to its default value.
+*/
+pub fn get_hook() -> &'static ErrorHook {
+    HOOK.get_or_init(|| Box::new(get_default_printer))
+}
+
 #[cfg_attr(track_caller, track_caller)]
 #[cfg_attr(not(track_caller), allow(unused_mut))]
 fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> {
-    let hook = HOOK.get_or_init(|| Box::new(get_default_printer)).as_ref();
+    let hook = get_hook().as_ref();
 
     #[cfg(track_caller)]
     {
@@ -97,7 +105,7 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
     }
 }
 
-fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
+fn get_default_printer(_err: &dyn Diagnostic) -> Box<dyn ReportHandler> {
     #[cfg(feature = "fancy")]
     return Box::new(MietteHandler::new());
     #[cfg(not(feature = "fancy"))]
