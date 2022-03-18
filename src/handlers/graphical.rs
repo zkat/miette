@@ -22,7 +22,7 @@ printer.
 */
 #[derive(Debug, Clone)]
 pub struct GraphicalReportHandler {
-    pub(crate) linkify_code: bool,
+    pub(crate) links: LinkStyle,
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
@@ -30,12 +30,19 @@ pub struct GraphicalReportHandler {
     pub(crate) tab_width: Option<usize>,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum LinkStyle {
+    None,
+    Link,
+    Text,
+}
+
 impl GraphicalReportHandler {
     /// Create a new `GraphicalReportHandler` with the default
     /// [`GraphicalTheme`]. This will use both unicode characters and colors.
     pub fn new() -> Self {
         Self {
-            linkify_code: true,
+            links: LinkStyle::Link,
             termwidth: 200,
             theme: GraphicalTheme::default(),
             footer: None,
@@ -47,7 +54,7 @@ impl GraphicalReportHandler {
     ///Create a new `GraphicalReportHandler` with a given [`GraphicalTheme`].
     pub fn new_themed(theme: GraphicalTheme) -> Self {
         Self {
-            linkify_code: true,
+            links: LinkStyle::Link,
             termwidth: 200,
             theme,
             footer: None,
@@ -64,7 +71,24 @@ impl GraphicalReportHandler {
 
     /// Whether to enable error code linkification using [`Diagnostic::url()`].
     pub fn with_links(mut self, links: bool) -> Self {
-        self.linkify_code = links;
+        self.links = if links {
+            LinkStyle::Link
+        } else {
+            LinkStyle::Text
+        };
+        self
+    }
+
+    /// Whether to include [`Diagnostic::url()`] in the output.
+    ///
+    /// Disabling this is not recommended, but can be useful for more easily
+    /// reproducable tests, as `url(docsrs)` links are version-dependent.
+    pub fn with_urls(mut self, urls: bool) -> Self {
+        self.links = match (self.links, urls) {
+            (_, false) => LinkStyle::None,
+            (LinkStyle::None, true) => LinkStyle::Link,
+            (links, true) => links,
+        };
         self
     }
 
@@ -133,7 +157,7 @@ impl GraphicalReportHandler {
             Some(Severity::Advice) => self.theme.styles.advice,
         };
         let mut header = String::new();
-        if self.linkify_code && diagnostic.url().is_some() {
+        if self.links == LinkStyle::Link && diagnostic.url().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = if let Some(code) = diagnostic.code() {
                 format!("{} ", code)
@@ -153,8 +177,9 @@ impl GraphicalReportHandler {
             writeln!(f, "{}", header)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
-            if let Some(link) = diagnostic.url() {
-                write!(header, " ({})", link.style(self.theme.styles.link))?;
+            if self.links == LinkStyle::Text && diagnostic.url().is_some() {
+                let url = diagnostic.url().unwrap(); // safe
+                write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
         }
