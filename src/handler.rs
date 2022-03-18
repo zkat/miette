@@ -167,10 +167,11 @@ impl MietteHandlerOpts {
             } else {
                 ThemeStyles::none()
             };
+            let theme = self.theme.unwrap_or(GraphicalTheme { characters, styles });
             let mut handler = GraphicalReportHandler::new()
                 .with_width(width)
                 .with_links(linkify)
-                .with_theme(GraphicalTheme { characters, styles });
+                .with_theme(theme);
             if let Some(footer) = self.footer {
                 handler = handler.with_footer(footer);
             }
