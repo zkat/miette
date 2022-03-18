@@ -150,7 +150,9 @@ impl MietteHandlerOpts {
                 None if supports_unicode::on(Stream::Stderr) => ThemeCharacters::unicode(),
                 None => ThemeCharacters::ascii(),
             };
-            let styles = if self.rgb_colors == Some(true) {
+            let styles = if self.color == Some(false) {
+                ThemeStyles::none()
+            } else if self.rgb_colors == Some(true) {
                 ThemeStyles::rgb()
             } else if self.ansi_colors == Some(true) {
                 ThemeStyles::ansi()
