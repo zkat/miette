@@ -530,7 +530,7 @@ the Apache License. Some code is taken from
 
 [`miette!`]: https://docs.rs/miette/latest/miette/macro.miette.html
 [`std::error::Error`]: https://doc.rust-lang.org/nightly/std/error/trait.Error.html
-[`Diagnostic`]: https://docs.rs/miette/latest/miette/struct.Diagnostic.html
+[`Diagnostic`]: https://docs.rs/miette/latest/miette/trait.Diagnostic.html
 [`IntoDiagnostic`]: https://docs.rs/miette/latest/miette/trait.IntoDiagnostic.html
 [`MietteHandlerOpts`]: https://docs.rs/miette/latest/miette/struct.MietteHandlerOpts.html
 [`MietteHandler`]: https://docs.rs/miette/latest/miette/struct.MietteHandler.html
