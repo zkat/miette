@@ -537,5 +537,5 @@ the Apache License. Some code is taken from
 [`Report`]: https://docs.rs/miette/latest/miette/struct.Report.html
 [`ReportHandler`]: https://docs.rs/miette/latest/miette/struct.ReportHandler.html
 [`Result`]: https://docs.rs/miette/latest/miette/type.Result.html
-[`SourceCode`]: https://docs.rs/miette/latest/miette/struct.SourceCode.html
+[`SourceCode`]: https://docs.rs/miette/latest/miette/trait.SourceCode.html
 [`SourceSpan`]: https://docs.rs/miette/latest/miette/struct.SourceSpan.html
