@@ -1,4 +1,4 @@
-#![cfg(feature = "fancy")]
+#![cfg(feature = "fancy-no-backtrace")]
 
 use miette::{
     Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,

@@ -26,10 +26,10 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
-#[cfg(not(feature = "fancy"))]
+#[cfg(not(feature = "fancy-no-backtrace"))]
 use crate::DebugReportHandler;
 use crate::Diagnostic;
-#[cfg(feature = "fancy")]
+#[cfg(feature = "fancy-no-backtrace")]
 use crate::MietteHandler;
 
 use error::ErrorImpl;
@@ -98,9 +98,9 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
-    #[cfg(feature = "fancy")]
+    #[cfg(feature = "fancy-no-backtrace")]
     return Box::new(MietteHandler::new());
-    #[cfg(not(feature = "fancy"))]
+    #[cfg(not(feature = "fancy-no-backtrace"))]
     return Box::new(DebugReportHandler::new());
 }
 

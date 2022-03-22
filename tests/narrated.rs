@@ -1,4 +1,4 @@
-#![cfg(feature = "fancy")]
+#![cfg(feature = "fancy-no-backtrace")]
 
 use miette::{Diagnostic, MietteError, NamedSource, NarratableReportHandler, Report, SourceSpan};
 
@@ -9,8 +9,8 @@ use thiserror::Error;
 fn fmt_report(diag: Report) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
-    if cfg!(feature = "fancy") && std::env::var("STYLE").is_ok() {
-        #[cfg(feature = "fancy")]
+    if cfg!(feature = "fancy-no-backtrace") && std::env::var("STYLE").is_ok() {
+        #[cfg(feature = "fancy-no-backtrace")]
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
             .render_report(&mut out, diag.as_ref())
             .unwrap();

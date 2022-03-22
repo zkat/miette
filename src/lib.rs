@@ -531,7 +531,7 @@ pub use miette_derive::*;
 
 pub use error::*;
 pub use eyreish::*;
-#[cfg(feature = "fancy")]
+#[cfg(feature = "fancy-no-backtrace")]
 pub use handler::*;
 pub use handlers::*;
 pub use named_source::*;
@@ -542,7 +542,7 @@ pub use protocol::*;
 mod chain;
 mod error;
 mod eyreish;
-#[cfg(feature = "fancy")]
+#[cfg(feature = "fancy-no-backtrace")]
 mod handler;
 mod handlers;
 mod named_source;

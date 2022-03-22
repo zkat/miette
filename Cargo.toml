@@ -38,7 +38,7 @@ syn = { version = "1.0", features = ["full"] }
 
 [features]
 default = []
-fancy = [
+fancy-no-backtrace = [
     "owo-colors",
     "atty",
     "textwrap",
@@ -46,6 +46,9 @@ fancy = [
     "supports-hyperlinks",
     "supports-color",
     "supports-unicode",
+]
+fancy = [
+    "fancy-no-backtrace",
     "backtrace",
 ]
 
