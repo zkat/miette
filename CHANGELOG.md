@@ -1,5 +1,25 @@
 # `miette` Release Changelog
 
+<a name="4.3.0"></a>
+## 4.3.0 (2022-03-27)
+
+### Features
+
+* **reporter:** Allow GraphicalReportHandler to disable url display (#137) ([b6a6cc9e](https://github.com/zkat/miette/commit/b6a6cc9e75198e53f1413c88694d950006833e05))
+
+### Bug Fixes
+
+* **colors:** handler_opts.color(false) should disable color (#133) ([209275d4](https://github.com/zkat/miette/commit/209275d4377fcaf397bde931f2972a1b7d8ce55c))
+* **handler:** Apply MietteHandlerOpts::graphical_theme (#138) ([70e84f9a](https://github.com/zkat/miette/commit/70e84f9a019008a38ed22416f1fc399d32f50db4))
+
+### Documentation
+
+* **readme:** Fix a couple links (#141) ([126ffc58](https://github.com/zkat/miette/commit/126ffc5834683726fc8efff6604735f8cc806f9b))
+
+### Miscellaneous Tasks
+
+* **deps:** Update textwrap to 0.15.0 (#143) ([2d0054b3](https://github.com/zkat/miette/commit/2d0054b3c9bf1f6bdbea624ba65593ca41f03999))
+
 <a name="4.2.1"></a>
 ## 4.2.1 (2022-02-25)
 
