@@ -83,6 +83,7 @@ impl Report {
             object_mut: object_mut::<E>,
             object_ref_stderr: object_ref_stderr::<E>,
             object_boxed: object_boxed::<E>,
+            object_boxed_stderr: object_boxed_stderr::<E>,
             object_downcast: object_downcast::<E>,
             object_drop_rest: object_drop_front::<E>,
         };
@@ -106,6 +107,7 @@ impl Report {
             object_mut: object_mut::<MessageError<M>>,
             object_ref_stderr: object_ref_stderr::<MessageError<M>>,
             object_boxed: object_boxed::<MessageError<M>>,
+            object_boxed_stderr: object_boxed_stderr::<MessageError<M>>,
             object_downcast: object_downcast::<M>,
             object_drop_rest: object_drop_front::<M>,
         };
@@ -131,6 +133,7 @@ impl Report {
             object_mut: object_mut::<ContextError<D, E>>,
             object_ref_stderr: object_ref_stderr::<ContextError<D, E>>,
             object_boxed: object_boxed::<ContextError<D, E>>,
+            object_boxed_stderr: object_boxed_stderr::<ContextError<D, E>>,
             object_downcast: context_downcast::<D, E>,
             object_drop_rest: context_drop_rest::<D, E>,
         };
@@ -153,6 +156,7 @@ impl Report {
             object_mut: object_mut::<BoxedError>,
             object_ref_stderr: object_ref_stderr::<BoxedError>,
             object_boxed: object_boxed::<BoxedError>,
+            object_boxed_stderr: object_boxed_stderr::<BoxedError>,
             object_downcast: object_downcast::<Box<dyn Diagnostic + Send + Sync>>,
             object_drop_rest: object_drop_front::<Box<dyn Diagnostic + Send + Sync>>,
         };
@@ -213,6 +217,7 @@ impl Report {
             object_mut: object_mut::<ContextError<D, Report>>,
             object_ref_stderr: object_ref_stderr::<ContextError<D, Report>>,
             object_boxed: object_boxed::<ContextError<D, Report>>,
+            object_boxed_stderr: object_boxed_stderr::<ContextError<D, Report>>,
             object_downcast: context_chain_downcast::<D>,
             object_drop_rest: context_chain_drop_rest::<D>,
         };
@@ -455,6 +460,8 @@ struct ErrorVTable {
     object_ref_stderr: unsafe fn(&ErrorImpl<()>) -> &(dyn StdError + Send + Sync + 'static),
     #[allow(clippy::type_complexity)]
     object_boxed: unsafe fn(Box<ErrorImpl<()>>) -> Box<dyn Diagnostic + Send + Sync + 'static>,
+    #[allow(clippy::type_complexity)]
+    object_boxed_stderr: unsafe fn(Box<ErrorImpl<()>>) -> Box<dyn StdError + Send + Sync + 'static>,
     object_downcast: unsafe fn(&ErrorImpl<()>, TypeId) -> Option<NonNull<()>>,
     object_drop_rest: unsafe fn(Box<ErrorImpl<()>>, TypeId),
 }
@@ -508,6 +515,15 @@ where
 unsafe fn object_boxed<E>(e: Box<ErrorImpl<()>>) -> Box<dyn Diagnostic + Send + Sync + 'static>
 where
     E: Diagnostic + Send + Sync + 'static,
+{
+    // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
+    mem::transmute::<Box<ErrorImpl<()>>, Box<ErrorImpl<E>>>(e)
+}
+
+// Safety: requires layout of *e to match ErrorImpl<E>.
+unsafe fn object_boxed_stderr<E>(e: Box<ErrorImpl<()>>) -> Box<dyn StdError + Send + Sync + 'static>
+where
+    E: StdError + Send + Sync + 'static,
 {
     // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
     mem::transmute::<Box<ErrorImpl<()>>, Box<ErrorImpl<E>>>(e)
@@ -711,9 +727,31 @@ impl From<Report> for Box<dyn Diagnostic + Send + Sync + 'static> {
     }
 }
 
+impl From<Report> for Box<dyn StdError + Send + Sync + 'static> {
+    fn from(error: Report) -> Self {
+        let outer = ManuallyDrop::new(error);
+        unsafe {
+            // Read Box<ErrorImpl<()>> from error. Can't move it out because
+            // Report has a Drop impl which we want to not run.
+            let inner = ptr::read(&outer.inner);
+            let erased = ManuallyDrop::into_inner(inner);
+
+            // Use vtable to attach ErrorImpl<E>'s native StdError vtable for
+            // the right original type E.
+            (erased.vtable.object_boxed_stderr)(erased)
+        }
+    }
+}
+
 impl From<Report> for Box<dyn Diagnostic + 'static> {
     fn from(error: Report) -> Self {
         Box::<dyn Diagnostic + Send + Sync>::from(error)
+    }
+}
+
+impl From<Report> for Box<dyn StdError + 'static> {
+    fn from(error: Report) -> Self {
+        Box::<dyn StdError + Send + Sync>::from(error)
     }
 }
 
