@@ -82,13 +82,14 @@ impl Url {
                     Url::DocsRs => {
                         let pat = gen_unused_pat(fields);
                         let fmt =
-                            "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}"
+                            "https://docs.rs/{crate_name}/{crate_version}/{mod_name}/{item_path}"
                                 .into();
                         let item_path = format!("enum.{}.html#variant.{}", enum_name, ident);
                         let args = quote! {
                             ,
                             crate_name=env!("CARGO_PKG_NAME"),
                             crate_version=env!("CARGO_PKG_VERSION"),
+                            mod_name=env!("CARGO_PKG_NAME").replace('-', "_"),
                             item_path=#item_path
                         };
                         (pat, fmt, args)
@@ -115,12 +116,13 @@ impl Url {
             Url::DocsRs => {
                 let pat = gen_unused_pat(fields);
                 let fmt =
-                    "https://docs.rs/{crate_name}/{crate_version}/{crate_name}/{item_path}".into();
+                    "https://docs.rs/{crate_name}/{crate_version}/{mod_name}/{item_path}".into();
                 let item_path = format!("struct.{}.html", struct_name);
                 let args = quote! {
                     ,
                     crate_name=env!("CARGO_PKG_NAME"),
                     crate_version=env!("CARGO_PKG_VERSION"),
+                    mod_name=env!("CARGO_PKG_NAME").replace('-', "_"),
                     item_path=#item_path
                 };
                 (pat, fmt, args)
