@@ -167,8 +167,8 @@ impl GraphicalReportHandler {
             let link = format!(
                 "\u{1b}]8;;{}\u{1b}\\{}{}\u{1b}]8;;\u{1b}\\",
                 url,
-                    code.style(severity_style),
-                    "(link)".style(self.theme.styles.link)
+                code.style(severity_style),
+                "(link)".style(self.theme.styles.link)
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
