@@ -165,13 +165,10 @@ impl GraphicalReportHandler {
                 "".to_string()
             };
             let link = format!(
-                "\u{1b}]8;;{}\u{1b}\\{}\u{1b}]8;;\u{1b}\\",
+                "\u{1b}]8;;{}\u{1b}\\{}{}\u{1b}]8;;\u{1b}\\",
                 url,
-                format!(
-                    "{}{}",
                     code.style(severity_style),
                     "(link)".style(self.theme.styles.link)
-                )
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
@@ -417,7 +414,7 @@ impl GraphicalReportHandler {
 
             // And _now_ we can print out the line text itself!
             if let Some(w) = self.tab_width {
-                let text = line.text.replace("\t", " ".repeat(w).as_str());
+                let text = line.text.replace('\t', " ".repeat(w).as_str());
                 writeln!(f, "{}", text)?;
             } else {
                 writeln!(f, "{}", line.text)?;

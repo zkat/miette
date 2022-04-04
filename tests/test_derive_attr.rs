@@ -142,6 +142,6 @@ fn attr_not_required() {
         highlight: (9, 4).into(),
     };
     let err_span = err.labels().unwrap().next().unwrap();
-    let expectation = LabeledSpan::new(Some("this bit here".into()), 9usize.into(), 4usize.into());
+    let expectation = LabeledSpan::new(Some("this bit here".into()), 9usize, 4usize);
     assert_eq!(err_span, expectation);
 }

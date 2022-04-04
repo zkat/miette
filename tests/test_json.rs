@@ -834,7 +834,7 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src.clone()),
+            src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 4).into(),
             related: vec![
                 InnerError {
