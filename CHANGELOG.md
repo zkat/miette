@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="4.4.0"></a>
+## 4.4.0 (2022-04-04)
+
+### Features
+
+* **report:** Add conversion from Report to Box<dyn Error> (#149) ([b4a9d4cd](https://github.com/zkat/miette/commit/b4a9d4cd9bc43720613b7d2bb6b521d51922c6b8))
+
+### Bug Fixes
+
+* **docsrs:** use proper module names for docsrs URLs ([a0b972f8](https://github.com/zkat/miette/commit/a0b972f8765040fdbb08fdbe006ceb4dbc9c31f2))
+* **clippy:** misc clippy fixes ([b98b0982](https://github.com/zkat/miette/commit/b98b09828215ffc623aa17aa0bc8a6f45173a3f0))
+* **fmt:** cargo fmt ([37cda4a3](https://github.com/zkat/miette/commit/37cda4a3a456060050e42a199a68ab86ee679f79))
+
 <a name="4.3.0"></a>
 ## 4.3.0 (2022-03-27)
 
