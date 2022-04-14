@@ -93,7 +93,7 @@ impl MietteHandlerOpts {
 
     /// If true, ANSI colors will be used during graphical rendering.
     pub fn ansi_colors(mut self, color: bool) -> Self {
-        self.rgb_colors = Some(color);
+        self.ansi_colors = Some(color);
         self
     }
     /// If true, graphical rendering will be used regardless of terminal
