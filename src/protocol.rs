@@ -345,7 +345,7 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
 /**
 Span within a [`SourceCode`] with an associated message.
 */
-#[derive(Clone, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub struct SourceSpan {
     /// The start of the span.
     offset: SourceOffset,
