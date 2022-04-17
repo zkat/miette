@@ -47,7 +47,7 @@ impl SourceCode for NamedSource {
         Ok(Box::new(MietteSpanContents::new_named(
             self.name.clone(),
             contents.data(),
-            contents.span().clone(),
+            *contents.span(),
             contents.line(),
             contents.column(),
             contents.line_count(),
