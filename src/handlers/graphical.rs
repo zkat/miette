@@ -350,9 +350,7 @@ impl GraphicalReportHandler {
         let labels = labels
             .iter()
             .zip(self.theme.styles.highlights.iter().cloned().cycle())
-            .map(|(label, st)| {
-                FancySpan::new(label.label().map(String::from), label.inner().clone(), st)
-            })
+            .map(|(label, st)| FancySpan::new(label.label().map(String::from), *label.inner(), st))
             .collect::<Vec<_>>();
 
         // The max number of gutter-lines that will be active at any given
