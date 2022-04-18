@@ -1,6 +1,9 @@
+// Huge thanks to @jam1gamer for this hack:
+// https://twitter.com/jam1garner/status/1515887996444323840
+
 #[doc(hidden)]
 pub trait IsOption {}
-impl <T> IsOption for Option<T> {}
+impl<T> IsOption for Option<T> {}
 
 #[doc(hidden)]
 #[derive(Debug, Default)]
@@ -18,7 +21,10 @@ pub trait ToOption {
     fn to_option<T>(self, value: T) -> Option<T>;
 }
 
-impl<T> OptionalWrapper<T> where T: IsOption {
+impl<T> OptionalWrapper<T>
+where
+    T: IsOption,
+{
     #[doc(hidden)]
     pub fn to_option(self, value: &T) -> &T {
         value
