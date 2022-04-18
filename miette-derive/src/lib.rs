@@ -16,7 +16,7 @@ mod source_code;
 mod url;
 mod utils;
 
-#[proc_macro_derive(Diagnostic, attributes(diagnostic, source_code, label, related))]
+#[proc_macro_derive(Diagnostic, attributes(diagnostic, source_code, label, related, help))]
 pub fn derive_diagnostic(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     let cmd = match Diagnostic::from_derive_input(input) {

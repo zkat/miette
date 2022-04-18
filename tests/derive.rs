@@ -239,6 +239,62 @@ fn fmt_help() {
 }
 
 #[test]
+fn help_field() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic()]
+    struct Foo {
+        #[help]
+        do_this: Option<String>,
+    }
+
+    assert_eq!(
+        "x".to_string(),
+        Foo {
+            do_this: Some("x".into())
+        }
+        .help()
+        .unwrap()
+        .to_string()
+    );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic()]
+    enum Bar {
+        A(#[help] Option<String>),
+        B {
+            #[help]
+            do_this: Option<String>,
+        },
+    }
+
+    assert_eq!(
+        "x".to_string(),
+        Bar::A(Some("x".into())).help().unwrap().to_string()
+    );
+    assert_eq!(
+        "x".to_string(),
+        Bar::B {
+            do_this: Some("x".into())
+        }
+        .help()
+        .unwrap()
+        .to_string()
+    );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic()]
+    struct Baz(#[help] Option<String>);
+
+    assert_eq!(
+        "x".to_string(),
+        Baz(Some("x".into())).help().unwrap().to_string()
+    );
+}
+
+#[test]
 fn test_snippet_named_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]

@@ -9,3 +9,9 @@ workspace=false
 install_crate="cargo-release"
 command = "cargo"
 args = ["release", "--workspace", "${@}"]
+
+[tasks.readme]
+workspace=false
+install_crate="cargo-readme"
+command = "cargo"
+args = ["readme"]
