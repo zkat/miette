@@ -18,7 +18,7 @@ use crate::{
 
 pub enum Help {
     Display(Display),
-    Field(syn::Member),
+    Field(syn::Member, Box<syn::Type>),
 }
 
 impl Parse for Help {
@@ -78,7 +78,7 @@ impl Help {
                             span: field.span(),
                         })
                     };
-                    return Ok(Some(Help::Field(help)));
+                    return Ok(Some(Help::Field(help, Box::new(field.ty.clone()))));
                 }
             }
         }
@@ -97,15 +97,19 @@ impl Help {
                             Self::#ident #display_pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
                         })
                     }
-                    Help::Field(member) => {
+                    Help::Field(member, ty) => {
                         let help = match &member {
                             syn::Member::Named(ident) => ident.clone(),
                             syn::Member::Unnamed(syn::Index { index, .. }) => {
                                 format_ident!("_{}", index)
                             }
                         };
+                        let var = quote! { __miette_internal_var };
                         Some(quote! {
-                            Self::#ident #display_pat => #help.as_ref().map(|h| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", h)) }),
+                            Self::#ident #display_pat => {
+                                use miette::macro_helpers::ToOption;
+                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&#help).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", #var)) })
+                            },
                         })
                     }
                 }
@@ -126,13 +130,17 @@ impl Help {
                     }
                 })
             }
-            Help::Field(member) => Some(quote! {
-                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                    #[allow(unused_variables, deprecated)]
-                    let Self #display_pat = self;
-                    self.#member.as_ref().map(|h| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", h)) })
-                }
-            }),
+            Help::Field(member, ty) => {
+                let var = quote! { __miette_internal_var };
+                Some(quote! {
+                    fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                        #[allow(unused_variables, deprecated)]
+                        let Self #display_pat = self;
+                        use miette::macro_helpers::ToOption;
+                        miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#member).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", #var)) })
+                    }
+                })
+            }
         }
     }
 }
