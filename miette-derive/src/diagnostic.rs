@@ -73,9 +73,10 @@ impl DiagnosticConcreteArgs {
         let labels = Labels::from_fields(fields)?;
         let source_code = SourceCode::from_fields(fields)?;
         let related = Related::from_fields(fields)?;
+        let help = Help::from_fields(fields)?;
         Ok(DiagnosticConcreteArgs {
             code: None,
-            help: None,
+            help,
             related,
             severity: None,
             labels,

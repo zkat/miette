@@ -371,6 +371,42 @@
 //! }
 //! ```
 //!
+//! #### ... help text
+//! `miette` provides two facilities for supplying help text for your errors:
+//
+//! The first is the `#[help()]` format attribute that applies to structs or
+//! enum variants:
+//!
+//! ```rust
+//! use miette::Diagnostic;
+//! use thiserror::Error;
+//!
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("welp")]
+//! #[diagnostic(help("try doing this instead"))]
+//! struct Foo;
+//! ```
+//!
+//! The other is by programmatically supplying the help text as a field to your
+//! diagnostic:
+//!
+//! ```rust
+//! use miette::Diagnostic;
+//! use thiserror::Error;
+//!
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("welp")]
+//! #[diagnostic()]
+//! struct Foo {
+//!     #[help]
+//!     advice: Option<String>,
+//! }
+//!
+//! let err = Foo {
+//!     advice: Some("try doing this instead".to_string()),
+//! };
+//! ```
+//!
 //! ### ... multiple related errors
 //!
 //! `miette` supports collecting multiple errors into a single diagnostic, and

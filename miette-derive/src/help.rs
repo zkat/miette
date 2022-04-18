@@ -1,8 +1,9 @@
 use proc_macro2::TokenStream;
-use quote::quote;
+use quote::{format_ident, quote};
 use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
+    spanned::Spanned,
     Fields, Token,
 };
 
@@ -15,8 +16,9 @@ use crate::{
     forward::WhichFn,
 };
 
-pub struct Help {
-    pub display: Display,
+pub enum Help {
+    Display(Display),
+    Field(syn::Member),
 }
 
 impl Parse for Help {
@@ -38,16 +40,14 @@ impl Parse for Help {
                     args,
                     has_bonus_display: false,
                 };
-                Ok(Help { display })
+                Ok(Help::Display(display))
             } else {
                 input.parse::<Token![=]>()?;
-                Ok(Help {
-                    display: Display {
-                        fmt: input.parse()?,
-                        args: TokenStream::new(),
-                        has_bonus_display: false,
-                    },
-                })
+                Ok(Help::Display(Display {
+                    fmt: input.parse()?,
+                    args: TokenStream::new(),
+                    has_bonus_display: false,
+                }))
             }
         } else {
             Err(syn::Error::new(ident.span(), "not a help"))
@@ -56,30 +56,83 @@ impl Parse for Help {
 }
 
 impl Help {
+    pub(crate) fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+        match fields {
+            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Unnamed(unnamed) => {
+                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+            }
+            syn::Fields::Unit => Ok(None),
+        }
+    }
+
+    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+        for (i, field) in fields.iter().enumerate() {
+            for attr in &field.attrs {
+                if attr.path.is_ident("help") {
+                    let help = if let Some(ident) = field.ident.clone() {
+                        syn::Member::Named(ident)
+                    } else {
+                        syn::Member::Unnamed(syn::Index {
+                            index: i as u32,
+                            span: field.span(),
+                        })
+                    };
+                    return Ok(Some(Help::Field(help)));
+                }
+            }
+        }
+        Ok(None)
+    }
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         gen_all_variants_with(
             variants,
             WhichFn::Help,
             |ident, fields, DiagnosticConcreteArgs { help, .. }| {
                 let (display_pat, display_members) = display_pat_members(fields);
-                let display = &help.as_ref()?.display;
-                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
-                Some(quote! {
-                    Self::#ident #display_pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
-                })
+                match &help.as_ref()? {
+                    Help::Display(display) => {
+                        let (fmt, args) = display.expand_shorthand_cloned(&display_members);
+                        Some(quote! {
+                            Self::#ident #display_pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
+                        })
+                    }
+                    Help::Field(member) => {
+                        let help = match &member {
+                            syn::Member::Named(ident) => ident.clone(),
+                            syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                format_ident!("_{}", index)
+                            }
+                        };
+                        Some(quote! {
+                            Self::#ident #display_pat => #help.as_ref().map(|h| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", h)) }),
+                        })
+                    }
+                }
             },
         )
     }
 
     pub(crate) fn gen_struct(&self, fields: &Fields) -> Option<TokenStream> {
         let (display_pat, display_members) = display_pat_members(fields);
-        let (fmt, args) = self.display.expand_shorthand_cloned(&display_members);
-        Some(quote! {
-            fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
-                #[allow(unused_variables, deprecated)]
-                let Self #display_pat = self;
-                std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
+        match self {
+            Help::Display(display) => {
+                let (fmt, args) = display.expand_shorthand_cloned(&display_members);
+                Some(quote! {
+                    fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                        #[allow(unused_variables, deprecated)]
+                        let Self #display_pat = self;
+                        std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
+                    }
+                })
             }
-        })
+            Help::Field(member) => Some(quote! {
+                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+                    #[allow(unused_variables, deprecated)]
+                    let Self #display_pat = self;
+                    self.#member.as_ref().map(|h| -> std::boxed::Box<dyn std::fmt::Display + 'a> { std::boxed::Box::new(format!("{}", h)) })
+                }
+            }),
+        }
     }
 }
