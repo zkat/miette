@@ -292,6 +292,16 @@ fn help_field() {
         "x".to_string(),
         Baz(Some("x".into())).help().unwrap().to_string()
     );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    #[diagnostic()]
+    struct Quux(#[help] String);
+
+    assert_eq!(
+        "x".to_string(),
+        Quux("x".into()).help().unwrap().to_string()
+    );
 }
 
 #[test]

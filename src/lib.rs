@@ -589,6 +589,8 @@ mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]
 mod handler;
 mod handlers;
+#[doc(hidden)]
+pub mod macro_helpers;
 mod named_source;
 #[cfg(feature = "fancy")]
 mod panic;
