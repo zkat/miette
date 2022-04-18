@@ -1,6 +1,21 @@
 # `miette` Release Changelog
 
-<a name="4.4.0"></a>
+<a name="v4.5.0"></a>
+## 4.5.0 (2022-04-18)
+
+### Features
+
+* **spans:** make SourceSpan implement Copy (#151) ([5e54b29a](https://github.com/zkat/miette/commit/5e54b29acf87eacf0a0255a9d3db8966de697fcf))
+* **help:** update macro to allow optional help text (#152) ([45093c2f](https://github.com/zkat/miette/commit/45093c2f587a281a37e80141d126d87944ca75b5))
+* **labels:** allow optional labels in derive macro (#153) ([23ee3642](https://github.com/zkat/miette/commit/23ee3642d198ff4f78af9729d7a5223b0c676d1f))
+* **help:** allow non-option values in #[help] fields ([ea55f458](https://github.com/zkat/miette/commit/ea55f458fa8acabc1c7e001c405f90025d6dbafc))
+* **label:** use macro magic instead of optional flag for optional labels ([9da62cd0](https://github.com/zkat/miette/commit/9da62cd05d777f8bd962f1fe94a75c47b11ee07e))
+
+### Bug Fixes
+
+* **theme:** set correct field in MietteHandlerOpts::ansi_colors (#150) ([97197601](https://github.com/zkat/miette/commit/97197601ee8f36fedb559c9c8b2d73ce5b0ca0ee))
+
+<a name="v4.4.0"></a>
 ## 4.4.0 (2022-04-04)
 
 ### Features
@@ -13,7 +28,7 @@
 * **clippy:** misc clippy fixes ([b98b0982](https://github.com/zkat/miette/commit/b98b09828215ffc623aa17aa0bc8a6f45173a3f0))
 * **fmt:** cargo fmt ([37cda4a3](https://github.com/zkat/miette/commit/37cda4a3a456060050e42a199a68ab86ee679f79))
 
-<a name="4.3.0"></a>
+<a name="v4.3.0"></a>
 ## 4.3.0 (2022-03-27)
 
 ### Features
@@ -33,7 +48,7 @@
 
 * **deps:** Update textwrap to 0.15.0 (#143) ([2d0054b3](https://github.com/zkat/miette/commit/2d0054b3c9bf1f6bdbea624ba65593ca41f03999))
 
-<a name="4.2.1"></a>
+<a name="v4.2.1"></a>
 ## 4.2.1 (2022-02-25)
 
 ### Bug Fixes
@@ -42,14 +57,14 @@
 * **clippy:** 1.59.0 clippy fix ([fa5b5fee](https://github.com/zkat/miette/commit/fa5b5fee549e53e9cf0c1d946bef242eebee6c48))
 * **docs:** Docs overhaul (#124) ([5d23c0d6](https://github.com/zkat/miette/commit/5d23c0d61d0c7e778579d4d290b1f6e2c53fba31))
 
-<a name="4.2.0"></a>
+<a name="v4.2.0"></a>
 ## 4.2.0 (2022-02-22)
 
 ### Features
 
 * **derive:** allow `Report` in `related` (#121) ([75d4505e](https://github.com/zkat/miette/commit/75d4505e7d55e816cac071eb126213b72bf48982))
 
-<a name="4.1.0"></a>
+<a name="v4.1.0"></a>
 ## 4.1.0 (2022-02-20)
 
 `.with_source_code()` is here!!
@@ -63,14 +78,14 @@
 
 * **derive:** absolute path references to Diagnostic (#118) ([6eb3d2d8](https://github.com/zkat/miette/commit/6eb3d2d8a63bc38a53a472932a476b78c4fdb34c))
 
-<a name="4.0.1"></a>
+<a name="v4.0.1"></a>
 ## 4.0.1 (2022-02-18)
 
 ### Bug Fixes
 
 * **graphical:** boolean was messing up graphical display ([5c085b39](https://github.com/zkat/miette/commit/5c085b39e28ad87777135bcca30d2ac99039de39))
 
-<a name="4.0.0"></a>
+<a name="v4.0.0"></a>
 ## 4.0.0 (2022-02-18)
 
 ### Breaking Changes
@@ -90,7 +105,7 @@ NO_GRAPHICS instead.
 * **handlers:** Fix label position (#107) ([f158f4e3](https://github.com/zkat/miette/commit/f158f4e370bd25d589136a69058a6dff5e8aa468))
 
 
-<a name="3.3.0"></a>
+<a name="v3.3.0"></a>
 ## 3.3.0 (2022-01-08)
 
 ### Features
@@ -104,7 +119,7 @@ NO_GRAPHICS instead.
 * **json:** proper escapes for JSON strings (#101) ([645ef6a1](https://github.com/zkat/miette/commit/645ef6a1b66a9a05f97883535f162cab4d0483f5))
 * **deps:** switch to terminal_size ([51146535](https://github.com/zkat/miette/commit/51146535f5ea9eeaff1163d99d8b89a2567e93dd))
 
-<a name="3.2.0"></a>
+<a name="v3.2.0"></a>
 ## 3.2.0 (2021-10-06)
 
 ### Features
@@ -115,19 +130,19 @@ NO_GRAPHICS instead.
 
 * **read_span** prevent multiline MietteSpanContents from skipping lines (#81) ([cb5a919d](https://github.com/zkat/miette/commit/cb5a919deb87f8fba748bed73b6f22ebe4e3390f))
 
-<a name="3.1.0"></a>
+<a name="v3.1.0"></a>
 ## 3.1.0 (2021-10-01)
 
 ### Features
 
 * **SourceSpan:** add impl From<Range> (#78) ([0169fe20](https://github.com/zkat/miette/commit/0169fe20e7868cfee594b26b063267d17be0a84e))
 
-<a name="3.0.1"></a>
+<a name="v3.0.1"></a>
 ## 3.0.1 (2021-09-26)
 
 No code changes this release. Just improved documentation and related tests.
 
-<a name="3.0.0"></a>
+<a name="v3.0.0"></a>
 ## 3.0.0 (2021-09-22)
 
 It's here! Have fun!
