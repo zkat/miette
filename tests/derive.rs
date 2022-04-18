@@ -319,9 +319,9 @@ fn test_snippet_named_struct() {
         var2: (usize, usize),
         #[label]
         var3: (usize, usize),
-        #[label(optional, "var 4")]
+        #[label("var 4")]
         var4: Option<(usize, usize)>,
-        #[label(optional)]
+        #[label]
         var5: Option<(usize, usize)>,
     }
 }
@@ -336,8 +336,8 @@ fn test_snippet_unnamed_struct() {
         #[label("{0}")] SourceSpan,
         #[label = "idk"] SourceSpan,
         #[label] SourceSpan,
-        #[label(optional, "foo")] Option<SourceSpan>,
-        #[label(optional)] Option<SourceSpan>,
+        #[label("foo")] Option<SourceSpan>,
+        #[label] Option<SourceSpan>,
     );
 }
 
@@ -358,9 +358,9 @@ fn test_snippet_enum() {
             var1: SourceSpan,
             #[label]
             var2: SourceSpan,
-            #[label(optional, "var 3")]
+            #[label("var 3")]
             var3: Option<(usize, usize)>,
-            #[label(optional)]
+            #[label]
             var4: Option<(usize, usize)>,
         },
         #[diagnostic(code(foo::b))]
@@ -370,8 +370,8 @@ fn test_snippet_enum() {
             #[label("{1}")] SourceSpan,
             #[label = "blorp"] SourceSpan,
             #[label] SourceSpan,
-            #[label(optional, "foo")] Option<SourceSpan>,
-            #[label(optional)] Option<SourceSpan>,
+            #[label("foo")] Option<SourceSpan>,
+            #[label] Option<SourceSpan>,
         ),
     }
 }

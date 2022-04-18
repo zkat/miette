@@ -369,12 +369,12 @@
 //!     #[label("This is bad")]
 //!     snip2: (usize, usize), // `(usize, usize)` is `Into<SourceSpan>`!
 //!
-//!     // Snippets can be optional, by tagging them as such:
-//!     #[label(optional, "some text")]
+//!     // Snippets can be optional, by using Option:
+//!     #[label("some text")]
 //!     snip3: Option<SourceSpan>,
 //!
 //!     // with or without label text
-//!     #[label(optional)]
+//!     #[label]
 //!     snip4: Option<SourceSpan>,
 //! }
 //! ```
@@ -407,7 +407,7 @@
 //! #[diagnostic()]
 //! struct Foo {
 //!     #[help]
-//!     advice: Option<String>,
+//!     advice: Option<String>, // Can also just be `String`
 //! }
 //!
 //! let err = Foo {

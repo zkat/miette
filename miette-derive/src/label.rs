@@ -18,35 +18,21 @@ pub struct Labels(Vec<Label>);
 
 struct Label {
     label: Option<Display>,
-    optional: bool,
+    ty: syn::Type,
     span: syn::Member,
 }
 
 struct LabelAttr {
     label: Option<Display>,
-    optional: bool,
 }
 
 impl Parse for LabelAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
         let la = input.lookahead1();
-        let (label, optional) = if la.peek(syn::token::Paren) {
+        let label = if la.peek(syn::token::Paren) {
             // #[label("{}", x)]
             let content;
             parenthesized!(content in input);
-            let optional = if content.peek(syn::Ident) {
-                let ident = content.parse::<syn::Ident>()?;
-                if ident == "optional" {
-                    if content.peek(syn::Token![,]) {
-                        content.parse::<syn::Token![,]>()?;
-                    }
-                    true
-                } else {
-                    false
-                }
-            } else {
-                false
-            };
             if content.peek(syn::LitStr) {
                 let fmt = content.parse()?;
                 let args = if content.is_empty() {
@@ -59,27 +45,22 @@ impl Parse for LabelAttr {
                     args,
                     has_bonus_display: false,
                 };
-                (Some(display), optional)
-            } else if optional {
-                (None, optional)
+                Some(display)
             } else {
-                return Err(syn::Error::new(input.span(), "Invalid argument to label() attribute. The first argument must be a literal string or the identifier `optional`"));
+                return Err(syn::Error::new(input.span(), "Invalid argument to label() attribute. The first argument must be a literal string."));
             }
         } else if la.peek(Token![=]) {
             // #[label = "blabla"]
             input.parse::<Token![=]>()?;
-            (
-                Some(Display {
-                    fmt: input.parse()?,
-                    args: TokenStream::new(),
-                    has_bonus_display: false,
-                }),
-                false,
-            )
+            Some(Display {
+                fmt: input.parse()?,
+                args: TokenStream::new(),
+                has_bonus_display: false,
+            })
         } else {
-            (None, false)
+            None
         };
-        Ok(LabelAttr { label, optional })
+        Ok(LabelAttr { label })
     }
 }
 
@@ -107,12 +88,11 @@ impl Labels {
                             span: field.span(),
                         })
                     };
-                    let LabelAttr { label, optional } =
-                        syn::parse2::<LabelAttr>(attr.tokens.clone())?;
+                    let LabelAttr { label } = syn::parse2::<LabelAttr>(attr.tokens.clone())?;
                     labels.push(Label {
                         label,
                         span,
-                        optional,
+                        ty: field.ty.clone(),
                     });
                 }
             }
@@ -127,43 +107,23 @@ impl Labels {
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
         let (display_pat, display_members) = display_pat_members(fields);
         let labels = self.0.iter().map(|highlight| {
-            let Label {
-                span,
-                label,
-                optional,
-            } = highlight;
+            let Label { span, label, ty } = highlight;
             let var = quote! { __miette_internal_var };
             if let Some(display) = label {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
-                if *optional {
-                    quote! {
-                        self.#span.clone().map(|#var|
-                            miette::LabeledSpan::new_with_span(
-                                std::option::Option::Some(format!(#fmt #args)),
-                                #var,
-                        ))
-                    }
-                } else {
-                    quote! {
-                        Some(miette::LabeledSpan::new_with_span(
-                            std::option::Option::Some(format!(#fmt #args)),
-                            self.#span.clone(),
-                        ))
-                    }
-                }
-            } else if *optional {
                 quote! {
-                    self.#span.clone().map(|#var|
-                        miette::LabeledSpan::new_with_span(
-                            std::option::Option::None,
-                            #var,
+                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
+                    .map(|#var| miette::LabeledSpan::new_with_span(
+                        std::option::Option::Some(format!(#fmt #args)),
+                        #var.clone(),
                     ))
                 }
             } else {
                 quote! {
-                    Some(miette::LabeledSpan::new_with_span(
+                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
+                    .map(|#var| miette::LabeledSpan::new_with_span(
                         std::option::Option::None,
-                        self.#span.clone(),
+                        #var.clone(),
                     ))
                 }
             }
@@ -171,6 +131,7 @@ impl Labels {
         Some(quote! {
             #[allow(unused_variables)]
             fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>> {
+                use miette::macro_helpers::ToOption;
                 let Self #display_pat = self;
                 std::option::Option::Some(Box::new(vec![
                     #(#labels),*
@@ -186,59 +147,46 @@ impl Labels {
             |ident, fields, DiagnosticConcreteArgs { labels, .. }| {
                 let (display_pat, display_members) = display_pat_members(fields);
                 labels.as_ref().and_then(|labels| {
-                let variant_labels = labels.0.iter().map(|label| {
-                    let Label { span, label, optional } = label;
-                    let field = match &span {
-                        syn::Member::Named(ident) => ident.clone(),
-                        syn::Member::Unnamed(syn::Index { index, .. }) => {
-                            format_ident!("_{}", index)
-                        }
-                    };
-                    let var = quote! { __miette_internal_var };
-                    if let Some(display) = label {
-                        let (fmt, args) = display.expand_shorthand_cloned(&display_members);
-                        if *optional {
+                    let variant_labels = labels.0.iter().map(|label| {
+                        let Label { span, label, ty } = label;
+                        let field = match &span {
+                            syn::Member::Named(ident) => ident.clone(),
+                            syn::Member::Unnamed(syn::Index { index, .. }) => {
+                                format_ident!("_{}", index)
+                            }
+                        };
+                        let var = quote! { __miette_internal_var };
+                        if let Some(display) = label {
+                            let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                             quote! {
-                                #field.clone().map(|#var|
-                                    miette::LabeledSpan::new_with_span(
-                                        std::option::Option::Some(format!(#fmt #args)),
-                                        #var,
+                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
+                                .map(|#var| miette::LabeledSpan::new_with_span(
+                                    std::option::Option::Some(format!(#fmt #args)),
+                                    #var.clone(),
                                 ))
                             }
                         } else {
                             quote! {
-                                Some(miette::LabeledSpan::new_with_span(
-                                    std::option::Option::Some(format!(#fmt #args)),
-                                    #field.clone(),
+                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
+                                .map(|#var| miette::LabeledSpan::new_with_span(
+                                    std::option::Option::None,
+                                    #var.clone(),
                                 ))
                             }
                         }
-                    } else if *optional {
-                        quote! {
-                            #field.clone().map(|#var|
-                                miette::LabeledSpan::new_with_span(
-                                    std::option::Option::None,
-                                    #var,
-                            ))
-                        }
-                    } else {
-                        quote! {
-                            Some(miette::LabeledSpan::new_with_span(
-                                std::option::Option::None,
-                                #field.clone(),
-                            ))
-                        }
+                    });
+                    let variant_name = ident.clone();
+                    match &fields {
+                        syn::Fields::Unit => None,
+                        _ => Some(quote! {
+                            Self::#variant_name #display_pat => {
+                                use miette::macro_helpers::ToOption;
+                                std::option::Option::Some(std::boxed::Box::new(vec![
+                                    #(#variant_labels),*
+                                ].into_iter().filter(Option::is_some).map(Option::unwrap)))
+                            }
+                        }),
                     }
-                });
-                let variant_name = ident.clone();
-                match &fields {
-                    syn::Fields::Unit => None,
-                    _ => Some(quote! {
-                        Self::#variant_name #display_pat => std::option::Option::Some(std::boxed::Box::new(vec![
-                            #(#variant_labels),*
-                        ].into_iter().filter(Option::is_some).map(Option::unwrap))),
-                    }),
-                }
                 })
             },
         )
