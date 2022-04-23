@@ -255,7 +255,11 @@ impl GraphicalReportHandler {
         if let Some(related) = diagnostic.related() {
             writeln!(f)?;
             for rel in related {
-                write!(f, "Error: ")?;
+                match diagnostic.severity() {
+                    Some(Severity::Error) | None => write!(f, "Error: ")?,
+                    Some(Severity::Warning) => write!(f, "Warning: ")?,
+                    Some(Severity::Advice) => write!(f, "Advice: ")?,
+                };
                 self.render_header(f, rel)?;
                 writeln!(f)?;
                 self.render_causes(f, rel)?;
