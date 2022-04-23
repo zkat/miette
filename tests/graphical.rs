@@ -881,3 +881,35 @@ Error: oops::my::bad
     assert_eq!(expected, out);
     Ok(())
 }
+
+#[test]
+fn zero_length_eol_span() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("This bit here")]
+        bad_bit: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
+        bad_bit: (23, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"
+  × oops!
+   ╭─[issue:1:1]
+ 1 │ this is the first line
+ 2 │ this is the second line
+   · ▲
+   · ╰── This bit here
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
