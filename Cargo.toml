@@ -13,7 +13,7 @@ exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
 thiserror = "1.0.26"
-miette-derive = { path = "miette-derive", version = "=4.6.0"}
+miette-derive = { path = "miette-derive", version = "=4.6.1-alpha.0"}
 once_cell = "1.8.0"
 unicode-width = "0.1.9"
 
