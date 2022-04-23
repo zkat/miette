@@ -1,5 +1,17 @@
 # `miette` Release Changelog
 
+<a name="4.6.0"></a>
+## 4.6.0 (2022-04-23)
+
+### Features
+
+* **spans:** add From shorthand for zero-length SourceSpans ([1e1d6152](https://github.com/zkat/miette/commit/1e1d61525381a6699deba103a3829874676eee9c))
+* **related:** print related prefixes according to severity (#158) ([084ed138](https://github.com/zkat/miette/commit/084ed138b7598d549f38fe873a758d0ed03ef2b1))
+
+### Bug Fixes
+
+* **graphical:** fix issue with duplicate labels when span len is 0 (#159) ([1a36fa7e](https://github.com/zkat/miette/commit/1a36fa7ec80de77e910e04cdb902270970611b39))
+
 <a name="v4.5.0"></a>
 ## 4.5.0 (2022-04-18)
 
