@@ -59,6 +59,11 @@ pub trait Diagnostic: std::error::Error {
     fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
         None
     }
+
+    /// The cause of the error.
+    fn caused_by(&self) -> Option<&dyn Diagnostic> {
+        None
+    }
 }
 
 impl std::error::Error for Box<dyn Diagnostic> {
