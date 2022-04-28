@@ -584,6 +584,7 @@ pub use panic::*;
 pub use protocol::*;
 
 mod chain;
+mod diagnostic_chain;
 mod error;
 mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]

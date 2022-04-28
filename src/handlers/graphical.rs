@@ -2,7 +2,7 @@ use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
 
-use crate::chain::Chain;
+use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};

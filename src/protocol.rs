@@ -61,7 +61,7 @@ pub trait Diagnostic: std::error::Error {
     }
 
     /// The cause of the error.
-    fn caused_by(&self) -> Option<&dyn Diagnostic> {
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
         None
     }
 }

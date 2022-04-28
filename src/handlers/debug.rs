@@ -51,6 +51,9 @@ impl DebugReportHandler {
             let labels: Vec<_> = labels.collect();
             diag.field("labels", &format!("{:?}", labels));
         }
+        if let Some(cause) = diagnostic.diagnostic_source() {
+            diag.field("caused by", &format!("{:?}", cause));
+        }
         diag.finish()?;
         writeln!(f)?;
         writeln!(f, "NOTE: If you're looking for the fancy error reports, install miette with the `fancy` feature, or write your own and hook it up with miette::set_hook().")
