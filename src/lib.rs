@@ -395,8 +395,8 @@
 //! struct Foo;
 //! ```
 //!
-//! The other is by programmatically supplying the help text as a field to your
-//! diagnostic:
+//! The other is by programmatically supplying the help text as a field to
+//! your diagnostic:
 //!
 //! ```rust
 //! use miette::Diagnostic;
@@ -437,9 +437,9 @@
 //!
 //! ### ... delayed source code
 //!
-//! Sometimes it makes sense to add source code to the error message later. One
-//! option is to use [`with_source_code()`](Report::with_source_code) method for
-//! that:
+//! Sometimes it makes sense to add source code to the error message later.
+//! One option is to use [`with_source_code()`](Report::with_source_code)
+//! method for that:
 //!
 //! ```rust,no_run
 //! use miette::{Diagnostic, SourceSpan};
@@ -470,8 +470,8 @@
 //! ```
 //!
 //! Also source code can be provided by a wrapper type. This is especially
-//! useful in combination with `related`, when multiple errors should be emitted
-//! at the same time:
+//! useful in combination with `related`, when multiple errors should be
+//! emitted at the same time:
 //!
 //! ```rust,no_run
 //! use miette::{Diagnostic, Report, SourceSpan};
@@ -518,10 +518,41 @@
 //! }
 //! ```
 //!
+//! ### ... Diagnostic-based error sources.
+//!
+//! When one uses the `#[source]` attribute on a field, that usually comes
+//! from `thiserror`, and implements a method for
+//! [`std::error::Error::source`]. This works in many cases, but it's lossy:
+//! if the source of the diagnostic is a diagnostic itself, the source will
+//! simply be treated as an `std::error::Error`.
+//!
+//! While this has no effect on the existing _reporters_, since they don't use
+//! that information right now, APIs who might want this information will have
+//! no access to it.
+//!
+//! If it's important for you for this information to be available to users,
+//! you can use `#[diagnostic_source]` alongside `#[source]`. Not that you
+//! will likely want to use _both_:
+//!
+//! ```rust
+//! use miette::Diagnostic;
+//! use thiserror::Error;
+//!
+//! #[derive(Debug, Diagnostic, Error)]
+//! struct MyError {
+//!     #[source]
+//!     #[diagnostic_source]
+//!     the_cause: OtherError,
+//! }
+//!
+//! #[derive(Debug, Diagnostic, Error)]
+//! struct OtherError;
+//! ```
+//!
 //! ### ... handler options
 //!
-//! [`MietteHandler`] is the default handler, and is very customizable. In most
-//! cases, you can simply use [`MietteHandlerOpts`] to tweak its behavior
+//! [`MietteHandler`] is the default handler, and is very customizable. In
+//! most cases, you can simply use [`MietteHandlerOpts`] to tweak its behavior
 //! instead of falling back to your own custom handler.
 //!
 //! Usage is like so:
@@ -549,14 +580,15 @@
 //! `miette` was not developed in a void. It owes enormous credit to various
 //! other projects and their authors:
 //!
-//! - [`anyhow`](http://crates.io/crates/anyhow) and [`color-eyre`](https://crates.io/crates/color-eyre):
-//!   these two enormously influential error handling libraries have pushed
-//!   forward the experience of application-level error handling and error
-//!   reporting. `miette`'s `Report` type is an attempt at a very very rough
-//!   version of their `Report` types.
-//! - [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
-//!   for library-level error definitions, and for being the inspiration behind
-//!   `miette`'s derive macro.
+//! - [`anyhow`](http://crates.io/crates/anyhow) and
+//!   [`color-eyre`](https://crates.io/crates/color-eyre): these two
+//!   enormously influential error handling libraries have pushed forward the
+//!   experience of application-level error handling and error reporting.
+//!   `miette`'s `Report` type is an attempt at a very very rough version of
+//!   their `Report` types.
+//! - [`thiserror`](https://crates.io/crates/thiserror) for setting the
+//!   standard for library-level error definitions, and for being the
+//!   inspiration behind `miette`'s derive macro.
 //! - `rustc` and [@estebank](https://github.com/estebank) for their
 //!   state-of-the-art work in compiler diagnostics.
 //! - [`ariadne`](https://crates.io/crates/ariadne) for pushing forward how
@@ -564,12 +596,12 @@
 //!
 //! ## License
 //!
-//! `miette` is released to the Rust community under the
-//! [Apache license 2.0](./LICENSE).
+//! `miette` is released to the Rust community under the [Apache license
+//! 2.0](./LICENSE).
 //!
 //! It also includes code taken from [`eyre`](https://github.com/yaahc/eyre),
-//! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
-//! the Apache License. Some code is taken from
+//! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also
+//! under the Apache License. Some code is taken from
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
 pub use miette_derive::*;
 

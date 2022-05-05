@@ -369,201 +369,29 @@ pub struct MyErrorType {
     // They'll be rendered sequentially.
     #[label("This is bad")]
     snip2: (usize, usize), // `(usize, usize)` is `Into<SourceSpan>`!
+
+    // Snippets can be optional, by using Option:
+    #[label("some text")]
+    snip3: Option<SourceSpan>,
+
+    // with or without label text
+    #[label]
+    snip4: Option<SourceSpan>,
 }
 ```
 
-#### ... help text
-
+##### ... help text
 `miette` provides two facilities for supplying help text for your errors:
-
-The first is the `#[help()]` format attribute that applies to structs or enum variants:
-
-```rust
-#[derive(Debug, Diagnostic, Error)]
-#[error("welp")]
-#[diagnostic(help("try doing this instead"))]
-struct Foo;
-```
-
-The other is by programmatically supplying the help text as a field to your
-diagnostic:
-
-```rust
-#[derive(Debug, Diagnostic, Error)]
-#[error("welp")]
-#[diagnostic()]
-struct Foo {
-    #[help]
-    advice: Option<String>
-}
-
-let err = Foo { advice: Some("try doing this instead".to_string()) };
-```
-
-#### ... multiple related errors
-
-`miette` supports collecting multiple errors into a single diagnostic, and
-printing them all together nicely.
-
-To do so, use the `#[related]` tag on any `IntoIter` field in your
-`Diagnostic` type:
-
-```rust
-use miette::Diagnostic;
-use thiserror::Error;
-
-#[derive(Debug, Error, Diagnostic)]
-#[error("oops")]
-struct MyError {
-    #[related]
-    others: Vec<MyError>,
-}
-```
-
-#### ... delayed source code
-
-Sometimes it makes sense to add source code to the error message later. One
-option is to use [`with_source_code()`](Report::with_source_code) method for
-that:
-
-```rust
-use miette::{Diagnostic, SourceSpan};
-use thiserror::Error;
-
-#[derive(Diagnostic, Debug, Error)]
-#[error("oops")]
-#[diagnostic()]
-pub struct MyErrorType {
-    // Note: label but no source code
-    #[label]
-    err_span: SourceSpan,
-}
-
-fn do_something() -> miette::Result<()> {
-    // This function emits actual error with label
-    return Err(MyErrorType {
-        err_span: (7..11).into(),
-    })?;
-}
-
-fn main() -> miette::Result<()> {
-    do_something().map_err(|error| {
-        // And this code provides the source code for inner error
-        error.with_source_code(String::from("source code"))
-    })
-}
-```
-
-Also source code can be provided by a wrapper type. This is especially
-useful in combination with `related`, when multiple errors should be emitted
-at the same time:
-
-```rust
-use miette::{Diagnostic, Report, SourceSpan};
-use thiserror::Error;
-
-#[derive(Diagnostic, Debug, Error)]
-#[error("oops")]
-#[diagnostic()]
-pub struct InnerError {
-    // Note: label but no source code
-    #[label]
-    err_span: SourceSpan,
-}
-
-#[derive(Diagnostic, Debug, Error)]
-#[error("oops: multiple errors")]
-#[diagnostic()]
-pub struct MultiError {
-    // Note source code by no labels
-    #[source_code]
-    source_code: String,
-    // The source code above is used for these errors
-    #[related]
-    related: Vec<InnerError>,
-}
-
-fn do_something() -> Result<(), Vec<InnerError>> {
-    Err(vec![
-        InnerError {
-            err_span: (0..6).into(),
-        },
-        InnerError {
-            err_span: (7..11).into(),
-        },
-    ])
-}
-
-fn main() -> miette::Result<()> {
-    do_something().map_err(|err_list| MultiError {
-        source_code: "source code".into(),
-        related: err_list,
-    })?;
-    Ok(())
-}
-```
-
-#### ... handler options
-
-[`MietteHandler`] is the default handler, and is very customizable. In most
-cases, you can simply use [`MietteHandlerOpts`] to tweak its behavior
-instead of falling back to your own custom handler.
-
-Usage is like so:
-
-```rust
-miette::set_hook(Box::new(|_| {
-    Box::new(
-        miette::MietteHandlerOpts::new()
-            .terminal_links(true)
-            .unicode(false)
-            .context_lines(3)
-            .tab_width(4)
-            .build(),
-    )
-}))
-
-```
-
-See the docs for [`MietteHandlerOpts`] for more details on what you can
-customize!
-
-### Acknowledgements
-
-`miette` was not developed in a void. It owes enormous credit to various
-other projects and their authors:
-
-- [`anyhow`](http://crates.io/crates/anyhow) and [`color-eyre`](https://crates.io/crates/color-eyre):
-  these two enormously influential error handling libraries have pushed
-  forward the experience of application-level error handling and error
-  reporting. `miette`'s `Report` type is an attempt at a very very rough
-  version of their `Report` types.
-- [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
-  for library-level error definitions, and for being the inspiration behind
-  `miette`'s derive macro.
-- `rustc` and [@estebank](https://github.com/estebank) for their
-  state-of-the-art work in compiler diagnostics.
-- [`ariadne`](https://crates.io/crates/ariadne) for pushing forward how
-  _pretty_ these diagnostics can really look!
-
-### License
-
-`miette` is released to the Rust community under the
-[Apache license 2.0](./LICENSE).
-
-It also includes code taken from [`eyre`](https://github.com/yaahc/eyre),
-and some from [`thiserror`](https://github.com/dtolnay/thiserror), also under
-the Apache License. Some code is taken from
-[`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
 
 [`miette!`]: https://docs.rs/miette/latest/miette/macro.miette.html
 [`std::error::Error`]: https://doc.rust-lang.org/nightly/std/error/trait.Error.html
-[`Diagnostic`]: https://docs.rs/miette/latest/miette/trait.Diagnostic.html
+[`std::error::Error::source`]: https://doc.rust-lang.org/nightly/std/error/trait.Error.html#method.source
+[`Diagnostic`]: https://docs.rs/miette/latest/miette/struct.Diagnostic.html
 [`IntoDiagnostic`]: https://docs.rs/miette/latest/miette/trait.IntoDiagnostic.html
 [`MietteHandlerOpts`]: https://docs.rs/miette/latest/miette/struct.MietteHandlerOpts.html
 [`MietteHandler`]: https://docs.rs/miette/latest/miette/struct.MietteHandler.html
 [`Report`]: https://docs.rs/miette/latest/miette/struct.Report.html
-[`ReportHandler`]: https://docs.rs/miette/latest/miette/trait.ReportHandler.html
+[`ReportHandler`]: https://docs.rs/miette/latest/miette/struct.ReportHandler.html
 [`Result`]: https://docs.rs/miette/latest/miette/type.Result.html
-[`SourceCode`]: https://docs.rs/miette/latest/miette/trait.SourceCode.html
+[`SourceCode`]: https://docs.rs/miette/latest/miette/struct.SourceCode.html
 [`SourceSpan`]: https://docs.rs/miette/latest/miette/struct.SourceSpan.html
