@@ -539,6 +539,7 @@
 //! use thiserror::Error;
 //!
 //! #[derive(Debug, Diagnostic, Error)]
+//! #[error("MyError")]
 //! struct MyError {
 //!     #[source]
 //!     #[diagnostic_source]
@@ -546,6 +547,7 @@
 //! }
 //!
 //! #[derive(Debug, Diagnostic, Error)]
+//! #[error("OtherError")]
 //! struct OtherError;
 //! ```
 //!
