@@ -14,4 +14,4 @@ args = ["release", "--workspace", "${@}"]
 workspace=false
 install_crate="cargo-readme"
 command = "cargo"
-args = ["readme"]
+args = ["readme", "-o", "README.md"]
