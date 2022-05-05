@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="4.7.0"></a>
+## 4.7.0 (2022-05-05)
+
+### Features
+
+* **diagnostic_source:** add protocol method for Diagnostic-aware source chaining (#165) ([bc449c84](https://github.com/zkat/miette/commit/bc449c842662909d93d3a6b7e117fdbde77544e7))
+
+### Documentation
+
+* **IntoDiagnostic:** Warn of potential data loss (#161) ([2451ad6a](https://github.com/zkat/miette/commit/2451ad6a963c222831977e89542a7349b66f11cf))
+
 <a name="4.6.0"></a>
 ## 4.6.0 (2022-04-23)
 
