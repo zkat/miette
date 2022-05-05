@@ -2,7 +2,7 @@ use std::fmt;
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
-use crate::chain::Chain;
+use crate::diagnostic_chain::DiagnosticChain;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
@@ -80,8 +80,12 @@ impl NarratableReportHandler {
     }
 
     fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
-        if let Some(cause) = diagnostic.source() {
-            for error in Chain::new(cause) {
+        if let Some(cause_iter) = diagnostic
+            .diagnostic_source()
+            .map(DiagnosticChain::from_diagnostic)
+            .or_else(|| diagnostic.source().map(DiagnosticChain::from_stderror))
+        {
+            for error in cause_iter {
                 writeln!(f, "    Caused by: {}", error)?;
             }
         }

@@ -2,7 +2,7 @@ use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
 
-use crate::chain::Chain;
+use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -199,8 +199,12 @@ impl GraphicalReportHandler {
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
-        if let Some(cause) = diagnostic.source() {
-            let mut cause_iter = Chain::new(cause).peekable();
+        if let Some(mut cause_iter) = diagnostic
+            .diagnostic_source()
+            .map(DiagnosticChain::from_diagnostic)
+            .or_else(|| diagnostic.source().map(DiagnosticChain::from_stderror))
+            .map(|it| it.peekable())
+        {
             while let Some(error) = cause_iter.next() {
                 let is_last = cause_iter.peek().is_none();
                 let char = if !is_last {

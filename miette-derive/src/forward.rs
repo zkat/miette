@@ -38,6 +38,7 @@ pub enum WhichFn {
     Labels,
     SourceCode,
     Related,
+    DiagnosticSource,
 }
 
 impl WhichFn {
@@ -50,6 +51,7 @@ impl WhichFn {
             Self::Labels => quote! { labels() },
             Self::SourceCode => quote! { source_code() },
             Self::Related => quote! { related() },
+            Self::DiagnosticSource => quote! { diagnostic_source() },
         }
     }
 
@@ -75,6 +77,9 @@ impl WhichFn {
             },
             Self::SourceCode => quote! {
                 fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode>
+            },
+            Self::DiagnosticSource => quote! {
+                fn diagnostic_source(&self) -> std::option::Option<&dyn miette::Diagnostic>
             },
         }
     }
