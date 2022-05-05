@@ -21,8 +21,8 @@ inaccessible. If you have a type implementing [`Diagnostic`] consider simply ret
 [`Into`] or the [`Try`](std::ops::Try) operator (`?`).
 */
 pub trait IntoDiagnostic<T, E> {
-    /// Converts [`Result`] types that return regular [`std::error::Error`]s into a
-    /// [`Result`] that returns a [`Diagnostic`].
+    /// Converts [`Result`] types that return regular [`std::error::Error`]s
+    /// into a [`Result`] that returns a [`Diagnostic`].
     fn into_diagnostic(self) -> Result<T, Report>;
 }
 
