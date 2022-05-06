@@ -2,7 +2,7 @@ use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
 
-use crate::diagnostic_chain::DiagnosticChain;
+use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -133,7 +133,6 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
-        writeln!(f)?;
         self.render_causes(f, diagnostic)?;
         let src = diagnostic.source_code();
         self.render_snippets(f, diagnostic, src)?;
@@ -172,6 +171,7 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -179,6 +179,7 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -231,7 +232,21 @@ impl GraphicalReportHandler {
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
-                writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
+                match error {
+                    ErrorKind::Diagnostic(diag) => {
+                        let mut inner = String::new();
+
+                        // Don't print footer for inner errors
+                        let mut inner_renderer = self.clone();
+                        inner_renderer.footer = None;
+                        inner_renderer.render_report(&mut inner, diag)?;
+
+                        writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+                    }
+                    ErrorKind::StdError(err) => {
+                        writeln!(f, "{}", textwrap::fill(&err.to_string(), opts))?;
+                    }
+                }
             }
         }
 
@@ -257,20 +272,47 @@ impl GraphicalReportHandler {
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
-            writeln!(f)?;
-            for rel in related {
+            let related: Vec<_> = related.collect();
+            writeln!(
+                f,
+                "{}{}There were {} related diagnostics:",
+                if related.is_empty() {
+                    self.theme.characters.lcross
+                } else {
+                    self.theme.characters.ltop
+                },
+                self.theme.characters.hbar,
+                related.len()
+            )?;
+            let width = self.termwidth.saturating_sub(2);
+            let mut inner = String::new();
+            for (idx, rel) in related.into_iter().enumerate() {
+                let init_ident = format!(
+                    "{}{} {}.",
+                    self.theme.characters.lcross,
+                    self.theme.characters.hbar,
+                    idx + 1
+                );
+                let subseq_ident = format!("{} ", self.theme.characters.vbar);
+                let opts = textwrap::Options::new(width)
+                    .initial_indent(&init_ident)
+                    .subsequent_indent(&subseq_ident);
                 match diagnostic.severity() {
-                    Some(Severity::Error) | None => write!(f, "Error: ")?,
-                    Some(Severity::Warning) => write!(f, "Warning: ")?,
-                    Some(Severity::Advice) => write!(f, "Advice: ")?,
+                    Some(Severity::Error) | None => write!(&mut inner, "Error: ")?,
+                    Some(Severity::Warning) => write!(&mut inner, "Warning: ")?,
+                    Some(Severity::Advice) => write!(&mut inner, "Advice: ")?,
                 };
-                self.render_header(f, rel)?;
-                writeln!(f)?;
-                self.render_causes(f, rel)?;
+                self.render_header(&mut inner, rel)?;
+                writeln!(&mut inner)?;
+                self.render_causes(&mut inner, rel)?;
                 let src = rel.source_code().or(parent_src);
-                self.render_snippets(f, rel, src)?;
-                self.render_footer(f, rel)?;
-                self.render_related(f, rel, src)?;
+                self.render_snippets(&mut inner, rel, src)?;
+                self.render_footer(&mut inner, rel)?;
+                self.render_related(&mut inner, rel, src)?;
+
+                writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+
+                inner.clear();
             }
         }
         Ok(())

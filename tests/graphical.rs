@@ -5,6 +5,7 @@ use miette::{
     NarratableReportHandler, Report, SourceSpan,
 };
 use thiserror::Error;
+use pretty_assertions::assert_eq;
 
 fn fmt_report(diag: Report) -> String {
     let mut out = String::new();
@@ -784,11 +785,22 @@ fn related() -> Result<(), MietteError> {
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src.clone()),
         highlight: (9, 4).into(),
-        related: vec![MyBad {
-            src: NamedSource::new("bad_file.rs", src),
-            highlight: (0, 6).into(),
-            related: vec![],
-        }],
+        related: vec![
+            MyBad {
+                src: NamedSource::new("bad_file.rs", src.clone()),
+                highlight: (0, 6).into(),
+                related: vec![MyBad {
+                    src: NamedSource::new("bad_file.rs", src.clone()),
+                    highlight: (0, 6).into(),
+                    related: vec![],
+                }],
+            },
+            MyBad {
+                src: NamedSource::new("bad_file.rs", src.clone()),
+                highlight: (0, 6).into(),
+                related: vec![],
+            },
+        ],
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -803,18 +815,46 @@ fn related() -> Result<(), MietteError> {
  3 │     here
    ╰────
   help: try doing it better next time?
-
-Error: oops::my::bad
-
-  × oops!
-   ╭─[bad_file.rs:1:1]
- 1 │ source
-   · ───┬──
-   ·    ╰── this bit here
- 2 │   text
-   ╰────
-  help: try doing it better next time?
-
+╭─There were 2 related diagnostics:
+├─ 1.Error: oops::my::bad
+│ 
+│ 
+│   × oops!
+│    ╭─[bad_file.rs:1:1]
+│  1 │ source
+│    · ───┬──
+│    ·    ╰── this bit here
+│  2 │   text
+│    ╰────
+│   help: try doing it better next time?
+│ ╭─There were 1 related diagnostics:
+│ ├─ 1.Error: oops::my::bad
+│ │
+│ │
+│ │   × oops!
+│ │    ╭─[bad_file.rs:1:1]
+│ │  1 │ source
+│ │    · ───┬──
+│ │    ·    ╰── this bit here
+│ │  2 │   text
+│ │    ╰────
+│ │   help: try doing it better next time?
+│ │ ├─There were 0 related diagnostics:
+│ │
+│ 
+├─ 2.Error: oops::my::bad
+│ 
+│ 
+│   × oops!
+│    ╭─[bad_file.rs:1:1]
+│  1 │ source
+│    · ───┬──
+│    ·    ╰── this bit here
+│  2 │   text
+│    ╰────
+│   help: try doing it better next time?
+│ ├─There were 0 related diagnostics:
+│ 
 "#
     .trim_start()
     .to_string();
@@ -865,16 +905,18 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
  3 │     here
    ╰────
   help: try doing it better next time?
-
-Error: oops::my::bad
-
-  × oops!
-   ╭─[bad_file.rs:1:1]
- 1 │ source
-   · ───┬──
-   ·    ╰── this bit here
- 2 │   text
-   ╰────
+╭─There were 1 related diagnostics:
+├─ 1.Error: oops::my::bad
+│ 
+│ 
+│   × oops!
+│    ╭─[bad_file.rs:1:1]
+│  1 │ source
+│    · ───┬──
+│    ·    ╰── this bit here
+│  2 │   text
+│    ╰────
+│ 
 "#
     .trim_start()
     .to_string();
@@ -900,8 +942,7 @@ fn zero_length_eol_span() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
+    let expected = r#"  × oops!
    ╭─[issue:1:1]
  1 │ this is the first line
  2 │ this is the second line
