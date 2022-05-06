@@ -3,7 +3,7 @@ use std::fmt::{self, Write};
 use owo_colors::{OwoColorize, Style};
 use unicode_width::UnicodeWidthChar;
 
-use crate::diagnostic_chain::DiagnosticChain;
+use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -253,7 +253,21 @@ impl GraphicalReportHandler {
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
-                writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
+                match error {
+                    ErrorKind::Diagnostic(diag) => {
+                        let mut inner = String::new();
+
+                        // Don't print footer for inner errors
+                        let mut inner_renderer = self.clone();
+                        inner_renderer.footer = None;
+                        inner_renderer.render_report(&mut inner, diag)?;
+
+                        writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+                    }
+                    ErrorKind::StdError(err) => {
+                        writeln!(f, "{}", textwrap::fill(&err.to_string(), opts))?;
+                    }
+                }
             }
         }
 
