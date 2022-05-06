@@ -133,7 +133,6 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
-        writeln!(f)?;
         self.render_causes(f, diagnostic)?;
         let src = diagnostic.source_code();
         self.render_snippets(f, diagnostic, src)?;
@@ -172,6 +171,7 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -179,6 +179,7 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         }
         Ok(())
     }
