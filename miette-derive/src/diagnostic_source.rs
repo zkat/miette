@@ -59,7 +59,8 @@ impl DiagnosticSource {
                     };
                     quote! {
                         Self::#ident #display_pat => {
-                            std::option::Option::Some(#rel.as_ref())
+                            use std::borrow::Borrow;
+                            std::option::Option::Some(#rel.borrow())
                         }
                     }
                 })
@@ -71,7 +72,8 @@ impl DiagnosticSource {
         let rel = &self.0;
         Some(quote! {
             fn diagnostic_source<'a>(&'a self) -> std::option::Option<&'a dyn miette::Diagnostic> {
-                std::option::Option::Some(&self.#rel)
+                use std::borrow::Borrow;
+                std::option::Option::Some(self.#rel.borrow())
             }
         })
     }
