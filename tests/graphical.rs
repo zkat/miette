@@ -806,6 +806,7 @@ fn related() -> Result<(), MietteError> {
 
 Error: oops::my::bad
 
+
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -868,6 +869,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
 
 Error: oops::my::bad
 
+
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -900,8 +902,7 @@ fn zero_length_eol_span() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
+    let expected = r#"  × oops!
    ╭─[issue:1:1]
  1 │ this is the first line
  2 │ this is the second line
