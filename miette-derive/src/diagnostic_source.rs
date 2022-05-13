@@ -59,7 +59,7 @@ impl DiagnosticSource {
                     };
                     quote! {
                         Self::#ident #display_pat => {
-                            std::option::Option::Some(#rel.as_ref())
+                            std::option::Option::Some(#rel)
                         }
                     }
                 })
