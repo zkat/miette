@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="4.7.1"></a>
+## 4.7.1 (2022-05-13)
+
+### Bug Fixes
+
+* **tests:** add Display impl to diagnostic_source example ([0a4cf4ad](https://github.com/zkat/miette/commit/0a4cf4ad24eb668d6668400b9ab3e8c896b33e3a))
+
 <a name="4.7.0"></a>
 ## 4.7.0 (2022-05-05)
 
