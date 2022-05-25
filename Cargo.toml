@@ -35,6 +35,8 @@ indenter = "0.3.0"
 rustversion = "1.0"
 trybuild = { version = "1.0.19", features = ["diff"] }
 syn = { version = "1.0", features = ["full"] }
+regex = "1.5"
+lazy_static = "1.4"
 
 [features]
 default = []
