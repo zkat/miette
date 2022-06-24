@@ -1,5 +1,20 @@
 # `miette` Release Changelog
 
+<a name="5.0.0"></a>
+## 5.0.0 (2022-06-24)
+
+### Breaking Changes
+
+* **theme:** restructure automatic color selection (#177) ([1816b06a](https://github.com/zkat/miette/commit/1816b06a2efcd5705dfe91147ab5651fe0b517d6))
+    * The default theme now prefers ANSI colors, even if RGB is supported
+    * `MietteHandlerOpts::ansi_colors` is removed
+    * `MietteHandlerOpts::rgb_color` now takes an enum that controls the color
+      format used when color support is enabled, and has no effect otherwise.
+
+### Bug Fixes
+
+* **json:** Don't escape single-quotes, that's not valid json (#180) ([b193d3c0](https://github.com/zkat/miette/commit/b193d3c002be8a42fd199911cef3465e2e0cb593))
+
 <a name="4.7.1"></a>
 ## 4.7.1 (2022-05-13)
 
