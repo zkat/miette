@@ -10,6 +10,23 @@ use crate::ReportHandler;
 use crate::ThemeCharacters;
 use crate::ThemeStyles;
 
+/// Settings to control the color format used for graphical rendering.
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub enum RgbColors {
+    /// Use RGB colors even if the terminal does not support them
+    Always,
+    /// Use RGB colors instead of ANSI if the terminal supports RGB
+    Preferred,
+    /// Always use ANSI, regardless of terminal support for RGB
+    Never,
+}
+
+impl Default for RgbColors {
+    fn default() -> RgbColors {
+        RgbColors::Never
+    }
+}
+
 /**
 Create a custom [`MietteHandler`] from options.
 
@@ -33,8 +50,7 @@ pub struct MietteHandlerOpts {
     pub(crate) theme: Option<GraphicalTheme>,
     pub(crate) force_graphical: Option<bool>,
     pub(crate) force_narrated: Option<bool>,
-    pub(crate) ansi_colors: Option<bool>,
-    pub(crate) rgb_colors: Option<bool>,
+    pub(crate) rgb_colors: RgbColors,
     pub(crate) color: Option<bool>,
     pub(crate) unicode: Option<bool>,
     pub(crate) footer: Option<String>,
@@ -71,16 +87,31 @@ impl MietteHandlerOpts {
         self
     }
 
-    /// If true, colors will be used during graphical rendering. Actual color
-    /// format will be auto-detected.
+    /// If true, colors will be used during graphical rendering, regardless
+    /// of whether or not the terminal supports them.
+    ///
+    /// If false, colors will never be used.
+    ///
+    /// If unspecified, colors will be used only if the terminal supports them.
+    ///
+    /// The actual format depends on the value of
+    /// [`MietteHandlerOpts::rgb_colors`].
     pub fn color(mut self, color: bool) -> Self {
         self.color = Some(color);
         self
     }
 
-    /// If true, RGB colors will be used during graphical rendering.
-    pub fn rgb_colors(mut self, color: bool) -> Self {
-        self.rgb_colors = Some(color);
+    /// Controls which color format to use if colors are used in graphical
+    /// rendering.
+    ///
+    /// The default is `Never`.
+    ///
+    /// This value does not control whether or not colors are being used in the
+    /// first place. That is handled by the [`MietteHandlerOpts::color`]
+    /// setting. If colors are not being used, the value of `rgb_colors` has
+    /// no effect.
+    pub fn rgb_colors(mut self, color: RgbColors) -> Self {
+        self.rgb_colors = color;
         self
     }
 
@@ -91,11 +122,6 @@ impl MietteHandlerOpts {
         self
     }
 
-    /// If true, ANSI colors will be used during graphical rendering.
-    pub fn ansi_colors(mut self, color: bool) -> Self {
-        self.ansi_colors = Some(color);
-        self
-    }
     /// If true, graphical rendering will be used regardless of terminal
     /// detection.
     pub fn force_graphical(mut self, force: bool) -> Self {
@@ -152,18 +178,17 @@ impl MietteHandlerOpts {
             };
             let styles = if self.color == Some(false) {
                 ThemeStyles::none()
-            } else if self.rgb_colors == Some(true) {
-                ThemeStyles::rgb()
-            } else if self.ansi_colors == Some(true) {
-                ThemeStyles::ansi()
-            } else if let Some(colors) = supports_color::on(Stream::Stderr) {
-                if colors.has_16m {
-                    ThemeStyles::rgb()
-                } else {
-                    ThemeStyles::ansi()
+            } else if let Some(color) = supports_color::on(Stream::Stderr) {
+                match self.rgb_colors {
+                    RgbColors::Always => ThemeStyles::rgb(),
+                    RgbColors::Preferred if color.has_16m => ThemeStyles::rgb(),
+                    _ => ThemeStyles::ansi(),
                 }
             } else if self.color == Some(true) {
-                ThemeStyles::ansi()
+                match self.rgb_colors {
+                    RgbColors::Always => ThemeStyles::rgb(),
+                    _ => ThemeStyles::ansi(),
+                }
             } else {
                 ThemeStyles::none()
             };

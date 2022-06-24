@@ -125,9 +125,9 @@ impl ThemeStyles {
             link: style().cyan().underline().bold(),
             linum: style().dimmed(),
             highlights: vec![
-                style().red().bold(),
+                style().magenta().bold(),
                 style().yellow().bold(),
-                style().cyan().bold(),
+                style().green().bold(),
             ],
         }
     }
