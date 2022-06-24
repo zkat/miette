@@ -30,7 +30,6 @@ impl fmt::Display for Escape<'_> {
             let escape = match c {
                 '\\' => Some(r"\\"),
                 '"' => Some(r#"\""#),
-                '\'' => Some(r"\'"),
                 '\r' => Some(r"\r"),
                 '\n' => Some(r"\n"),
                 '\t' => Some(r"\t"),
