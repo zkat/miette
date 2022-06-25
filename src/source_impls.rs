@@ -158,7 +158,7 @@ impl SourceCode for String {
     }
 }
 
-impl<T: SourceCode> SourceCode for Arc<T> {
+impl<T: ?Sized + SourceCode> SourceCode for Arc<T> {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
