@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="5.1.0"></a>
+## 5.1.0 (2022-06-25)
+
+### Features
+
+* **protocol:** Implement SourceCode for Arc<str> (and similar types) (#181) ([85da6a84](https://github.com/zkat/miette/commit/85da6a8407ef727b8f77184b8a61f5b9a7d3ccef))
+
 <a name="5.0.0"></a>
 ## 5.0.0 (2022-06-24)
 
