@@ -45,3 +45,21 @@ jobs:
       - name: Run tests
         run: cargo test --all --verbose --features fancy
 
+  minimal_versions:
+    name: Minimal versions check
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macOS-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          override: true
+      - name: Run minimal version build
+        run: cargo build -Z minimal-versions --all-features
+
