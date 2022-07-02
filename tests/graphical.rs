@@ -82,7 +82,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     let src = "source\n  👼🏼text\n    here".to_string();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        highlight: (9, 6).into(),
+        highlight: (13, 8).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -92,8 +92,8 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
    ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   👼🏼text
-   ·   ───┬──
-   ·      ╰── this bit here
+   ·     ───┬──
+   ·        ╰── this bit here
  3 │     here
    ╰────
   help: try doing it better next time?

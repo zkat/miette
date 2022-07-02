@@ -1,6 +1,7 @@
 use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
+use unicode_width::UnicodeWidthStr;
 
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
@@ -604,6 +605,17 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
+    /// Returns the visual column position of a byte offset on a specific line.
+    fn visual_offset(&self, line: &Line, offset: usize) -> usize {
+        let line_range = line.offset..(line.offset + line.length);
+        assert!(line_range.contains(&offset));
+
+        let text = &line.text[..offset - line.offset];
+        let tab_count = text.matches('\t').count();
+        let tab_width = self.tab_width.unwrap_or(1);
+        text.width() + tab_count * tab_width
+    }
+
     fn render_single_line_highlights(
         &self,
         f: &mut impl fmt::Write,
@@ -617,63 +629,44 @@ impl GraphicalReportHandler {
         let mut highest = 0;
 
         let chars = &self.theme.characters;
-        for hl in single_liners {
-            let hl_len = std::cmp::max(1, hl.len());
-
-            let local_offset = if let Some(w) = self.tab_width {
-                // Only count tabs that affect the position of the highlighted
-                // line and ignore tabs past the span.
-                let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
-                let tabs_as_spaces = tab_count * w - tab_count;
-                hl.offset() - line.offset + tabs_as_spaces
-            } else {
-                hl.offset() - line.offset
-            };
-
-            let vbar_offset = local_offset + (hl_len / 2);
-            let num_left = vbar_offset - local_offset;
-            let num_right = local_offset + hl_len - vbar_offset - 1;
-            let start = std::cmp::max(local_offset, highest);
-            let end = local_offset + hl_len;
-            if start < end {
-                underlines.push_str(
-                    &format!(
-                        "{:width$}{}{}{}",
-                        "",
-                        chars.underline.to_string().repeat(num_left),
-                        if hl.len() == 0 {
-                            chars.uarrow
-                        } else if hl.label().is_some() {
-                            chars.underbar
-                        } else {
-                            chars.underline
-                        },
-                        chars.underline.to_string().repeat(num_right),
-                        width = local_offset.saturating_sub(highest),
-                    )
-                    .style(hl.style)
-                    .to_string(),
-                );
-            }
-            highest = std::cmp::max(highest, end);
-        }
-        writeln!(f, "{}", underlines)?;
-
         let vbar_offsets: Vec<_> = single_liners
             .iter()
             .map(|hl| {
-                let local_offset = if let Some(w) = self.tab_width {
-                    // Only count tabs that affect the position of the
-                    // highlighted line and ignore tabs past the span.
-                    let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
-                    let tabs_as_spaces = tab_count * w - tab_count;
-                    hl.offset() - line.offset + tabs_as_spaces
-                } else {
-                    hl.offset() - line.offset
-                };
-                (hl, local_offset + (std::cmp::max(1, hl.len()) / 2))
+                let byte_start = hl.offset();
+                let byte_end = hl.offset() + hl.len().max(1);
+                let start = self.visual_offset(line, byte_start).max(highest);
+                let end = self.visual_offset(line, byte_end);
+
+                let vbar_offset = (start + end) / 2;
+                let num_left = vbar_offset - start;
+                let num_right = end - vbar_offset - 1;
+                if start < end {
+                    underlines.push_str(
+                        &format!(
+                            "{:width$}{}{}{}",
+                            "",
+                            chars.underline.to_string().repeat(num_left),
+                            if hl.len() == 0 {
+                                chars.uarrow
+                            } else if hl.label().is_some() {
+                                chars.underbar
+                            } else {
+                                chars.underline
+                            },
+                            chars.underline.to_string().repeat(num_right),
+                            width = start.saturating_sub(highest),
+                        )
+                        .style(hl.style)
+                        .to_string(),
+                    );
+                }
+                highest = std::cmp::max(highest, end);
+
+                (hl, vbar_offset)
             })
             .collect();
+        writeln!(f, "{}", underlines)?;
+
         for hl in single_liners.iter().rev() {
             if let Some(label) = hl.label() {
                 self.write_no_linum(f, linum_width)?;
