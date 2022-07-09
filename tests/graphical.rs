@@ -35,6 +35,39 @@ fn fmt_report(diag: Report) -> String {
 }
 
 #[test]
+fn empty_source() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (0, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    // For an empty string, the label cannot be rendered.
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn single_line_with_wide_char() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
