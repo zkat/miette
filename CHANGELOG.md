@@ -1,5 +1,13 @@
 # `miette` Release Changelog
 
+<a name="5.1.1"></a>
+## 5.1.1 (2022-07-09)
+
+### Bug Fixes
+
+* **deps:** bump minimum supports-color version (#182) ([ccf1b8ad](https://github.com/zkat/miette/commit/ccf1b8ade5b631e05fad79d1f9c5d268706d118e))
+* **graphical:** handle an empty source (#183) ([12dc4007](https://github.com/zkat/miette/commit/12dc40070a99ac91b67e23f7c15ce8151965fc81))
+
 <a name="5.1.0"></a>
 ## 5.1.0 (2022-06-25)
 
