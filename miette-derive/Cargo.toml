@@ -1,6 +1,6 @@
 [package]
 name = "miette-derive"
-version = "5.1.1"
+version = "5.1.2-alpha.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 edition = "2018"
 license = "Apache-2.0"
