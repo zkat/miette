@@ -379,8 +379,9 @@ impl GraphicalReportHandler {
         // numbers need!
         let linum_width = lines[..]
             .last()
-            .expect("get_lines should always return at least one line?")
-            .line_number
+            .map(|line| line.line_number)
+            // It's possible for the source to be an empty string.
+            .unwrap_or(0)
             .to_string()
             .len();
 
@@ -402,7 +403,7 @@ impl GraphicalReportHandler {
                 contents.line() + 1,
                 contents.column() + 1
             )?;
-        } else if lines.len() == 1 {
+        } else if lines.len() <= 1 {
             writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
         } else {
             writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
