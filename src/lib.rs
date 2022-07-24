@@ -381,7 +381,7 @@
 //!
 //! #### ... help text
 //! `miette` provides two facilities for supplying help text for your errors:
-//
+//!
 //! The first is the `#[help()]` format attribute that applies to structs or
 //! enum variants:
 //!
