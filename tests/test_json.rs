@@ -1,5 +1,4 @@
 mod json_report_handler {
-
     use miette::{Diagnostic, MietteError, NamedSource, Report, SourceSpan};
 
     use miette::JSONReportHandler;
@@ -38,6 +37,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -83,6 +83,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -128,6 +129,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -173,6 +175,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -218,6 +221,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -262,6 +266,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -313,6 +318,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -372,6 +378,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -427,6 +434,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -500,6 +508,10 @@ mod json_report_handler {
             "message": "wtf?!\nit broke :(",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [
+                "something went wrong\n\nHere's a more detailed explanation of everything that actually went wrong because it's actually important.\n",
+                "very much went wrong"
+            ],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -554,6 +566,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -609,6 +622,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -664,6 +678,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -706,6 +721,7 @@ mod json_report_handler {
         {
             "message": "oops!",
             "severity": "error",
+            "causes": [],
             "url": "https://example.com",
             "help": "try doing it better next time?",
             "labels": [],
@@ -757,6 +773,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -772,6 +789,7 @@ mod json_report_handler {
                 "message": "oops!",
                 "code": "oops::my::bad",
                 "severity": "error",
+                "causes": [],
                 "help": "try doing it better next time?",
                 "filename": "bad_file2.rs",
                 "labels": [
@@ -788,6 +806,7 @@ mod json_report_handler {
                 "message": "oops!",
                 "code": "oops::my::bad",
                 "severity": "error",
+                "causes": [],
                 "help": "try doing it better next time?",
                 "filename": "bad_file3.rs",
                 "labels": [
@@ -852,6 +871,7 @@ mod json_report_handler {
             "message": "oops!",
             "code": "oops::my::bad",
             "severity": "error",
+            "causes": [],
             "help": "try doing it better next time?",
             "filename": "bad_file.rs",
             "labels": [
@@ -867,6 +887,7 @@ mod json_report_handler {
                 "message": "oops!",
                 "code": "oops::my::bad",
                 "severity": "error",
+                "causes": [],
                 "help": "try doing it better next time?",
                 "filename": "bad_file.rs",
                 "labels": [
@@ -883,6 +904,7 @@ mod json_report_handler {
                 "message": "oops!",
                 "code": "oops::my::bad",
                 "severity": "error",
+                "causes": [],
                 "help": "try doing it better next time?",
                 "filename": "bad_file.rs",
                 "labels": [
