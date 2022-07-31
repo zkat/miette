@@ -1,6 +1,8 @@
 use std::fmt::{self, Write};
 
-use crate::{protocol::Diagnostic, ReportHandler, Severity, SourceCode};
+use crate::{
+    diagnostic_chain::DiagnosticChain, protocol::Diagnostic, ReportHandler, Severity, SourceCode,
+};
 
 /**
 [`ReportHandler`] that renders JSON output. It's a machine-readable output.
@@ -79,6 +81,25 @@ impl JSONReportHandler {
             Some(Severity::Advice) => "advice",
         };
         write!(f, r#""severity": "{:}","#, severity)?;
+        if let Some(cause_iter) = diagnostic
+            .diagnostic_source()
+            .map(DiagnosticChain::from_diagnostic)
+            .or_else(|| diagnostic.source().map(DiagnosticChain::from_stderror))
+        {
+            write!(f, r#""causes": ["#)?;
+            let mut add_comma = false;
+            for error in cause_iter {
+                if add_comma {
+                    write!(f, ",")?;
+                } else {
+                    add_comma = true;
+                }
+                write!(f, r#""{}""#, escape(&error.to_string()))?;
+            }
+            write!(f, "],")?
+        } else {
+            write!(f, r#""causes": [],"#)?;
+        }
         if let Some(url) = diagnostic.url() {
             write!(f, r#""url": "{}","#, &url.to_string())?;
         }
