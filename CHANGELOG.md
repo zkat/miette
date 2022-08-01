@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="5.2.0"></a>
+## 5.2.0 (2022-07-31)
+
+### Features
+
+* **json:** `causes` support (#188) ([c95f58c8](https://github.com/zkat/miette/commit/c95f58c87a1335e956be23879754ac312a2b0853))
+
+### Bug Fixes
+
+* **docs:** readme was getting cut off during generation ([e286c705](https://github.com/zkat/miette/commit/e286c705fda28c02df67a584c0a013a1bbc38968))
+
 <a name="5.1.1"></a>
 ## 5.1.1 (2022-07-09)
 
