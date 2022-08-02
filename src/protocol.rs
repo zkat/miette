@@ -446,7 +446,7 @@ impl SourceOffset {
         self.0
     }
 
-    /// Little utility to help convert line/column locations into
+    /// Little utility to help convert 1-based line/column locations into
     /// miette-compatible Spans
     ///
     /// This function is infallible: Giving an out-of-range line/column pair
@@ -456,14 +456,14 @@ impl SourceOffset {
         let mut col = 0usize;
         let mut offset = 0usize;
         for char in source.as_ref().chars() {
+            if line + 1 >= loc_line && col + 1 >= loc_col {
+                break;
+            }
             if char == '\n' {
                 col = 0;
                 line += 1;
             } else {
                 col += 1;
-            }
-            if line + 1 >= loc_line && col + 1 >= loc_col {
-                break;
             }
             offset += char.len_utf8();
         }
@@ -497,4 +497,27 @@ impl From<ByteOffset> for SourceOffset {
     fn from(bytes: ByteOffset) -> Self {
         SourceOffset(bytes)
     }
+}
+
+#[test]
+fn test_source_offset_from_location() {
+    let source = "f\n\noo\r\nbar";
+
+    assert_eq!(SourceOffset::from_location(source, 1, 1).offset(), 0);
+    assert_eq!(SourceOffset::from_location(source, 1, 2).offset(), 1);
+    assert_eq!(SourceOffset::from_location(source, 2, 1).offset(), 2);
+    assert_eq!(SourceOffset::from_location(source, 3, 1).offset(), 3);
+    assert_eq!(SourceOffset::from_location(source, 3, 2).offset(), 4);
+    assert_eq!(SourceOffset::from_location(source, 3, 3).offset(), 5);
+    assert_eq!(SourceOffset::from_location(source, 3, 4).offset(), 6);
+    assert_eq!(SourceOffset::from_location(source, 4, 1).offset(), 7);
+    assert_eq!(SourceOffset::from_location(source, 4, 2).offset(), 8);
+    assert_eq!(SourceOffset::from_location(source, 4, 3).offset(), 9);
+    assert_eq!(SourceOffset::from_location(source, 4, 4).offset(), 10);
+
+    // Out-of-range
+    assert_eq!(
+        SourceOffset::from_location(source, 5, 1).offset(),
+        source.len()
+    );
 }
