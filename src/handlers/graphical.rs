@@ -149,9 +149,7 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
         writeln!(f)?;
-        if self.with_cause_chain {
-            self.render_causes(f, diagnostic)?;
-        }
+        self.render_causes(f, diagnostic)?;
         let src = diagnostic.source_code();
         self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
@@ -216,6 +214,10 @@ impl GraphicalReportHandler {
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
+        if !self.with_cause_chain {
+            return Ok(())
+        }
+        
         if let Some(mut cause_iter) = diagnostic
             .diagnostic_source()
             .map(DiagnosticChain::from_diagnostic)
