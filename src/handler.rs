@@ -56,6 +56,7 @@ pub struct MietteHandlerOpts {
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
+    pub(crate) with_cause_chain: Option<bool>
 }
 
 impl MietteHandlerOpts {
@@ -84,6 +85,18 @@ impl MietteHandlerOpts {
     /// Sets the width to wrap the report at. Defaults to 80.
     pub fn width(mut self, width: usize) -> Self {
         self.width = Some(width);
+        self
+    }
+    
+    /// Include the cause chain of the top-level error in the report.
+    pub fn with_cause_chain(mut self) -> Self {
+        self.with_cause_chain = Some(true);
+        self
+    }
+
+    /// Do not include the cause chain of the top-level error in the report.
+    pub fn without_cause_chain(mut self) -> Self {
+        self.with_cause_chain = Some(false);
         self
     }
 
@@ -165,6 +178,13 @@ impl MietteHandlerOpts {
             if let Some(context_lines) = self.context_lines {
                 handler = handler.with_context_lines(context_lines);
             }
+            if let Some(with_cause_chain) = self.with_cause_chain {
+                if with_cause_chain {
+                    handler = handler.with_cause_chain();
+                } else {
+                    handler = handler.without_cause_chain();
+                }
+            }
             MietteHandler {
                 inner: Box::new(handler),
             }
@@ -197,6 +217,13 @@ impl MietteHandlerOpts {
                 .with_width(width)
                 .with_links(linkify)
                 .with_theme(theme);
+            if let Some(with_cause_chain) = self.with_cause_chain {
+                if with_cause_chain {
+                    handler = handler.with_cause_chain();
+                } else {
+                    handler = handler.without_cause_chain();
+                }
+            }
             if let Some(footer) = self.footer {
                 handler = handler.with_footer(footer);
             }
