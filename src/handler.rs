@@ -56,7 +56,7 @@ pub struct MietteHandlerOpts {
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
-    pub(crate) with_cause_chain: Option<bool>
+    pub(crate) with_cause_chain: Option<bool>,
 }
 
 impl MietteHandlerOpts {
@@ -87,7 +87,7 @@ impl MietteHandlerOpts {
         self.width = Some(width);
         self
     }
-    
+
     /// Include the cause chain of the top-level error in the report.
     pub fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = Some(true);

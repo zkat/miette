@@ -25,11 +25,12 @@ impl NarratableReportHandler {
         Self {
             footer: None,
             context_lines: 1,
-            with_cause_chain: true
+            with_cause_chain: true,
         }
     }
-    
-    /// Include the cause chain of the top-level error in the report, if available.
+
+    /// Include the cause chain of the top-level error in the report, if
+    /// available.
     pub fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = true;
         self

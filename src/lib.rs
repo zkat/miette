@@ -582,15 +582,14 @@
 //! `miette` was not developed in a void. It owes enormous credit to various
 //! other projects and their authors:
 //!
-//! - [`anyhow`](http://crates.io/crates/anyhow) and
-//!   [`color-eyre`](https://crates.io/crates/color-eyre): these two
-//!   enormously influential error handling libraries have pushed forward the
-//!   experience of application-level error handling and error reporting.
-//!   `miette`'s `Report` type is an attempt at a very very rough version of
-//!   their `Report` types.
-//! - [`thiserror`](https://crates.io/crates/thiserror) for setting the
-//!   standard for library-level error definitions, and for being the
-//!   inspiration behind `miette`'s derive macro.
+//! - [`anyhow`](http://crates.io/crates/anyhow) and [`color-eyre`](https://crates.io/crates/color-eyre):
+//!   these two enormously influential error handling libraries have pushed
+//!   forward the experience of application-level error handling and error
+//!   reporting. `miette`'s `Report` type is an attempt at a very very rough
+//!   version of their `Report` types.
+//! - [`thiserror`](https://crates.io/crates/thiserror) for setting the standard
+//!   for library-level error definitions, and for being the inspiration behind
+//!   `miette`'s derive macro.
 //! - `rustc` and [@estebank](https://github.com/estebank) for their
 //!   state-of-the-art work in compiler diagnostics.
 //! - [`ariadne`](https://crates.io/crates/ariadne) for pushing forward how
