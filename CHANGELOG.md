@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="5.3.0"></a>
+## 5.3.0 (2022-08-10)
+
+### Bug Fixes
+
+* **utils:** Fix off-by-one error in SourceOffset::from_location (#190) ([c3e6c983](https://github.com/zkat/miette/commit/c3e6c983363af7f7a88e52d50d57404defb1bf49))
+
+### Features
+
+* **graphical:** Allow miette users to opt-out of the rendering of the cause chain (#192) ([b9ea5871](https://github.com/zkat/miette/commit/b9ea587159464c0090d9510567e5ea93bb772b49))
+
 <a name="5.2.0"></a>
 ## 5.2.0 (2022-07-31)
 
