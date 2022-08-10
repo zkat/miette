@@ -28,6 +28,7 @@ pub struct GraphicalReportHandler {
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: usize,
     pub(crate) tab_width: Option<usize>,
+    pub(crate) with_cause_chain: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -48,6 +49,7 @@ impl GraphicalReportHandler {
             footer: None,
             context_lines: 1,
             tab_width: None,
+            with_cause_chain: true,
         }
     }
 
@@ -60,6 +62,7 @@ impl GraphicalReportHandler {
             footer: None,
             context_lines: 1,
             tab_width: None,
+            with_cause_chain: true,
         }
     }
 
@@ -76,6 +79,20 @@ impl GraphicalReportHandler {
         } else {
             LinkStyle::Text
         };
+        self
+    }
+
+    /// Include the cause chain of the top-level error in the graphical output,
+    /// if available.
+    pub fn with_cause_chain(mut self) -> Self {
+        self.with_cause_chain = true;
+        self
+    }
+
+    /// Do not include the cause chain of the top-level error in the graphical
+    /// output.
+    pub fn without_cause_chain(mut self) -> Self {
+        self.with_cause_chain = false;
         self
     }
 
@@ -198,6 +215,10 @@ impl GraphicalReportHandler {
             .subsequent_indent(&rest_indent);
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+
+        if !self.with_cause_chain {
+            return Ok(());
+        }
 
         if let Some(mut cause_iter) = diagnostic
             .diagnostic_source()

@@ -14,6 +14,7 @@ non-graphical environments, such as non-TTY output.
 #[derive(Debug, Clone)]
 pub struct NarratableReportHandler {
     context_lines: usize,
+    with_cause_chain: bool,
     footer: Option<String>,
 }
 
@@ -24,7 +25,21 @@ impl NarratableReportHandler {
         Self {
             footer: None,
             context_lines: 1,
+            with_cause_chain: true,
         }
+    }
+
+    /// Include the cause chain of the top-level error in the report, if
+    /// available.
+    pub fn with_cause_chain(mut self) -> Self {
+        self.with_cause_chain = true;
+        self
+    }
+
+    /// Do not include the cause chain of the top-level error in the report.
+    pub fn without_cause_chain(mut self) -> Self {
+        self.with_cause_chain = false;
+        self
     }
 
     /// Set the footer to be displayed at the end of the report.
@@ -57,7 +72,9 @@ impl NarratableReportHandler {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
-        self.render_causes(f, diagnostic)?;
+        if self.with_cause_chain {
+            self.render_causes(f, diagnostic)?;
+        }
         let src = diagnostic.source_code();
         self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
