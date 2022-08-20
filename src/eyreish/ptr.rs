@@ -1,6 +1,7 @@
 use std::{marker::PhantomData, ptr::NonNull};
 
 #[repr(transparent)]
+/// A raw pointer that owns its pointee
 pub(crate) struct Own<T>
 where
     T: ?Sized,
@@ -58,6 +59,7 @@ where
 }
 
 #[repr(transparent)]
+/// A raw pointer that represents a shared borrow of its pointee
 pub(crate) struct Ref<'a, T>
 where
     T: ?Sized,
@@ -118,6 +120,8 @@ where
     }
 }
 
+#[repr(transparent)]
+/// A raw pointer that represents a unique borrow of its pointee
 pub(crate) struct Mut<'a, T>
 where
     T: ?Sized,
