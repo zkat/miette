@@ -452,8 +452,6 @@ impl Drop for Report {
     }
 }
 
-type ErasedErrorImpl = ErrorImpl<()>;
-
 struct ErrorVTable {
     object_drop: unsafe fn(Own<ErasedErrorImpl>),
     object_ref:
@@ -658,8 +656,10 @@ pub(crate) struct ContextError<D, E> {
     pub(crate) error: E,
 }
 
+type ErasedErrorImpl = ErrorImpl<()>;
+
 // Safety: `ErrorVTable` must be the first field of `ErrorImpl`
-unsafe fn vtable<E>(p: NonNull<ErrorImpl<E>>) -> &'static ErrorVTable {
+unsafe fn vtable(p: NonNull<ErasedErrorImpl>) -> &'static ErrorVTable {
     (p.as_ptr() as *const &'static ErrorVTable).read()
 }
 
