@@ -77,8 +77,6 @@ the following features:
 
 ### Installing
 
-Using [`cargo-edit`](https://crates.io/crates/cargo-edit):
-
 ```sh
 $ cargo add miette
 ```
