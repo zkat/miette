@@ -699,7 +699,7 @@ impl ErasedErrorImpl {
             .deref_mut()
     }
 
-    pub(crate) unsafe fn chain<'a>(this: Ref<'a, Self>) -> Chain<'a> {
+    pub(crate) unsafe fn chain(this: Ref<'_, Self>) -> Chain<'_> {
         Chain::new(Self::error(this))
     }
 }
