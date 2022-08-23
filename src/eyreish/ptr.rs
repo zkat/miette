@@ -58,6 +58,7 @@ where
     }
 }
 
+#[allow(explicit_outlives_requirements)]
 #[repr(transparent)]
 /// A raw pointer that represents a shared borrow of its pointee
 pub(crate) struct Ref<'a, T>
@@ -120,6 +121,7 @@ where
     }
 }
 
+#[allow(explicit_outlives_requirements)]
 #[repr(transparent)]
 /// A raw pointer that represents a unique borrow of its pointee
 pub(crate) struct Mut<'a, T>
