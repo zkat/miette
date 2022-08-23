@@ -45,6 +45,24 @@ jobs:
       - name: Run tests
         run: cargo test --all --verbose --features fancy
 
+  miri:
+    name: Miri
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: nightly
+          components: miri,rust-src
+          override: true
+      - name: Run tests with miri
+        env:
+          MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-strict-provenance
+        run: cargo miri test --all --verbose --features fancy
+
   minimal_versions:
     name: Minimal versions check
     runs-on: ${{ matrix.os }}
