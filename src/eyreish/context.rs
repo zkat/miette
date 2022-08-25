@@ -1,4 +1,4 @@
-use super::error::ContextError;
+use super::error::{ContextError, ErrorImpl};
 use super::{Report, WrapErr};
 use core::fmt::{self, Debug, Display, Write};
 
@@ -116,7 +116,7 @@ where
     D: Display,
 {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        Some(self.error.inner.error())
+        unsafe { Some(ErrorImpl::error(self.error.inner.by_ref())) }
     }
 }
 
@@ -159,23 +159,23 @@ where
     D: Display,
 {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.inner.diagnostic().code()
+        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).code() }
     }
 
     fn severity(&self) -> Option<crate::Severity> {
-        self.error.inner.diagnostic().severity()
+        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).severity() }
     }
 
     fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.inner.diagnostic().help()
+        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).help() }
     }
 
     fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.inner.diagnostic().url()
+        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).url() }
     }
 
     fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
-        self.error.inner.diagnostic().labels()
+        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).labels() }
     }
 
     fn source_code(&self) -> Option<&dyn crate::SourceCode> {

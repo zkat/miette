@@ -73,7 +73,7 @@ fn context_info<'a>(
     }
 
     if offset >= (span.offset() + span.len()).saturating_sub(1) {
-        let starting_offset = before_lines_starts.get(0).copied().unwrap_or_else(|| {
+        let starting_offset = before_lines_starts.first().copied().unwrap_or_else(|| {
             if context_lines_before == 0 {
                 span.offset()
             } else {

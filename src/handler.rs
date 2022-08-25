@@ -261,6 +261,7 @@ impl MietteHandlerOpts {
         }
     }
 
+    #[cfg(not(miri))]
     pub(crate) fn get_width(&self) -> usize {
         self.width.unwrap_or_else(|| {
             terminal_size::terminal_size()
@@ -268,6 +269,14 @@ impl MietteHandlerOpts {
                 .0
                  .0 as usize
         })
+    }
+
+    #[cfg(miri)]
+    // miri doesn't support a syscall (specifically ioctl)
+    // performed by terminal_size, which causes test execution to fail
+    // so when miri is running we'll just fallback to a constant
+    pub(crate) fn get_width(&self) -> usize {
+        self.width.unwrap_or(80)
     }
 }
 

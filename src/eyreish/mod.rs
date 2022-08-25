@@ -5,7 +5,6 @@
     clippy::wrong_self_convention
 )]
 use core::fmt::Display;
-use core::mem::ManuallyDrop;
 
 use std::error::Error as StdError;
 
@@ -34,12 +33,15 @@ use crate::MietteHandler;
 
 use error::ErrorImpl;
 
+use self::ptr::Own;
+
 mod context;
 mod error;
 mod fmt;
 mod into_diagnostic;
 mod kind;
 mod macros;
+mod ptr;
 mod wrapper;
 
 /**
@@ -50,8 +52,11 @@ Core Diagnostic wrapper type.
 You can just replace `use`s of `eyre::Report` with `miette::Report`.
 */
 pub struct Report {
-    inner: ManuallyDrop<Box<ErrorImpl<()>>>,
+    inner: Own<ErrorImpl<()>>,
 }
+
+unsafe impl Sync for Report {}
+unsafe impl Send for Report {}
 
 ///
 pub type ErrorHook =
