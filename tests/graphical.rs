@@ -157,10 +157,10 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
 
     std::env::set_var("REPLACE_TABS", "4");
 
-    let src = "source\ntext\ttext\n    here".to_string();
+    let src = "source\ntext =\ttext\n    here".to_string();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        highlight: (12, 4).into(),
+        highlight: (14, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -169,7 +169,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
- 2 │ text    text
+ 2 │ text =  text
    ·         ──┬─
    ·           ╰── this bit here
  3 │     here

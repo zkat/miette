@@ -1,7 +1,7 @@
 use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
-use unicode_width::UnicodeWidthStr;
+use unicode_width::UnicodeWidthChar;
 
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
@@ -28,7 +28,7 @@ pub struct GraphicalReportHandler {
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: usize,
-    pub(crate) tab_width: Option<usize>,
+    pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
 }
 
@@ -49,7 +49,7 @@ impl GraphicalReportHandler {
             theme: GraphicalTheme::default(),
             footer: None,
             context_lines: 1,
-            tab_width: None,
+            tab_width: 4,
             with_cause_chain: true,
         }
     }
@@ -62,14 +62,14 @@ impl GraphicalReportHandler {
             theme,
             footer: None,
             context_lines: 1,
-            tab_width: None,
+            tab_width: 4,
             with_cause_chain: true,
         }
     }
 
     /// Set the displayed tab width in spaces.
     pub fn tab_width(mut self, width: usize) -> Self {
-        self.tab_width = Some(width);
+        self.tab_width = width;
         self
     }
 
@@ -442,12 +442,7 @@ impl GraphicalReportHandler {
             self.render_line_gutter(f, max_gutter, line, &labels)?;
 
             // And _now_ we can print out the line text itself!
-            if let Some(w) = self.tab_width {
-                let text = line.text.replace('\t', " ".repeat(w).as_str());
-                writeln!(f, "{}", text)?;
-            } else {
-                writeln!(f, "{}", line.text)?;
-            };
+            self.render_line_text(f, &line.text)?;
 
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
@@ -605,15 +600,44 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
+    /// Returns an iterator over the visual width of each character in a line.
+    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item = usize> + 'a {
+        let mut column = 0;
+        let tab_width = self.tab_width;
+        text.chars().map(move |c| {
+            let width = if c == '\t' {
+                // Round up to the next multiple of tab_width
+                tab_width - column % tab_width
+            } else {
+                c.width().unwrap_or(0)
+            };
+            column += width;
+            width
+        })
+    }
+
     /// Returns the visual column position of a byte offset on a specific line.
     fn visual_offset(&self, line: &Line, offset: usize) -> usize {
         let line_range = line.offset..(line.offset + line.length);
         assert!(line_range.contains(&offset));
 
         let text = &line.text[..offset - line.offset];
-        let tab_count = text.matches('\t').count();
-        let tab_width = self.tab_width.unwrap_or(1);
-        text.width() + tab_count * tab_width
+        self.line_visual_char_width(text).sum()
+    }
+
+    /// Renders a line to the output formatter, replacing tabs with spaces.
+    fn render_line_text(&self, f: &mut impl fmt::Write, text: &str) -> fmt::Result {
+        for (c, width) in text.chars().zip(self.line_visual_char_width(text)) {
+            if c == '\t' {
+                for _ in 0..width {
+                    f.write_char(' ')?
+                }
+            } else {
+                f.write_char(c)?
+            }
+        }
+        f.write_char('\n')?;
+        Ok(())
     }
 
     fn render_single_line_highlights(
