@@ -1,5 +1,13 @@
 # `miette` Release Changelog
 
+<a name="5.3.1"></a>
+## 5.3.1 (2022-09-10)
+
+### Bug Fixes
+
+* **miri:** Resolve Miri's concerns around unsafe code (#197) ([5f3429b0](https://github.com/zkat/miette/commit/5f3429b0626034328a0c2f1317b8a0e712c63775))
+* **graphical:** Align highlights correctly with wide unicode characters and tabs (#202) ([196c09ce](https://github.com/zkat/miette/commit/196c09ce7af9e54b63aaa5dae4cd199f2ecba3fa))
+
 <a name="5.3.0"></a>
 ## 5.3.0 (2022-08-10)
 
