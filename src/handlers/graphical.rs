@@ -1,6 +1,7 @@
 use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style};
+use unicode_width::UnicodeWidthChar;
 
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
@@ -27,7 +28,7 @@ pub struct GraphicalReportHandler {
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
     pub(crate) context_lines: usize,
-    pub(crate) tab_width: Option<usize>,
+    pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
 }
 
@@ -48,7 +49,7 @@ impl GraphicalReportHandler {
             theme: GraphicalTheme::default(),
             footer: None,
             context_lines: 1,
-            tab_width: None,
+            tab_width: 4,
             with_cause_chain: true,
         }
     }
@@ -61,14 +62,14 @@ impl GraphicalReportHandler {
             theme,
             footer: None,
             context_lines: 1,
-            tab_width: None,
+            tab_width: 4,
             with_cause_chain: true,
         }
     }
 
     /// Set the displayed tab width in spaces.
     pub fn tab_width(mut self, width: usize) -> Self {
-        self.tab_width = Some(width);
+        self.tab_width = width;
         self
     }
 
@@ -441,12 +442,7 @@ impl GraphicalReportHandler {
             self.render_line_gutter(f, max_gutter, line, &labels)?;
 
             // And _now_ we can print out the line text itself!
-            if let Some(w) = self.tab_width {
-                let text = line.text.replace('\t', " ".repeat(w).as_str());
-                writeln!(f, "{}", text)?;
-            } else {
-                writeln!(f, "{}", line.text)?;
-            };
+            self.render_line_text(f, &line.text)?;
 
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
@@ -604,6 +600,46 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
+    /// Returns an iterator over the visual width of each character in a line.
+    fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item = usize> + 'a {
+        let mut column = 0;
+        let tab_width = self.tab_width;
+        text.chars().map(move |c| {
+            let width = if c == '\t' {
+                // Round up to the next multiple of tab_width
+                tab_width - column % tab_width
+            } else {
+                c.width().unwrap_or(0)
+            };
+            column += width;
+            width
+        })
+    }
+
+    /// Returns the visual column position of a byte offset on a specific line.
+    fn visual_offset(&self, line: &Line, offset: usize) -> usize {
+        let line_range = line.offset..(line.offset + line.length);
+        assert!(line_range.contains(&offset));
+
+        let text = &line.text[..offset - line.offset];
+        self.line_visual_char_width(text).sum()
+    }
+
+    /// Renders a line to the output formatter, replacing tabs with spaces.
+    fn render_line_text(&self, f: &mut impl fmt::Write, text: &str) -> fmt::Result {
+        for (c, width) in text.chars().zip(self.line_visual_char_width(text)) {
+            if c == '\t' {
+                for _ in 0..width {
+                    f.write_char(' ')?
+                }
+            } else {
+                f.write_char(c)?
+            }
+        }
+        f.write_char('\n')?;
+        Ok(())
+    }
+
     fn render_single_line_highlights(
         &self,
         f: &mut impl fmt::Write,
@@ -617,63 +653,44 @@ impl GraphicalReportHandler {
         let mut highest = 0;
 
         let chars = &self.theme.characters;
-        for hl in single_liners {
-            let hl_len = std::cmp::max(1, hl.len());
-
-            let local_offset = if let Some(w) = self.tab_width {
-                // Only count tabs that affect the position of the highlighted
-                // line and ignore tabs past the span.
-                let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
-                let tabs_as_spaces = tab_count * w - tab_count;
-                hl.offset() - line.offset + tabs_as_spaces
-            } else {
-                hl.offset() - line.offset
-            };
-
-            let vbar_offset = local_offset + (hl_len / 2);
-            let num_left = vbar_offset - local_offset;
-            let num_right = local_offset + hl_len - vbar_offset - 1;
-            let start = std::cmp::max(local_offset, highest);
-            let end = local_offset + hl_len;
-            if start < end {
-                underlines.push_str(
-                    &format!(
-                        "{:width$}{}{}{}",
-                        "",
-                        chars.underline.to_string().repeat(num_left),
-                        if hl.len() == 0 {
-                            chars.uarrow
-                        } else if hl.label().is_some() {
-                            chars.underbar
-                        } else {
-                            chars.underline
-                        },
-                        chars.underline.to_string().repeat(num_right),
-                        width = local_offset.saturating_sub(highest),
-                    )
-                    .style(hl.style)
-                    .to_string(),
-                );
-            }
-            highest = std::cmp::max(highest, end);
-        }
-        writeln!(f, "{}", underlines)?;
-
         let vbar_offsets: Vec<_> = single_liners
             .iter()
             .map(|hl| {
-                let local_offset = if let Some(w) = self.tab_width {
-                    // Only count tabs that affect the position of the
-                    // highlighted line and ignore tabs past the span.
-                    let tab_count = &line.text[..hl.offset() - line.offset].matches('\t').count();
-                    let tabs_as_spaces = tab_count * w - tab_count;
-                    hl.offset() - line.offset + tabs_as_spaces
-                } else {
-                    hl.offset() - line.offset
-                };
-                (hl, local_offset + (std::cmp::max(1, hl.len()) / 2))
+                let byte_start = hl.offset();
+                let byte_end = hl.offset() + hl.len().max(1);
+                let start = self.visual_offset(line, byte_start).max(highest);
+                let end = self.visual_offset(line, byte_end);
+
+                let vbar_offset = (start + end) / 2;
+                let num_left = vbar_offset - start;
+                let num_right = end - vbar_offset - 1;
+                if start < end {
+                    underlines.push_str(
+                        &format!(
+                            "{:width$}{}{}{}",
+                            "",
+                            chars.underline.to_string().repeat(num_left),
+                            if hl.len() == 0 {
+                                chars.uarrow
+                            } else if hl.label().is_some() {
+                                chars.underbar
+                            } else {
+                                chars.underline
+                            },
+                            chars.underline.to_string().repeat(num_right),
+                            width = start.saturating_sub(highest),
+                        )
+                        .style(hl.style)
+                        .to_string(),
+                    );
+                }
+                highest = std::cmp::max(highest, end);
+
+                (hl, vbar_offset)
             })
             .collect();
+        writeln!(f, "{}", underlines)?;
+
         for hl in single_liners.iter().rev() {
             if let Some(label) = hl.label() {
                 self.write_no_linum(f, linum_width)?;

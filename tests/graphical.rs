@@ -82,7 +82,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     let src = "source\n  👼🏼text\n    here".to_string();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        highlight: (9, 6).into(),
+        highlight: (13, 8).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -92,8 +92,8 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
    ╭─[bad_file.rs:1:1]
  1 │ source
  2 │   👼🏼text
-   ·   ───┬──
-   ·      ╰── this bit here
+   ·     ───┬──
+   ·        ╰── this bit here
  3 │     here
    ╰────
   help: try doing it better next time?
@@ -157,10 +157,10 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
 
     std::env::set_var("REPLACE_TABS", "4");
 
-    let src = "source\ntext\ttext\n    here".to_string();
+    let src = "source\ntext =\ttext\n    here".to_string();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
-        highlight: (12, 4).into(),
+        highlight: (14, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -169,7 +169,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
- 2 │ text    text
+ 2 │ text =  text
    ·         ──┬─
    ·           ╰── this bit here
  3 │     here
