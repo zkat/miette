@@ -68,6 +68,38 @@ fn empty_source() -> Result<(), MietteError> {
 }
 
 #[test]
+fn full_line_span() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("This bit here")]
+        bad_bit: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new("issue", "source\ntext"),
+        bad_bit: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"
+  × oops!
+   ╭─[issue:1:1]
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰── This bit here
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
+
+#[test]
 fn single_line_with_wide_char() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]

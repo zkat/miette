@@ -618,7 +618,7 @@ impl GraphicalReportHandler {
 
     /// Returns the visual column position of a byte offset on a specific line.
     fn visual_offset(&self, line: &Line, offset: usize) -> usize {
-        let line_range = line.offset..(line.offset + line.length);
+        let line_range = line.offset..=(line.offset + line.length);
         assert!(line_range.contains(&offset));
 
         let text = &line.text[..offset - line.offset];
