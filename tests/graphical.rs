@@ -68,7 +68,7 @@ fn empty_source() -> Result<(), MietteError> {
 }
 
 #[test]
-fn full_line_span() {
+fn single_line_highlight_span_full_line() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]
     #[diagnostic(severity(Error))]
@@ -312,6 +312,42 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
  1 │ source
    · ▲
    · ╰── this bit here
+ 2 │   text
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_higlight_offset_end_of_line() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   ·       ▲
+   ·       ╰── this bit here
  2 │   text
    ╰────
   help: try doing it better next time?

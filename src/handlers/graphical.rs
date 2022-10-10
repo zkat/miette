@@ -657,9 +657,9 @@ impl GraphicalReportHandler {
             .iter()
             .map(|hl| {
                 let byte_start = hl.offset();
-                let byte_end = hl.offset() + hl.len().max(1);
+                let byte_end = hl.offset() + hl.len();
                 let start = self.visual_offset(line, byte_start).max(highest);
-                let end = self.visual_offset(line, byte_end);
+                let end = self.visual_offset(line, byte_end).max(start + 1);
 
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
