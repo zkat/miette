@@ -73,6 +73,18 @@ impl Report {
         Report::from_adhoc(message)
     }
 
+    /// Create a new error object from a boxed [`Diagnostic`].
+    ///
+    /// The boxed type must be thread safe and 'static, so that the `Report`
+    /// will be as well.
+    ///
+    /// Boxed `Diagnostic`s don't implement `Diagnostic` themselves due to trait coherence issues.
+    /// This method allows you to create a `Report` from a boxed `Diagnostic`.
+    #[cfg_attr(track_caller, track_caller)]
+    pub fn new_boxed(error: Box<dyn Diagnostic + Send + Sync + 'static>) -> Self {
+        Report::from_boxed(error)
+    }
+
     #[cfg_attr(track_caller, track_caller)]
     pub(crate) fn from_std<E>(error: E) -> Self
     where
