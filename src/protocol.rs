@@ -66,35 +66,57 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-impl std::error::Error for Box<dyn Diagnostic> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        (**self).source()
-    }
+macro_rules! forwarding_impl {
+    ($t:ty) => {
+        impl std::error::Error for $t {
+            fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                (**self).source()
+            }
 
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
-    }
+            fn cause(&self) -> Option<&dyn std::error::Error> {
+                self.source()
+            }
+        }
+
+        impl Diagnostic for $t {
+            fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                (**self).code()
+            }
+
+            fn severity(&self) -> Option<Severity> {
+                (**self).severity()
+            }
+
+            fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                (**self).help()
+            }
+
+            fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                (**self).url()
+            }
+
+            fn source_code(&self) -> Option<&dyn SourceCode> {
+                (**self).source_code()
+            }
+
+            fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+                (**self).labels()
+            }
+
+            fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+                (**self).related()
+            }
+
+            fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+                (**self).diagnostic_source()
+            }
+        }
+    };
 }
 
-impl<T: Diagnostic + Send + Sync + 'static> From<T>
-    for Box<dyn Diagnostic + Send + Sync + 'static>
-{
-    fn from(diag: T) -> Self {
-        Box::new(diag)
-    }
-}
-
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + Send + 'static> {
-    fn from(diag: T) -> Self {
-        Box::<dyn Diagnostic + Send + Sync>::from(diag)
-    }
-}
-
-impl<T: Diagnostic + Send + Sync + 'static> From<T> for Box<dyn Diagnostic + 'static> {
-    fn from(diag: T) -> Self {
-        Box::<dyn Diagnostic + Send + Sync>::from(diag)
-    }
-}
+forwarding_impl!(Box<dyn Diagnostic + 'static>);
+forwarding_impl!(Box<dyn Diagnostic + Send + 'static>);
+forwarding_impl!(Box<dyn Diagnostic + Send + Sync + 'static>);
 
 impl From<&str> for Box<dyn Diagnostic> {
     fn from(s: &str) -> Self {
