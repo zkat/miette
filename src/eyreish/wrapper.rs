@@ -102,6 +102,10 @@ impl Diagnostic for BoxedError {
     fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
         self.0.related()
     }
+
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+        self.0.diagnostic_source()
+    }
 }
 
 impl Debug for BoxedError {
@@ -151,6 +155,10 @@ impl<E: Diagnostic, C: SourceCode> Diagnostic for WithSourceCode<E, C> {
     fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
         self.error.related()
     }
+
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+        self.error.diagnostic_source()
+    }
 }
 
 impl<C: SourceCode> Diagnostic for WithSourceCode<Report, C> {
@@ -180,6 +188,10 @@ impl<C: SourceCode> Diagnostic for WithSourceCode<Report, C> {
 
     fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
         self.error.related()
+    }
+
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+        self.error.diagnostic_source()
     }
 }
 
