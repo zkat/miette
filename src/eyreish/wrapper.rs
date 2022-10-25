@@ -120,7 +120,21 @@ impl Display for BoxedError {
     }
 }
 
-impl StdError for BoxedError {}
+impl StdError for BoxedError {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        self.0.source()
+    }
+
+    fn description(&self) -> &str {
+        #[allow(deprecated)]
+        self.0.description()
+    }
+
+    fn cause(&self) -> Option<&dyn StdError> {
+        #[allow(deprecated)]
+        self.0.cause()
+    }
+}
 
 pub(crate) struct WithSourceCode<E, C> {
     pub(crate) error: E,
