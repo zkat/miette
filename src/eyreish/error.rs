@@ -791,6 +791,18 @@ impl AsRef<dyn Diagnostic> for Report {
     }
 }
 
+impl AsRef<dyn StdError + Send + Sync> for Report {
+    fn as_ref(&self) -> &(dyn StdError + Send + Sync + 'static) {
+        unsafe { ErrorImpl::error(self.inner.by_ref()) }
+    }
+}
+
+impl AsRef<dyn StdError> for Report {
+    fn as_ref(&self) -> &(dyn StdError + 'static) {
+        unsafe { ErrorImpl::error(self.inner.by_ref()) }
+    }
+}
+
 impl std::borrow::Borrow<dyn Diagnostic> for Report {
     fn borrow(&self) -> &(dyn Diagnostic + 'static) {
         self.as_ref()
