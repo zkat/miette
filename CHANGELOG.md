@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="5.4.0"></a>
+## 5.4.0 (2022-10-25)
+
+### Features
+
+* **version:** declare minimum supported rust version at 1.56.0 (#209) ([ac02a124](https://github.com/zkat/miette/commit/ac02a1242b1d6452a428846d2a84d2ac164fd914))
+* **report:** `Report::new_boxed` ([0660d2f4](https://github.com/zkat/miette/commit/0660d2f43c0a793b1e289b26bcca73c8733bdcff))
+* **error:** `impl AsRef<dyn StdError> for Report` ([1a27033d](https://github.com/zkat/miette/commit/1a27033d7afd0007907550b1fc9d589d6f658662))
+
+### Bug Fixes
+
+* **wrapper:** complete forwarding `Diagnostic` implementations ([3fc5c04c](https://github.com/zkat/miette/commit/3fc5c04cbbd4b92863290a488a23d5243c16fe60))
+
 <a name="5.3.1"></a>
 ## 5.3.1 (2022-09-10)
 
