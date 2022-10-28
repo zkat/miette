@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="5.4.1"></a>
+## 5.4.1 (2022-10-28)
+
+### Bug Fixes
+
+* **graphical:** Fix panic with zero-width span at end of line (#204) ([b8810ee3](https://github.com/zkat/miette/commit/b8810ee3d8aee7d7723e081616dd4f2fe8748abe))
+
 <a name="5.4.0"></a>
 ## 5.4.0 (2022-10-25)
 
