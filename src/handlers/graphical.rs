@@ -621,8 +621,22 @@ impl GraphicalReportHandler {
         let line_range = line.offset..=(line.offset + line.length);
         assert!(line_range.contains(&offset));
 
-        let text = &line.text[..offset - line.offset];
-        self.line_visual_char_width(text).sum()
+        let text_index = offset - line.offset;
+        let text = &line.text[..text_index.min(line.text.len())];
+        let text_width = self.line_visual_char_width(text).sum();
+        if text_index > line.text.len() {
+            // Spans extending past the end of the line are always rendered as
+            // one column past the end of the visible line.
+            //
+            // This doesn't necessarily correspond to a specific byte-offset,
+            // since a span extending past the end of the line could contain:
+            //  - an actual \n character (1 byte)
+            //  - a CRLF (2 bytes)
+            //  - EOF (0 bytes)
+            text_width + 1
+        } else {
+            text_width
+        }
     }
 
     /// Renders a line to the output formatter, replacing tabs with spaces.
