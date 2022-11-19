@@ -129,7 +129,7 @@ impl Url {
             }
         };
         Some(quote! {
-            fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+            fn url(&self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>> {
                 #[allow(unused_variables, deprecated)]
                 let Self #pat = self;
                 std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))

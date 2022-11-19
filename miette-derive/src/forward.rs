@@ -58,13 +58,13 @@ impl WhichFn {
     pub fn signature(&self) -> TokenStream {
         match self {
             Self::Code => quote! {
-                fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>>
+                fn code(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
             },
             Self::Help => quote! {
-                fn help<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>>
+                fn help(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
             },
             Self::Url => quote! {
-                fn url<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>>
+                fn url(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
             },
             Self::Severity => quote! {
                 fn severity(&self) -> std::option::Option<miette::Severity>
