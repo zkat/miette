@@ -72,7 +72,7 @@ impl Code {
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let code = &self.0;
         Some(quote! {
-            fn code<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + 'a>> {
+            fn code(&self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>> {
                 std::option::Option::Some(std::boxed::Box::new(#code))
             }
         })

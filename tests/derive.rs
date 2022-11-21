@@ -185,7 +185,7 @@ fn fmt_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz), help("{} x {0} x {:?}", 1, "2"))]
-    struct FooStruct(String);
+    struct FooStruct<'a>(&'a str);
 
     assert_eq!(
         "1 x hello x \"2\"".to_string(),
@@ -195,8 +195,8 @@ fn fmt_help() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz), help("{} x {my_field} x {:?}", 1, "2"))]
-    struct BarStruct {
-        my_field: String,
+    struct BarStruct<'a> {
+        my_field: &'a str,
     }
 
     assert_eq!(
@@ -211,9 +211,9 @@ fn fmt_help() {
 
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
-    enum FooEnum {
+    enum FooEnum<'a> {
         #[diagnostic(code(foo::x), help("{} x {0} x {:?}", 1, "2"))]
-        X(String),
+        X(&'a str),
 
         #[diagnostic(code(foo::x), help("{} x {len} x {:?}", 1, "2"))]
         Y { len: usize },
@@ -243,9 +243,9 @@ fn help_field() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic()]
-    struct Foo {
+    struct Foo<'a> {
         #[help]
-        do_this: Option<String>,
+        do_this: Option<&'a str>,
     }
 
     assert_eq!(
@@ -261,11 +261,11 @@ fn help_field() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic()]
-    enum Bar {
-        A(#[help] Option<String>),
+    enum Bar<'a> {
+        A(#[help] Option<&'a str>),
         B {
             #[help]
-            do_this: Option<String>,
+            do_this: Option<&'a str>,
         },
     }
 
@@ -286,7 +286,7 @@ fn help_field() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic()]
-    struct Baz(#[help] Option<String>);
+    struct Baz<'a>(#[help] Option<&'a str>);
 
     assert_eq!(
         "x".to_string(),
@@ -296,7 +296,7 @@ fn help_field() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic()]
-    struct Quux(#[help] String);
+    struct Quux<'a>(#[help] &'a str);
 
     assert_eq!(
         "x".to_string(),
@@ -309,9 +309,9 @@ fn test_snippet_named_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
-    struct Foo {
+    struct Foo<'a> {
         #[source_code]
-        src: String,
+        src: &'a str,
         #[label("var 1")]
         var1: SourceSpan,
         #[label = "var 2"]
@@ -331,8 +331,8 @@ fn test_snippet_unnamed_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
-    struct Foo(
-        #[source_code] String,
+    struct Foo<'a>(
+        #[source_code] &'a str,
         #[label("{0}")] SourceSpan,
         #[label = "idk"] SourceSpan,
         #[label] SourceSpan,
@@ -346,11 +346,11 @@ fn test_snippet_enum() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[allow(dead_code)]
-    enum Foo {
+    enum Foo<'a> {
         #[diagnostic(code(foo::a))]
         A {
             #[source_code]
-            src: String,
+            src: &'a str,
             msg: String,
             #[label("hi this is where the thing went wrong ({msg})")]
             var0: SourceSpan,
@@ -516,9 +516,9 @@ fn test_forward_struct_named() {
         help("{help}"),
         forward(span)
     )]
-    struct Struct {
+    struct Struct<'a> {
         span: ForwardsTo,
-        help: &'static str,
+        help: &'a str,
     }
     // Also check the From impl here
     let diag = Struct {
@@ -535,7 +535,7 @@ fn test_forward_struct_unnamed() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("display")]
     #[diagnostic(code(foo::bar::overridden), url("{1}"), forward(0))]
-    struct Struct(ForwardsTo, &'static str);
+    struct Struct<'a>(ForwardsTo, &'a str);
 
     // Also check the From impl here
     let diag = Struct(ForwardsTo::new(), "url here");
@@ -546,12 +546,12 @@ fn test_forward_struct_unnamed() {
 #[test]
 fn test_forward_enum_named() {
     #[derive(Debug, Diagnostic, Error)]
-    enum Enum {
+    enum Enum<'a> {
         #[error("help: {help_text}")]
         #[diagnostic(code(foo::bar::overridden), help("{help_text}"), forward(span))]
         Variant {
             span: ForwardsTo,
-            help_text: &'static str,
+            help_text: &'a str,
         },
     }
     // Also check the From impl here
@@ -569,10 +569,10 @@ fn test_forward_enum_named() {
 #[test]
 fn test_forward_enum_unnamed() {
     #[derive(Debug, Diagnostic, Error)]
-    enum ForwardEnumUnnamed {
+    enum ForwardEnumUnnamed<'a> {
         #[error("help: {1}")]
         #[diagnostic(code(foo::bar::overridden), help("{1}"), forward(0))]
-        Variant(ForwardsTo, &'static str),
+        Variant(ForwardsTo, &'a str),
     }
     // Also check the From impl here
     let variant = ForwardEnumUnnamed::Variant(ForwardsTo::new(), "overridden help please");
