@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="5.5.0"></a>
+## 5.5.0 (2022-11-24)
+
+### Features
+
+* **SourceCode:** Implement SourceCode for Vec<u8> (#216) ([c857595e](https://github.com/zkat/miette/commit/c857595e1ae689028c5c5b66148e81b175eaa509))
+
+### Bug Fixes
+
+* **derive:** elide lifetimes in derived functions (#226) ([c88f0b5a](https://github.com/zkat/miette/commit/c88f0b5aa0786a0f4bb778686548f91db96ea6af))
+* **graphical:** Fix panic with span extending past end of line (#221) ([8b56d277](https://github.com/zkat/miette/commit/8b56d277ef476438a1c7383c29f6c1a0a1684818))
+* **license:** fix mangled license text to improve recognition ([d5fbb340](https://github.com/zkat/miette/commit/d5fbb3409c7cc950c502eb77578d5f1062384fb5))
+
 <a name="5.4.1"></a>
 ## 5.4.1 (2022-10-28)
 
