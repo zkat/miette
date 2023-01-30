@@ -247,6 +247,23 @@ pub fn some_tool() -> Result<Version> {
 }
 ```
 
+To construct your own simple adhoc error use the `miette::miette!` macro:
+
+```rust
+// my_app/lib/my_internal_file.rs
+use miette::{IntoDiagnostic, Result, WrapErr, miette};
+use semver::Version;
+
+pub fn some_tool() -> Result<Version> {
+    let version = "1.2.x";
+    Ok(version
+        .parse()
+        .map_err(|_| miette!("Invalid version {}", version))?)
+}
+```
+
+There are also similar `miette::bail!` and `miette::ensure!` macros.
+
 #### ... in `main()`
 
 `main()` is just like any other part of your application-internal code. Use
@@ -379,6 +396,7 @@ pub struct MyErrorType {
 ```
 
 ##### ... help text
+
 `miette` provides two facilities for supplying help text for your errors:
 
 The first is the `#[help()]` format attribute that applies to structs or
