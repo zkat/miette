@@ -488,7 +488,7 @@ impl SourceOffset {
         Ok((
             loc.file().into(),
             fs::read_to_string(loc.file())
-                .map(|txt| Self::from_location(&txt, loc.line() as usize, loc.column() as usize))?,
+                .map(|txt| Self::from_location(txt, loc.line() as usize, loc.column() as usize))?,
         ))
     }
 }

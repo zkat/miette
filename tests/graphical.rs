@@ -1058,6 +1058,132 @@ Error: oops::my::bad
 }
 
 #[test]
+fn related_severity() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[related]
+        related: Vec<MyRelated>,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    enum MyRelated {
+        #[error("oops!")]
+        #[diagnostic(
+            severity(Error),
+            code(oops::my::related::error),
+            help("try doing it better next time?")
+        )]
+        Error {
+            #[source_code]
+            src: NamedSource,
+            #[label("this bit here")]
+            highlight: SourceSpan,
+        },
+
+        #[error("oops!")]
+        #[diagnostic(
+            severity(Warning),
+            code(oops::my::related::warning),
+            help("try doing it better next time?")
+        )]
+        Warning {
+            #[source_code]
+            src: NamedSource,
+            #[label("this bit here")]
+            highlight: SourceSpan,
+        },
+
+        #[error("oops!")]
+        #[diagnostic(
+            severity(Advice),
+            code(oops::my::related::advice),
+            help("try doing it better next time?")
+        )]
+        Advice {
+            #[source_code]
+            src: NamedSource,
+            #[label("this bit here")]
+            highlight: SourceSpan,
+        },
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src.clone()),
+        highlight: (9, 4).into(),
+        related: vec![
+            MyRelated::Error {
+                src: NamedSource::new("bad_file.rs", src.clone()),
+                highlight: (0, 6).into(),
+            },
+            MyRelated::Warning {
+                src: NamedSource::new("bad_file.rs", src.clone()),
+                highlight: (0, 6).into(),
+            },
+            MyRelated::Advice {
+                src: NamedSource::new("bad_file.rs", src),
+                highlight: (0, 6).into(),
+            },
+        ],
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+ 2 │   text
+   ·   ──┬─
+   ·     ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+
+Error: oops::my::related::error
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │   text
+   ╰────
+  help: try doing it better next time?
+Warning: oops::my::related::warning
+
+  ⚠ oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │   text
+   ╰────
+  help: try doing it better next time?
+Advice: oops::my::related::advice
+
+  ☞ oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │   text
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn zero_length_eol_span() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]

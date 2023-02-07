@@ -132,7 +132,7 @@ impl NarratableReportHandler {
         if let Some(related) = diagnostic.related() {
             writeln!(f)?;
             for rel in related {
-                match diagnostic.severity() {
+                match rel.severity() {
                     Some(Severity::Error) | None => write!(f, "Error: ")?,
                     Some(Severity::Warning) => write!(f, "Warning: ")?,
                     Some(Severity::Advice) => write!(f, "Advice: ")?,
@@ -218,10 +218,10 @@ impl NarratableReportHandler {
         Ok(())
     }
 
-    fn render_context<'a>(
+    fn render_context(
         &self,
         f: &mut impl fmt::Write,
-        source: &'a dyn SourceCode,
+        source: &dyn SourceCode,
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
