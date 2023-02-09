@@ -108,8 +108,8 @@ impl SourceCode for [u8] {
     }
 
     fn source_bytes(&self) -> &[u8] {
-        &self[..]
-    }    
+        self
+    }
 }
 
 impl<'src> SourceCode for &'src [u8] {
@@ -125,8 +125,6 @@ impl<'src> SourceCode for &'src [u8] {
     fn source_bytes(&self) -> &[u8] {
         self
     }
-
-    
 }
 
 impl SourceCode for Vec<u8> {
@@ -161,7 +159,7 @@ impl SourceCode for str {
 
     fn source_bytes(&self) -> &[u8] {
         self.as_bytes()
-    }    
+    }
 }
 
 /// Makes `src: &'static str` or `struct S<'a> { src: &'a str }` usable.
