@@ -53,4 +53,8 @@ impl SourceCode for NamedSource {
             contents.line_count(),
         )))
     }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.inner().source_bytes()
+    }
 }

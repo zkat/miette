@@ -106,6 +106,10 @@ impl SourceCode for [u8] {
         let contents = context_info(self, span, context_lines_before, context_lines_after)?;
         Ok(Box::new(contents))
     }
+
+    fn source_bytes(&self) -> &[u8] {
+        &self[..]
+    }    
 }
 
 impl<'src> SourceCode for &'src [u8] {
@@ -117,6 +121,12 @@ impl<'src> SourceCode for &'src [u8] {
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
+
+    fn source_bytes(&self) -> &[u8] {
+        self
+    }
+
+    
 }
 
 impl SourceCode for Vec<u8> {
@@ -127,6 +137,10 @@ impl SourceCode for Vec<u8> {
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
+    }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_slice()
     }
 }
 
@@ -144,6 +158,10 @@ impl SourceCode for str {
             context_lines_after,
         )
     }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_bytes()
+    }    
 }
 
 /// Makes `src: &'static str` or `struct S<'a> { src: &'a str }` usable.
@@ -156,6 +174,10 @@ impl<'s> SourceCode for &'s str {
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_bytes()
+    }
 }
 
 impl SourceCode for String {
@@ -166,6 +188,10 @@ impl SourceCode for String {
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
+    }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_bytes()
     }
 }
 
@@ -178,6 +204,10 @@ impl<T: ?Sized + SourceCode> SourceCode for Arc<T> {
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
+    }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_ref().source_bytes()
     }
 }
 
@@ -198,6 +228,10 @@ where
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
+    }
+
+    fn source_bytes(&self) -> &[u8] {
+        self.as_ref().source_bytes()
     }
 }
 

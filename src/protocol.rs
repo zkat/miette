@@ -192,6 +192,15 @@ pub trait SourceCode: Send + Sync {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
+
+    /// Borrow the source bytes in their entirety.
+    fn source_bytes(&self) -> &[u8];
+
+    /// Borrow the source bytes as a string slice.
+    /// Returns None if the source is not a valid utf-8 string.
+    fn source_utf8(&self) -> Result<&str, std::str::Utf8Error> {
+        std::str::from_utf8(self.source_bytes())
+    }
 }
 
 /// A labeled [`SourceSpan`].
