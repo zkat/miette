@@ -198,7 +198,7 @@ pub trait SourceCode: Send + Sync {
 
     /// Borrow the source bytes as a string slice.
     /// Returns None if the source is not a valid utf-8 string.
-    fn source_utf8(&self) -> Result<&str, std::str::Utf8Error> {
+    fn source_str(&self) -> Result<&str, std::str::Utf8Error> {
         std::str::from_utf8(self.source_bytes())
     }
 }
