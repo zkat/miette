@@ -9,7 +9,7 @@ use crate::{
 };
 
 pub struct SourceCode {
-    source_code: syn::Member,
+    pub source_code: syn::Member,
 }
 
 impl SourceCode {

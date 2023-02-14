@@ -4,14 +4,14 @@ use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
     spanned::Spanned,
-    Token,
+    Token, Member,
 };
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     fmt::{self, Display},
     forward::WhichFn,
-    utils::{display_pat_members, gen_all_variants_with},
+    utils::{display_pat_members, gen_all_variants_with}, source_code::SourceCode,
 };
 
 pub struct Labels(Vec<Label>);
@@ -105,6 +105,13 @@ impl Labels {
     }
 
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
+        let sources = SourceCode::from_fields(fields).unwrap_or_else(|_| None);
+        let source : Option<Member>;
+        if let Some(SourceCode { source_code }) = sources {
+            source = Some(source_code);
+        } else {
+            source = None;
+        }
         let (display_pat, display_members) = display_pat_members(fields);
         let labels = self.0.iter().map(|highlight| {
             let Label { span, label, ty } = highlight;
@@ -113,10 +120,15 @@ impl Labels {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                 quote! {
                     miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
-                    .map(|#var| miette::LabeledSpan::new_with_span(
-                        std::option::Option::Some(format!(#fmt #args)),
-                        #var.clone(),
-                    ))
+                    .map(|#var| {
+                        if #source.len() < #var.len() + #var.offset() {
+                            panic!("invalid span, not shadowing the error message");
+                        };
+                        miette::LabeledSpan::new_with_span(
+                            std::option::Option::Some(format!(#fmt #args)),
+                            #var.clone(),
+                        )
+                    })
                 }
             } else {
                 quote! {
