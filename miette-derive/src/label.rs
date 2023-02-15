@@ -114,10 +114,9 @@ impl Labels {
                 quote! {
                     miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
                     .map(|#var| miette::LabeledSpan::new_with_span(
-                            std::option::Option::Some(format!(#fmt #args)),
-                            #var.clone(),
-                        )
-                    )
+                        std::option::Option::Some(format!(#fmt #args)),
+                        #var.clone(),
+                    ))
                 }
             } else {
                 quote! {
