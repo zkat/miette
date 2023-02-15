@@ -315,7 +315,13 @@ impl GraphicalReportHandler {
                             source.read_span(label.inner(), self.context_lines, self.context_lines)
                         })
                         .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
-                        .map_err(|_| fmt::Error)?;
+                        .map_err(|e| {
+                            if matches!(e,MietteError::OutOfBounds) {
+                                panic!("invalid span , OutOfBounds");
+                            } else {
+                                fmt::Error 
+                            }
+                        })?;
                     let mut contexts = Vec::new();
                     for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
                         if contexts.is_empty() {
