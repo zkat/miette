@@ -162,14 +162,14 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
 [`ReportHandler`](crate::ReportHandler)s to change the way different
 [`Diagnostic`]s are displayed.
 */
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Severity {
-    /// Critical failure. The program cannot continue.
-    Error,
-    /// Warning. Please take note.
-    Warning,
     /// Just some help. Here's how you could be doing it better.
     Advice,
+    /// Warning. Please take note.
+    Warning,
+    /// Critical failure. The program cannot continue.
+    Error,
 }
 
 /**
