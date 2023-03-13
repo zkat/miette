@@ -191,7 +191,9 @@ impl MietteHandlerOpts {
             let characters = match self.unicode {
                 Some(true) => ThemeCharacters::unicode(),
                 Some(false) => ThemeCharacters::ascii(),
-                None if supports_unicode::on(&std::io::stderr()) => ThemeCharacters::unicode(),
+                None if supports_unicode::on(supports_unicode::Stream::Stderr) => {
+                    ThemeCharacters::unicode()
+                }
                 None => ThemeCharacters::ascii(),
             };
             let styles = if self.color == Some(false) {
@@ -255,7 +257,7 @@ impl MietteHandlerOpts {
         if let Some(linkify) = self.linkify {
             linkify
         } else {
-            supports_hyperlinks::on(&std::io::stderr())
+            supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
         }
     }
 
