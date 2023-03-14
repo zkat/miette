@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="5.6.0"></a>
+## 5.6.0 (2023-03-14)
+
+### Bug Fixes
+
+* **ci:** configure clippy-specific MSRV ([b658fc02](https://github.com/zkat/miette/commit/b658fc020b23b0715339c5c60f7c12c947f9a747))
+* **graphical:** Fix wrong severity of related errors (#234) ([3497508a](https://github.com/zkat/miette/commit/3497508aa9b8d8503d7aae997738a4323408ffa0))
+* **atty:** Switch out `atty` for `is-terminal` (#229) ([443d240f](https://github.com/zkat/miette/commit/443d240f49e9f48756ee88e4cdc377f09d44454e))
+
+### Features
+
+* **protocol:** implement `Ord` for `Severity` (#240) ([ed486c95](https://github.com/zkat/miette/commit/ed486c959d8e8fbd4247af7d47d7e32c8a88321d))
+
 <a name="5.5.0"></a>
 ## 5.5.0 (2022-11-24)
 
