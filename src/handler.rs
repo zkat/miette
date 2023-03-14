@@ -1,7 +1,5 @@
 use std::fmt;
 
-use atty::Stream;
-
 use crate::protocol::Diagnostic;
 use crate::GraphicalReportHandler;
 use crate::GraphicalTheme;
@@ -193,12 +191,14 @@ impl MietteHandlerOpts {
             let characters = match self.unicode {
                 Some(true) => ThemeCharacters::unicode(),
                 Some(false) => ThemeCharacters::ascii(),
-                None if supports_unicode::on(Stream::Stderr) => ThemeCharacters::unicode(),
+                None if supports_unicode::on(supports_unicode::Stream::Stderr) => {
+                    ThemeCharacters::unicode()
+                }
                 None => ThemeCharacters::ascii(),
             };
             let styles = if self.color == Some(false) {
                 ThemeStyles::none()
-            } else if let Some(color) = supports_color::on(Stream::Stderr) {
+            } else if let Some(color) = supports_color::on(supports_color::Stream::Stderr) {
                 match self.rgb_colors {
                     RgbColors::Always => ThemeStyles::rgb(),
                     RgbColors::Preferred if color.has_16m => ThemeStyles::rgb(),
@@ -257,7 +257,7 @@ impl MietteHandlerOpts {
         if let Some(linkify) = self.linkify {
             linkify
         } else {
-            supports_hyperlinks::on(Stream::Stderr)
+            supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
         }
     }
 

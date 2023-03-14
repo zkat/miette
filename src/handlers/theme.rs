@@ -1,4 +1,4 @@
-use atty::Stream;
+use is_terminal::IsTerminal;
 use owo_colors::Style;
 
 /**
@@ -63,7 +63,9 @@ impl GraphicalTheme {
 impl Default for GraphicalTheme {
     fn default() -> Self {
         match std::env::var("NO_COLOR") {
-            _ if !atty::is(Stream::Stdout) || !atty::is(Stream::Stderr) => Self::ascii(),
+            _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
+                Self::ascii()
+            }
             Ok(string) if string != "0" => Self::unicode_nocolor(),
             _ => Self::unicode(),
         }
