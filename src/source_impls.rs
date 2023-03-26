@@ -3,6 +3,7 @@ Default trait implementations for [`SourceCode`].
 */
 use std::{
     borrow::{Cow, ToOwned},
+    collections::VecDeque,
     fmt::Debug,
     sync::Arc,
 };
@@ -19,7 +20,7 @@ fn context_info<'a>(
     let mut line_count = 0usize;
     let mut start_line = 0usize;
     let mut start_column = 0usize;
-    let mut before_lines_starts = Vec::new();
+    let mut before_lines_starts = VecDeque::new();
     let mut current_line_start = 0usize;
     let mut end_lines = 0usize;
     let mut post_span = false;
@@ -34,10 +35,10 @@ fn context_info<'a>(
             if offset < span.offset() {
                 // We're before the start of the span.
                 start_column = 0;
-                before_lines_starts.push(current_line_start);
+                before_lines_starts.push_back(current_line_start);
                 if before_lines_starts.len() > context_lines_before {
                     start_line += 1;
-                    before_lines_starts.remove(0);
+                    before_lines_starts.pop_front();
                 }
             } else if offset >= span.offset() + span.len().saturating_sub(1) {
                 // We're after the end of the span, but haven't necessarily
@@ -73,7 +74,7 @@ fn context_info<'a>(
     }
 
     if offset >= (span.offset() + span.len()).saturating_sub(1) {
-        let starting_offset = before_lines_starts.first().copied().unwrap_or_else(|| {
+        let starting_offset = before_lines_starts.front().copied().unwrap_or_else(|| {
             if context_lines_before == 0 {
                 span.offset()
             } else {
