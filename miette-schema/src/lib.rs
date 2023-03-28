@@ -155,7 +155,7 @@ impl Diagnostic {
 
 #[test]
 fn emit() {
-    use std::fs::File;
+    use std::fs::OpenOptions;
     use std::io::BufWriter;
     use std::io::Write;
     use std::path::PathBuf;
@@ -167,12 +167,12 @@ fn emit() {
     // works ok.
     let root = std::env!("CARGO_MANIFEST_DIR");
     let schema = PathBuf::from(root).join("miette-json-schema.json");
-    let file = File::options()
+    let file = OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .open(schema)
         .unwrap();
     let mut file = BufWriter::new(file);
-    writeln!(&mut file, "{json_schema}").unwrap();
+    writeln!(&mut file, "{}", json_schema).unwrap();
 }
