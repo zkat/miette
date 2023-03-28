@@ -96,11 +96,10 @@ pub struct Diagnostic {
 /// The severity of a diagnostic
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 #[cfg_attr(feature = "schemars", derive(JsonSchema))]
-#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash, Default)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
 pub enum Severity {
     /// This is an error
     #[serde(rename = "error")]
-    #[default]
     Error,
     /// This is a warning
     #[serde(rename = "warning")]
@@ -113,6 +112,12 @@ pub enum Severity {
     /// unknown ones will be mapped to this variant.
     #[serde(other, rename = "_unknown")]
     Unknown,
+}
+
+impl Default for Severity {
+    fn default() -> Self {
+        Severity::Error
+    }
 }
 
 /// A label/span indicating relevant portions of a source file for a Diagnostic
