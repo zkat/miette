@@ -56,6 +56,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -102,6 +104,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -148,6 +152,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -194,6 +200,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -239,6 +247,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -285,6 +295,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -351,6 +363,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -397,6 +411,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -460,6 +476,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -536,6 +554,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -592,6 +612,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -648,6 +670,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -704,6 +728,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -732,6 +758,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -826,6 +854,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 
@@ -924,6 +954,8 @@ mod json_report_handler {
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
+        serde_json::from_str::<miette_schema::Diagnostic>(&expected)
+            .expect("JSON Schema can't read output");
         Ok(())
     }
 }

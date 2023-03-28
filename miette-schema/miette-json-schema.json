@@ -1,0 +1,208 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Diagnostic",
+  "description": "A miette diagnostic, the top level type of miette's json output",
+  "type": "object",
+  "properties": {
+    "causes": {
+      "description": "The underlying causes of this error (similar to a backtrace)",
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "code": {
+      "description": "The error code\n\ne.g. \"oops::my::bad\" or \"E1312\"",
+      "default": "",
+      "type": "string"
+    },
+    "filename": {
+      "description": "The name of the source file that caused the diagnostic",
+      "default": "",
+      "type": "string"
+    },
+    "help": {
+      "description": "An additional piece of advice on how to address the diagnostic\n\ne.g. \"try removing this trailing comma\"",
+      "default": "",
+      "type": "string"
+    },
+    "labels": {
+      "description": "Labels/spans referring to the locations in the source that are relevant to the diagnostic\n\nSee \"filename\" for the source file these labels refer to\n\ne.g. \"here's the extra comma you should remove\" (offset: 100, len: 1)",
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Label"
+      }
+    },
+    "message": {
+      "description": "The primary error message",
+      "default": "",
+      "type": "string"
+    },
+    "related": {
+      "description": "Related Diagnostics nested under this one\n\nThis can be used to report multiple diagnostics at once, by e.g. having a vague top-level diagnostic like \"failed to compile\" with the more specific issues nested underneath it.",
+      "default": [],
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Diagnostic"
+      }
+    },
+    "severity": {
+      "description": "The severity of the error (error, warning, advice, ...)",
+      "default": "error",
+      "allOf": [
+        {
+          "$ref": "#/definitions/Severity"
+        }
+      ]
+    },
+    "url": {
+      "description": "A URL to visit to get more information on this error",
+      "default": "",
+      "type": "string"
+    }
+  },
+  "definitions": {
+    "Diagnostic": {
+      "description": "A miette diagnostic, the top level type of miette's json output",
+      "type": "object",
+      "properties": {
+        "causes": {
+          "description": "The underlying causes of this error (similar to a backtrace)",
+          "default": [],
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "code": {
+          "description": "The error code\n\ne.g. \"oops::my::bad\" or \"E1312\"",
+          "default": "",
+          "type": "string"
+        },
+        "filename": {
+          "description": "The name of the source file that caused the diagnostic",
+          "default": "",
+          "type": "string"
+        },
+        "help": {
+          "description": "An additional piece of advice on how to address the diagnostic\n\ne.g. \"try removing this trailing comma\"",
+          "default": "",
+          "type": "string"
+        },
+        "labels": {
+          "description": "Labels/spans referring to the locations in the source that are relevant to the diagnostic\n\nSee \"filename\" for the source file these labels refer to\n\ne.g. \"here's the extra comma you should remove\" (offset: 100, len: 1)",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Label"
+          }
+        },
+        "message": {
+          "description": "The primary error message",
+          "default": "",
+          "type": "string"
+        },
+        "related": {
+          "description": "Related Diagnostics nested under this one\n\nThis can be used to report multiple diagnostics at once, by e.g. having a vague top-level diagnostic like \"failed to compile\" with the more specific issues nested underneath it.",
+          "default": [],
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Diagnostic"
+          }
+        },
+        "severity": {
+          "description": "The severity of the error (error, warning, advice, ...)",
+          "default": "error",
+          "allOf": [
+            {
+              "$ref": "#/definitions/Severity"
+            }
+          ]
+        },
+        "url": {
+          "description": "A URL to visit to get more information on this error",
+          "default": "",
+          "type": "string"
+        }
+      }
+    },
+    "Label": {
+      "description": "A label/span indicating relevant portions of a source file for a Diagnostic",
+      "type": "object",
+      "properties": {
+        "label": {
+          "description": "The label/message for the span",
+          "default": "",
+          "type": "string"
+        },
+        "span": {
+          "description": "The actual span/range of source code that we're referring to",
+          "default": {
+            "length": 0,
+            "offset": 0
+          },
+          "allOf": [
+            {
+              "$ref": "#/definitions/Span"
+            }
+          ]
+        }
+      }
+    },
+    "Severity": {
+      "description": "The severity of a diagnostic",
+      "oneOf": [
+        {
+          "description": "This is an error",
+          "type": "string",
+          "enum": [
+            "error"
+          ]
+        },
+        {
+          "description": "This is a warning",
+          "type": "string",
+          "enum": [
+            "warning"
+          ]
+        },
+        {
+          "description": "This is just some advice",
+          "type": "string",
+          "enum": [
+            "advice"
+          ]
+        },
+        {
+          "description": "A dummy variant for forward/backward-compatibility with other versions of miette which may one day introduce more kinds of Severity. Any unknown ones will be mapped to this variant.",
+          "type": "string",
+          "enum": [
+            "_unknown"
+          ]
+        }
+      ]
+    },
+    "Span": {
+      "description": "A span/range of source code",
+      "type": "object",
+      "properties": {
+        "length": {
+          "description": "How many bytes the span contains",
+          "default": 0,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        },
+        "offset": {
+          "description": "The byte offset where the span starts",
+          "default": 0,
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0.0
+        }
+      }
+    }
+  }
+}
