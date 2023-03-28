@@ -32,6 +32,8 @@ output like in the screenshots above.** You should only do this in your
 toplevel crate, as the fancy feature pulls in a number of dependencies that
 libraries and such might not want.
 
+HELLO!
+
 ### Table of Contents <!-- omit in toc -->
 
 - [About](#about)
