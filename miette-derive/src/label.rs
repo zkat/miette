@@ -28,6 +28,17 @@ struct LabelAttr {
 
 impl Parse for LabelAttr {
     fn parse(input: ParseStream) -> syn::Result<Self> {
+        // Skip a token.
+        // This should receive one of:
+        // - label = "..."
+        // - label("...")
+        let _ = input.step(|cursor| {
+            if let Some((_, next)) = cursor.token_tree() {
+                Ok(((), next))
+            } else {
+                Err(cursor.error("unexpected empty attribute"))
+            }
+        });
         let la = input.lookahead1();
         let label = if la.peek(syn::token::Paren) {
             // #[label("{}", x)]
@@ -79,7 +90,7 @@ impl Labels {
         let mut labels = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
-                if attr.path.is_ident("label") {
+                if attr.path().is_ident("label") {
                     let span = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
                     } else {
@@ -88,7 +99,8 @@ impl Labels {
                             span: field.span(),
                         })
                     };
-                    let LabelAttr { label } = syn::parse2::<LabelAttr>(attr.tokens.clone())?;
+                    use quote::ToTokens;
+                    let LabelAttr { label } = syn::parse2::<LabelAttr>(attr.meta.to_token_stream())?;
                     labels.push(Label {
                         label,
                         span,

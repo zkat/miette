@@ -69,7 +69,7 @@ impl Help {
     fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
-                if attr.path.is_ident("help") {
+                if attr.path().is_ident("help") {
                     let help = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
                     } else {
