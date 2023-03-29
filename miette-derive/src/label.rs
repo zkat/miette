@@ -100,7 +100,8 @@ impl Labels {
                         })
                     };
                     use quote::ToTokens;
-                    let LabelAttr { label } = syn::parse2::<LabelAttr>(attr.meta.to_token_stream())?;
+                    let LabelAttr { label } =
+                        syn::parse2::<LabelAttr>(attr.meta.to_token_stream())?;
                     labels.push(Label {
                         label,
                         span,
