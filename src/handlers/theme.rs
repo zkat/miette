@@ -31,10 +31,16 @@ impl GraphicalTheme {
 
     /// Graphical theme that draws using both ansi colors and unicode
     /// characters.
+    ///
+    /// Note that full rgb colors aren't enabled by default because they're
+    /// an accessibility hazard, especially in the context of terminal themes
+    /// that can change the background color and make hardcoded colors illegible.
+    /// Such themes typically remap ansi codes properly, treating them more
+    /// like CSS classes than specific colors.
     pub fn unicode() -> Self {
         Self {
             characters: ThemeCharacters::unicode(),
-            styles: ThemeStyles::rgb(),
+            styles: ThemeStyles::ansi(),
         }
     }
 
