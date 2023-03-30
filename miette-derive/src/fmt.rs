@@ -210,21 +210,21 @@ pub fn parse_token_expr(input: ParseStream, mut begin_expr: bool) -> Result<Toke
             let delimiter = parenthesized!(content in input);
             let nested = parse_token_expr(&content, true)?;
             let mut group = Group::new(Delimiter::Parenthesis, nested);
-            group.set_span(delimiter.span);
+            group.set_span(delimiter.span.join());
             TokenTree::Group(group)
         } else if input.peek(syn::token::Brace) {
             let content;
             let delimiter = braced!(content in input);
             let nested = parse_token_expr(&content, true)?;
             let mut group = Group::new(Delimiter::Brace, nested);
-            group.set_span(delimiter.span);
+            group.set_span(delimiter.span.join());
             TokenTree::Group(group)
         } else if input.peek(syn::token::Bracket) {
             let content;
             let delimiter = bracketed!(content in input);
             let nested = parse_token_expr(&content, true)?;
             let mut group = Group::new(Delimiter::Bracket, nested);
-            group.set_span(delimiter.span);
+            group.set_span(delimiter.span.join());
             TokenTree::Group(group)
         } else {
             input.parse()?

@@ -222,7 +222,7 @@ impl Diagnostic {
         let input_attrs = input
             .attrs
             .iter()
-            .filter(|x| x.path.is_ident("diagnostic"))
+            .filter(|x| x.path().is_ident("diagnostic"))
             .collect::<Vec<&syn::Attribute>>();
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
@@ -245,7 +245,7 @@ impl Diagnostic {
                 for var in variants {
                     let mut variant_attrs = input_attrs.clone();
                     variant_attrs
-                        .extend(var.attrs.iter().filter(|x| x.path.is_ident("diagnostic")));
+                        .extend(var.attrs.iter().filter(|x| x.path().is_ident("diagnostic")));
                     let args =
                         DiagnosticDefArgs::parse(&var.ident, &var.fields, &variant_attrs, true)?;
                     vars.push(DiagnosticDef {
