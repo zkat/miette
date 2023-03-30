@@ -572,7 +572,7 @@
 //!
 //! Usage is like so:
 //!
-//! ```rust
+//! ```rust,ignore
 //! miette::set_hook(Box::new(|_| {
 //!     Box::new(
 //!         miette::MietteHandlerOpts::new()
