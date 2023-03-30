@@ -316,7 +316,7 @@ impl GraphicalReportHandler {
                         })
                         .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
                         .map_err(|_| fmt::Error)?;
-                    let mut contexts = Vec::new();
+                    let mut contexts = Vec::with_capacity(contents.len());
                     for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
                         if contexts.is_empty() {
                             contexts.push((right, right_conts));
