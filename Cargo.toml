@@ -26,6 +26,7 @@ supports-color = { version = "2.0.0", optional = true }
 supports-unicode = { version = "2.0.0", optional = true }
 backtrace = { version = "0.3.61", optional = true }
 terminal_size = { version = "0.1.17", optional = true }
+backtrace-ext = { version = "0.2.1", optional = true }
 
 [dev-dependencies]
 semver = "1.0.4"
@@ -41,19 +42,8 @@ lazy_static = "1.4"
 
 [features]
 default = []
-fancy-no-backtrace = [
-    "owo-colors",
-    "is-terminal",
-    "textwrap",
-    "terminal_size",
-    "supports-hyperlinks",
-    "supports-color",
-    "supports-unicode",
-]
-fancy = [
-    "fancy-no-backtrace",
-    "backtrace",
-]
+fancy-no-backtrace = ["owo-colors", "is-terminal", "textwrap", "terminal_size", "supports-hyperlinks", "supports-color", "supports-unicode"]
+fancy = ["fancy-no-backtrace", "backtrace", "backtrace-ext"]
 
 [workspace]
 members = ["miette-derive"]

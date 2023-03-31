@@ -1,6 +1,3 @@
-#![cfg(feature = "fancy")]
-use std::fmt::Write;
-
 use backtrace::Backtrace;
 use thiserror::Error;
 
@@ -29,20 +26,22 @@ pub fn set_panic_hook() {
 }
 
 #[derive(Debug, Error, Diagnostic)]
-#[error("{0}{}", self.maybe_collect_backtrace())]
+#[error("{0}{}", Panic::backtrace())]
 #[diagnostic(help("set the `RUST_BACKTRACE=1` environment variable to display a backtrace."))]
 struct Panic(String);
 
 impl Panic {
-    fn maybe_collect_backtrace(&self) -> String {
+    fn backtrace() -> String {
+        use std::fmt::Write;
         if let Ok(var) = std::env::var("RUST_BACKTRACE") {
             if !var.is_empty() && var != "0" {
-                // This is all taken from human-panic: https://github.com/rust-cli/human-panic/blob/master/src/report.rs#L55-L107
                 const HEX_WIDTH: usize = std::mem::size_of::<usize>() + 2;
-                //Padding for next lines after frame's address
+                // Padding for next lines after frame's address
                 const NEXT_SYMBOL_PADDING: usize = HEX_WIDTH + 6;
                 let mut backtrace = String::new();
-                for (idx, frame) in Backtrace::new().frames().iter().skip(26).enumerate() {
+                let trace = Backtrace::new();
+                let frames = backtrace_ext::short_frames_strict(&trace).enumerate();
+                for (idx, (frame, sub_frames)) in frames {
                     let ip = frame.ip();
                     let _ = write!(backtrace, "\n{:4}: {:2$?}", idx, ip, HEX_WIDTH);
 
@@ -52,10 +51,10 @@ impl Panic {
                         continue;
                     }
 
-                    for (idx, symbol) in symbols.iter().enumerate() {
-                        //Print symbols from this address,
-                        //if there are several addresses
-                        //we need to put it on next line
+                    for (idx, symbol) in symbols[sub_frames].iter().enumerate() {
+                        // Print symbols from this address,
+                        // if there are several addresses
+                        // we need to put it on next line
                         if idx != 0 {
                             let _ = write!(backtrace, "\n{:1$}", "", NEXT_SYMBOL_PADDING);
                         }
@@ -66,7 +65,7 @@ impl Panic {
                             let _ = write!(backtrace, " - <unknown>");
                         }
 
-                        //See if there is debug information with file name and line
+                        // See if there is debug information with file name and line
                         if let (Some(file), Some(line)) = (symbol.filename(), symbol.lineno()) {
                             let _ = write!(
                                 backtrace,
