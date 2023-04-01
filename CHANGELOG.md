@@ -1,5 +1,26 @@
 # `miette` Release Changelog
 
+<a name="5.7.0"></a>
+## 5.7.0 (2023-04-01)
+
+While this is a semver-minor release, there's potential for it to have
+knock-on effects due to the syn2 upgrade. There's been issues as this new
+version propagates between syn/thiserror versions (for example, see [a similar
+change in eyre](https://github.com/yaahc/eyre/pull/92)).
+
+The other thing of note is that backtrace printing is now **much** better! Try
+the hook and see for yourself!
+
+### Features
+
+* **deps:** update to syn2 (#247) ([a2157205](https://github.com/zkat/miette/commit/a215720576fbda249138808f3469017d81eda9f0))
+* **panic:** improved backtrace handling ([b0453215](https://github.com/zkat/miette/commit/b0453215f62318bedeb4af1cb00dcefbb739d619))
+
+### Bug Fixes
+
+* **colors:** change unicode to default to ansi (#249) ([159f2b35](https://github.com/zkat/miette/commit/159f2b354b7ea83f842a58be98c45d0175b1faad))
+* **tests:** disable doctest that doesn't work with default feature flags (#248) ([0b445dc2](https://github.com/zkat/miette/commit/0b445dc2b4b30d40f03defc130bfa3e7396b51d4))
+
 <a name="5.6.0"></a>
 ## 5.6.0 (2023-03-14)
 
