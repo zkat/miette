@@ -1,5 +1,6 @@
 use is_terminal::IsTerminal;
 use owo_colors::Style;
+use std::collections::HashMap;
 
 /**
 Theme used by [`GraphicalReportHandler`](crate::GraphicalReportHandler) to
@@ -18,6 +19,8 @@ pub struct GraphicalTheme {
     pub characters: ThemeCharacters,
     /// Styles to be used for painting.
     pub styles: ThemeStyles,
+    /// Tags to be used for styling.
+    pub tags: HashMap<String, Style>,
 }
 
 impl GraphicalTheme {
@@ -26,6 +29,7 @@ impl GraphicalTheme {
         Self {
             characters: ThemeCharacters::ascii(),
             styles: ThemeStyles::ansi(),
+            tags: HashMap::new(),
         }
     }
 
@@ -41,6 +45,7 @@ impl GraphicalTheme {
         Self {
             characters: ThemeCharacters::unicode(),
             styles: ThemeStyles::ansi(),
+            tags: HashMap::new(),
         }
     }
 
@@ -50,6 +55,7 @@ impl GraphicalTheme {
         Self {
             characters: ThemeCharacters::unicode(),
             styles: ThemeStyles::none(),
+            tags: HashMap::new(),
         }
     }
 
@@ -62,6 +68,7 @@ impl GraphicalTheme {
         Self {
             characters: ThemeCharacters::ascii(),
             styles: ThemeStyles::none(),
+            tags: HashMap::new(),
         }
     }
 }
