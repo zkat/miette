@@ -6,7 +6,9 @@ use unicode_width::UnicodeWidthChar;
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{
+    LabeledSpan, MessageFormatter, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents,
+};
 
 /**
 A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
@@ -30,6 +32,7 @@ pub struct GraphicalReportHandler {
     pub(crate) context_lines: usize,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
+    pub(crate) message_formatter: Option<Box<MessageFormatter>>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +54,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            message_formatter: None,
         }
     }
 
@@ -64,6 +68,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            message_formatter: None,
         }
     }
 
@@ -131,6 +136,11 @@ impl GraphicalReportHandler {
     /// Sets the number of lines of context to show around each error.
     pub fn with_context_lines(mut self, lines: usize) -> Self {
         self.context_lines = lines;
+        self
+    }
+
+    pub fn with_message_formatter<F: MessageFormatter>(mut self, formatter: F) -> Self {
+        self.message_formatter = Some(Box::new(formatter));
         self
     }
 }
@@ -214,8 +224,13 @@ impl GraphicalReportHandler {
         let opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
             .subsequent_indent(&rest_indent);
+        let mut message = diagnostic.to_string();
 
-        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+        if let Some(formatter) = self.message_formatter {
+            message = formatter(message);
+        }
+
+        writeln!(f, "{}", textwrap::fill(&message, opts))?;
 
         if !self.with_cause_chain {
             return Ok(());

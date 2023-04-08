@@ -25,6 +25,9 @@ impl Default for RgbColors {
     }
 }
 
+/// Function to format a message before rendering.
+pub type MessageFormatter = dyn Fn(String) -> String;
+
 /**
 Create a custom [`MietteHandler`] from options.
 
@@ -55,6 +58,7 @@ pub struct MietteHandlerOpts {
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
+    pub(crate) message_formatter: Option<Box<MessageFormatter>>,
 }
 
 impl MietteHandlerOpts {
@@ -164,6 +168,11 @@ impl MietteHandlerOpts {
         self
     }
 
+    pub fn message_formatter<F: MessageFormatter>(mut self, formatter: F) -> Self {
+        self.message_formatter = Some(Box::new(formatter));
+        self
+    }
+
     /// Builds a [`MietteHandler`] from this builder.
     pub fn build(self) -> MietteHandler {
         let graphical = self.is_graphical();
@@ -232,6 +241,9 @@ impl MietteHandlerOpts {
             }
             if let Some(w) = self.tab_width {
                 handler = handler.tab_width(w);
+            }
+            if let Some(formatter) = self.message_formatter {
+                handler = handler.with_message_formatter(formatter);
             }
             MietteHandler {
                 inner: Box::new(handler),
