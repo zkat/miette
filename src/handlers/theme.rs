@@ -6,9 +6,10 @@ use std::collections::HashMap;
 Theme used by [`GraphicalReportHandler`](crate::GraphicalReportHandler) to
 render fancy [`Diagnostic`](crate::Diagnostic) reports.
 
-A theme consists of two things: the set of characters to be used for drawing,
-and the
-[`owo_colors::Style`](https://docs.rs/owo-colors/latest/owo_colors/struct.Style.html)s to be used to paint various items.
+A theme consists of three things: the set of characters to be used for drawing,
+the
+[`owo_colors::Style`](https://docs.rs/owo-colors/latest/owo_colors/struct.Style.html)s to be used to paint various items, and an optional set of tags (in the format of <tag>text</tag>) to be
+styled with [`owo_colors::Style`](https://docs.rs/owo-colors/latest/owo_colors/struct.Style.html).
 
 You can create your own custom graphical theme using this type, or you can use
 one of the predefined ones using the methods below.
