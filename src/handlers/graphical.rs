@@ -214,8 +214,7 @@ impl GraphicalReportHandler {
         let opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
             .subsequent_indent(&rest_indent);
-        let mut message = diagnostic.to_string();
-
+        let message = self.apply_tags(diagnostic.to_string());
 
         writeln!(f, "{}", textwrap::fill(&message, opts))?;
 
@@ -804,6 +803,31 @@ impl GraphicalReportHandler {
             }
         }
         Ok((context_data, lines))
+    }
+
+    fn apply_tags(&self, message: String) -> String {
+        let mut message = message;
+
+        for (tag, style) in &self.theme.tags {
+            let open_tag = format!("<{}>", tag);
+            let close_tag = format!("</{}>", tag);
+
+            while let Some(open_index) = message.find(&open_tag) {
+                if let Some(close_index) = message.find(&close_tag) {
+                    let inner = &message[open_index + open_tag.len()..close_index];
+
+                    message = message.replace(
+                        &format!("{}{}{}", open_tag, inner, close_tag),
+                        &inner.style(*style).to_string(),
+                    );
+                } else {
+                    // No closing? Just remove the opening...
+                    message = message.replace(&open_tag, "");
+                }
+            }
+        }
+
+        message
     }
 }
 

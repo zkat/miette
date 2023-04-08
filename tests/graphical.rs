@@ -4,6 +4,7 @@ use miette::{
     Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
     NarratableReportHandler, Report, SourceSpan,
 };
+use owo_colors::Style;
 use thiserror::Error;
 
 fn fmt_report(diag: Report) -> String {
@@ -1213,4 +1214,33 @@ fn zero_length_eol_span() {
     .to_string();
 
     assert_eq!(expected, out);
+}
+
+#[test]
+fn message_tags() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("this <green>is</green> a <yellow>string <blue>with</blue></yellow> many <green>style</green> tags!")]
+    #[diagnostic(code(oops::my::bad))]
+    struct MyBad;
+
+    let mut theme = GraphicalTheme::unicode();
+    theme.tags.insert("green".to_string(), Style::new().green());
+    theme
+        .tags
+        .insert("yellow".to_string(), Style::new().yellow());
+    theme.tags.insert("blue".to_string(), Style::new().blue());
+
+    let err = MyBad;
+    let report: Report = err.into();
+    let mut out = String::new();
+
+    GraphicalReportHandler::new_themed(theme)
+        .with_width(80)
+        .render_report(&mut out, report.as_ref())
+        .unwrap();
+
+    println!("Error: {}", out);
+    let expected = "\u{1b}[31moops::my::bad\u{1b}[0m\n\n  \u{1b}[31m×\u{1b}[0m this \u{1b}[32mis\u{1b}[0m a \u{1b}[33mstring \u{1b}[34mwith\u{1b}[0m\u{1b}[0m many \u{1b}[32mstyle\u{1b}[0m tags!\n";
+    assert_eq!(expected, out);
+    Ok(())
 }
