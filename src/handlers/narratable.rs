@@ -118,7 +118,7 @@ impl NarratableReportHandler {
             writeln!(f, "diagnostic code: {}", code)?;
         }
         if let Some(url) = diagnostic.url() {
-            writeln!(f, "For more details, see {}", url)?;
+            writeln!(f, "For more details, see:\n{}", url)?;
         }
         Ok(())
     }
