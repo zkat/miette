@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="5.8.0"></a>
+## 5.8.0 (2023-04-18)
+
+### Features
+
+* **source:** Add getter for NamedSource name (#252) ([be3b2547](https://github.com/zkat/miette/commit/be3b25475147e92fae631b510c8de22949eada45))
+
+### Bug Fixes
+
+* **narrated:** put URLs in their own line ([adbff65e](https://github.com/zkat/miette/commit/adbff65e4ed52103569a3a5cd09c1bee79f8e361))
+
 <a name="5.7.0"></a>
 ## 5.7.0 (2023-04-01)
 
