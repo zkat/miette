@@ -3,12 +3,12 @@ use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 /// Utility struct for when you have a regular [`SourceCode`] type that doesn't
 /// implement `name`. For example [`String`]. Or if you want to override the
 /// `name` returned by the `SourceCode`.
-pub struct NamedSource {
-    source: Box<dyn SourceCode + 'static>,
+pub struct NamedSource<S: SourceCode + 'static> {
+    source: S,
     name: String,
 }
 
-impl std::fmt::Debug for NamedSource {
+impl<S: SourceCode> std::fmt::Debug for NamedSource<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("NamedSource")
             .field("name", &self.name)
@@ -17,12 +17,15 @@ impl std::fmt::Debug for NamedSource {
     }
 }
 
-impl NamedSource {
+impl<S: SourceCode + 'static> NamedSource<S> {
     /// Create a new `NamedSource` using a regular [`SourceCode`] and giving
     /// its returned [`SpanContents`] a name.
-    pub fn new(name: impl AsRef<str>, source: impl SourceCode + Send + Sync + 'static) -> Self {
+    pub fn new(name: impl AsRef<str>, source: S) -> Self
+    where
+        S: Send + Sync,
+    {
         Self {
-            source: Box::new(source),
+            source,
             name: name.as_ref().to_string(),
         }
     }
@@ -34,12 +37,12 @@ impl NamedSource {
 
     /// Returns a reference the inner [`SourceCode`] type for this
     /// `NamedSource`.
-    pub fn inner(&self) -> &(dyn SourceCode + 'static) {
-        &*self.source
+    pub fn inner(&self) -> &S {
+        &self.source
     }
 }
 
-impl SourceCode for NamedSource {
+impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
     fn read_span<'a>(
         &'a self,
         span: &crate::SourceSpan,

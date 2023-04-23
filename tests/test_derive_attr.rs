@@ -10,7 +10,7 @@ fn enum_uses_base_attr() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -32,7 +32,7 @@ fn enum_uses_variant_attr() {
         #[diagnostic(code(error::on::variant))]
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -55,7 +55,7 @@ fn multiple_attrs_allowed_on_item() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -79,7 +79,7 @@ fn multiple_attrs_allowed_on_variant() {
         #[diagnostic(help("try doing it correctly"))]
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -104,7 +104,7 @@ fn attrs_can_be_split_between_item_and_variants() {
         #[diagnostic(url("https://example.com/foo/bar"))]
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -130,7 +130,7 @@ fn attr_not_required() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },

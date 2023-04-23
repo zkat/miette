@@ -109,7 +109,7 @@ struct MyBad {
     // The Source that we're gonna be printing snippets out of.
     // This can be a String if you don't have or care about file names.
     #[source_code]
-    src: NamedSource,
+    src: NamedSource<String>,
     // Snippets and highlights can be included in the diagnostic!
     #[label("This bit here")]
     bad_bit: SourceSpan,
