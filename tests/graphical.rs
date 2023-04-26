@@ -323,7 +323,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
 }
 
 #[test]
-fn single_line_higlight_offset_end_of_line() -> Result<(), MietteError> {
+fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
@@ -359,7 +359,7 @@ fn single_line_higlight_offset_end_of_line() -> Result<(), MietteError> {
 }
 
 #[test]
-fn single_line_higlight_include_end_of_line() -> Result<(), MietteError> {
+fn single_line_highlight_include_end_of_line() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
@@ -396,7 +396,7 @@ fn single_line_higlight_include_end_of_line() -> Result<(), MietteError> {
 }
 
 #[test]
-fn single_line_higlight_include_end_of_line_crlf() -> Result<(), MietteError> {
+fn single_line_highlight_include_end_of_line_crlf() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
