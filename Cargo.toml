@@ -40,13 +40,17 @@ syn = { version = "2.0", features = ["full"] }
 regex = "1.5"
 lazy_static = "1.4"
 
+# JSON Schema devdeps
+miette-schema = { version = "5.6.0", path = "miette-schema" }
+serde_json = "1.0.95"
+
 [features]
 default = []
 fancy-no-backtrace = ["owo-colors", "is-terminal", "textwrap", "terminal_size", "supports-hyperlinks", "supports-color", "supports-unicode"]
 fancy = ["fancy-no-backtrace", "backtrace", "backtrace-ext"]
 
 [workspace]
-members = ["miette-derive"]
+members = ["miette-derive", "miette-schema"]
 
 [package.metadata.docs.rs]
 all-features = true

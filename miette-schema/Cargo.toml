@@ -1,0 +1,18 @@
+[package]
+name = "miette-schema"
+version = "5.6.0"
+authors = ["Kat Marchán <kzm@zkat.tech>"]
+edition = "2018"
+license = "Apache-2.0"
+description = "Type definitions for the JSON Schema of miette's json output"
+repository = "https://github.com/zkat/miette"
+
+[features]
+default = ["schemars", "serde"]
+
+[dependencies]
+schemars = { version = "0.8.12", optional = true }
+serde = { version = "1.0.159", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0.95"

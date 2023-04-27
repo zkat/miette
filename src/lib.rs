@@ -249,7 +249,7 @@
 //! To construct your own simple adhoc error use the [miette!] macro:
 //! ```rust
 //! // my_app/lib/my_internal_file.rs
-//! use miette::{IntoDiagnostic, Result, WrapErr, miette};
+//! use miette::{miette, IntoDiagnostic, Result, WrapErr};
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
