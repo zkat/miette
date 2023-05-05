@@ -249,7 +249,7 @@
 //! To construct your own simple adhoc error use the [miette!] macro:
 //! ```rust
 //! // my_app/lib/my_internal_file.rs
-//! use miette::{IntoDiagnostic, Result, WrapErr, miette};
+//! use miette::{miette, IntoDiagnostic, Result, WrapErr};
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
@@ -619,6 +619,7 @@
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
 pub use miette_derive::*;
 
+pub use dynamic_diagnostic::*;
 pub use error::*;
 pub use eyreish::*;
 #[cfg(feature = "fancy-no-backtrace")]
@@ -631,6 +632,7 @@ pub use protocol::*;
 
 mod chain;
 mod diagnostic_chain;
+mod dynamic_diagnostic;
 mod error;
 mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]
