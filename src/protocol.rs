@@ -160,7 +160,7 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
 /**
 [`Diagnostic`] severity. Intended to be used by
 [`ReportHandler`](crate::ReportHandler)s to change the way different
-[`Diagnostic`]s are displayed.
+[`Diagnostic`]s are displayed. Defaults to [`Severity::Error`].
 */
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum Severity {
@@ -169,7 +169,14 @@ pub enum Severity {
     /// Warning. Please take note.
     Warning,
     /// Critical failure. The program cannot continue.
+    /// This is the default severity, if you don't specify another one
     Error,
+}
+
+impl Default for Severity {
+    fn default() -> Self {
+        Severity::Error
+    }
 }
 
 /**
