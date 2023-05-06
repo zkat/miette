@@ -46,6 +46,7 @@
 //!   - [... multiple related errors](#-multiple-related-errors)
 //!   - [... delayed source code](#-delayed-source-code)
 //!   - [... handler options](#-handler-options)
+//!   - [... dynamic diagnostics](#-dynamic-diagnostics)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
 //!
@@ -589,6 +590,28 @@
 //!
 //! See the docs for [`MietteHandlerOpts`] for more details on what you can
 //! customize!
+//!
+//! ### ... dynamic diagnostics
+//!
+//! If you...
+//! - ...don't know all the possible errors upfront
+//! - ...need to serialize/deserialize errors
+//! then you may want to use [`miette!`], [`miette_diagnostic!`] macros or
+//! [`MietteDiagnostic`] directly to create diagnostic on the fly.
+//!
+//! ```rs
+//! # use miette::{miette, LabeledSpan, Report};
+//!
+//! let source = "2 + 2 * 2 = 8".to_string();
+//! let report = miette!(
+//!   "Wrong answer",
+//!   labels = vec[
+//!       LabeledSpan::at(12..13, "this should be 6"),
+//!   ],
+//!   help = "'*' has greater precedence than '+'"
+//! ).with_source_code(source);
+//! println!("{:?}", report)
+//! ```
 //!
 //! ## Acknowledgements
 //!
