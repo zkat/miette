@@ -176,12 +176,36 @@ macro_rules! miette {
         let error = $err;
         (&error).miette_kind().new(error)
     });
-    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {{
-        let mut diag = $crate::MietteDiagnostic::new(format!("{}", $fmt));
-        $(diag.$key = Some($value.into());)*
-        $crate::Report::from(diag)
-    }};
+    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
+        $crate::Report::from($crate::miette_diagnostic!($fmt, $($key = $value,)*))
+    };
     ($fmt:expr, $($arg:tt)*) => {
         $crate::private::new_adhoc(format!($fmt, $($arg)*))
     };
+}
+
+/// Construct a [`MietteDiagnostic`] in more user-friendly way.
+///
+/// # Examples
+/// ```
+/// use miette::{miette_diagnostic, LabeledSpan, Severity};
+///
+/// let source = "(2 + 2".to_string();
+/// let diag = miette_diagnostic!(
+///     "expected closing ')'",
+///     // Those fields are optional
+///     severity = Severity::Error,
+///     code = "expected::rparen",
+///     help = "always close your parens",
+///     labels = vec![LabeledSpan::at_offset(6, "here")],
+///     url = "https://example.com"
+/// );
+/// ```
+#[macro_export]
+macro_rules! miette_diagnostic {
+    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {{
+        let mut diag = $crate::MietteDiagnostic::new(format!("{}", $fmt));
+        $(diag.$key = Some($value.into());)*
+        diag
+    }};
 }
