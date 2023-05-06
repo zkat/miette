@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use crate::Diagnostic;
+use crate::{Diagnostic, Severity};
 
 /// Diagnostic that can be created at runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -16,6 +16,10 @@ pub struct MietteDiagnostic {
     /// Rust path format (`foo::bar::baz`) is recommended, but more classic
     /// codes like `E0123` will work just fine.
     pub code: Option<String>,
+    /// [`Diagnostic`] severity. Intended to be used by
+    /// [`ReportHandler`](crate::ReportHandler)s to change the way different
+    /// [`Diagnostic`]s are displayed. Defaults to [`Severity::Error`].
+    pub severity: Severity,
 }
 
 impl Display for MietteDiagnostic {
@@ -33,6 +37,10 @@ impl Diagnostic for MietteDiagnostic {
             .map(Box::new)
             .map(|c| c as Box<dyn Display>)
     }
+
+    fn severity(&self) -> Option<Severity> {
+        Some(self.severity)
+    }
 }
 
 impl MietteDiagnostic {
@@ -40,16 +48,18 @@ impl MietteDiagnostic {
     ///
     /// # Examples
     /// ```
-    /// use miette::{Diagnostic, MietteDiagnostic};
+    /// use miette::{Diagnostic, MietteDiagnostic, Severity};
     ///
     /// let diag = MietteDiagnostic::new("Oops, something went wrong!");
     /// assert_eq!(diag.to_string(), "Oops, something went wrong!");
     /// assert_eq!(diag.description, "Oops, something went wrong!");
+    /// assert_eq!(diag.severity, Severity::Error);
     /// ```
     pub fn new(description: impl Into<String>) -> Self {
         Self {
             description: description.into(),
             code: None,
+            severity: Severity::Error,
         }
     }
 
@@ -68,5 +78,19 @@ impl MietteDiagnostic {
             code: Some(code.into()),
             ..self
         }
+    }
+
+    /// Return new diagnostic with the given severity.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, MietteDiagnostic, Severity};
+    ///
+    /// let diag = MietteDiagnostic::new("I warn you to stop!").with_severity(Severity::Warning);
+    /// assert_eq!(diag.description, "I warn you to stop!");
+    /// assert_eq!(diag.severity, Severity::Warning);
+    /// ```
+    pub fn with_severity(self, severity: Severity) -> Self {
+        Self { severity, ..self }
     }
 }
