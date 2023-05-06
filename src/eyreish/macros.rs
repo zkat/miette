@@ -130,8 +130,7 @@ macro_rules! ensure {
 /// string with arguments. It also can take any custom type which implements
 /// `Debug` and `Display`.
 ///
-/// # Example
-///
+/// # Examples
 /// ```
 /// # type V = ();
 /// #
@@ -145,6 +144,11 @@ macro_rules! ensure {
 ///     // ...
 ///     # Ok(())
 /// }
+/// ```
+/// ```
+/// use miette::miette;
+///
+/// let err = miette!("expected '('", code = "expected::lparen");
 /// ```
 ///
 /// ## `anyhow`/`eyre` Users
@@ -162,6 +166,12 @@ macro_rules! miette {
         let error = $err;
         (&error).miette_kind().new(error)
     });
+    ($msg:literal, $(code = $code:literal)? ) => {
+        $crate::Report::from(
+            $crate::MietteDiagnostic::new($msg)
+                $(.with_code($code))?
+        )
+    };
     ($fmt:expr, $($arg:tt)*) => {
         $crate::private::new_adhoc(format!($fmt, $($arg)*))
     };
