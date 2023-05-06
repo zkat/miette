@@ -19,7 +19,7 @@ pub struct MietteDiagnostic {
     /// [`Diagnostic`] severity. Intended to be used by
     /// [`ReportHandler`](crate::ReportHandler)s to change the way different
     /// [`Diagnostic`]s are displayed. Defaults to [`Severity::Error`]
-    pub severity: Severity,
+    pub severity: Option<Severity>,
     /// Additional help text related to this Diagnostic
     pub help: Option<String>,
     /// URL to visit for a more detailed explanation/help about this
@@ -46,7 +46,7 @@ impl Diagnostic for MietteDiagnostic {
     }
 
     fn severity(&self) -> Option<Severity> {
-        Some(self.severity)
+        self.severity
     }
 
     fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
@@ -78,13 +78,12 @@ impl MietteDiagnostic {
     /// let diag = MietteDiagnostic::new("Oops, something went wrong!");
     /// assert_eq!(diag.to_string(), "Oops, something went wrong!");
     /// assert_eq!(diag.description, "Oops, something went wrong!");
-    /// assert_eq!(diag.severity, Severity::Error);
     /// ```
     pub fn new(description: impl Into<String>) -> Self {
         Self {
             description: description.into(),
-            severity: Severity::Error,
             labels: Vec::new(),
+            severity: None,
             code: None,
             help: None,
             url: None,
@@ -116,10 +115,13 @@ impl MietteDiagnostic {
     ///
     /// let diag = MietteDiagnostic::new("I warn you to stop!").with_severity(Severity::Warning);
     /// assert_eq!(diag.description, "I warn you to stop!");
-    /// assert_eq!(diag.severity, Severity::Warning);
+    /// assert_eq!(diag.severity, Some(Severity::Warning));
     /// ```
     pub fn with_severity(self, severity: Severity) -> Self {
-        Self { severity, ..self }
+        Self {
+            severity: Some(severity),
+            ..self
+        }
     }
 
     /// Return new diagnostic with the given help message.
