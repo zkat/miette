@@ -105,6 +105,19 @@ macro_rules! bail {
 /// #     Ok(())
 /// # }
 /// ```
+///
+/// ```
+/// use miette::{ensure, Result, Severity};
+///
+/// fn divide(x: f64, y: f64) -> Result<f64> {
+///     ensure!(
+///         y.abs() >= 1e-3,
+///         "dividing by value close to 0",
+///         severity = Severity::Warning
+///     );
+///     Ok(x / y)
+/// }
+/// ```
 #[macro_export]
 macro_rules! ensure {
     ($cond:expr, $msg:literal $(,)?) => {
@@ -115,6 +128,11 @@ macro_rules! ensure {
     ($cond:expr, $err:expr $(,)?) => {
         if !$cond {
             return $crate::private::Err($crate::miette!($err));
+        }
+    };
+    ($cond:expr, $fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
+        if !$cond {
+            return $crate::private::Err($crate::miette!($fmt, $($key = $value),*));
         }
     };
     ($cond:expr, $fmt:expr, $($arg:tt)*) => {
