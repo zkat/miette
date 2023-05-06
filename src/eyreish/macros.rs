@@ -48,6 +48,17 @@
 /// #     Ok(())
 /// # }
 /// ```
+///
+/// ```
+/// use miette::{bail, Result, Severity};
+///
+/// fn divide(x: f64, y: f64) -> Result<f64> {
+///     if y.abs() < 1e-3 {
+///         bail!("dividing by value close to 0", severity = Severity::Warning);
+///     }
+///     Ok(x / y)
+/// }
+/// ```
 #[macro_export]
 macro_rules! bail {
     ($msg:literal $(,)?) => {
@@ -55,6 +66,9 @@ macro_rules! bail {
     };
     ($err:expr $(,)?) => {
         return $crate::private::Err($crate::miette!($err));
+    };
+    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
+        return $crate::private::Err($crate::miette!($fmt, $($key = $value),*));
     };
     ($fmt:expr, $($arg:tt)*) => {
         return $crate::private::Err($crate::miette!($fmt, $($arg)*));
