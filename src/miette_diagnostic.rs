@@ -26,7 +26,7 @@ pub struct MietteDiagnostic {
     /// [`Diagnostic`].
     pub url: Option<String>,
     /// Labels to apply to this `Diagnostic`'s [`Diagnostic::source_code`]
-    pub labels: Vec<LabeledSpan>,
+    pub labels: Option<Vec<LabeledSpan>>,
 }
 
 impl Display for MietteDiagnostic {
@@ -64,7 +64,11 @@ impl Diagnostic for MietteDiagnostic {
     }
 
     fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
-        Some(Box::new(self.labels.iter().cloned()))
+        self.labels
+            .as_ref()
+            .map(|ls| ls.iter().cloned())
+            .map(Box::new)
+            .map(|b| b as Box<dyn Iterator<Item = LabeledSpan>>)
     }
 }
 
@@ -82,7 +86,7 @@ impl MietteDiagnostic {
     pub fn new(description: impl Into<String>) -> Self {
         Self {
             description: description.into(),
-            labels: Vec::new(),
+            labels: None,
             severity: None,
             code: None,
             help: None,
@@ -175,11 +179,11 @@ impl MietteDiagnostic {
     /// let label = LabeledSpan::at(0..3, "This should be Rust");
     /// let diag = MietteDiagnostic::new("Wrong best language").with_label(label.clone());
     /// assert_eq!(diag.description, "Wrong best language");
-    /// assert_eq!(diag.labels, vec![label]);
+    /// assert_eq!(diag.labels, Some(vec![label]));
     /// ```
     pub fn with_label(self, label: impl Into<LabeledSpan>) -> Self {
         Self {
-            labels: vec![label.into()],
+            labels: Some(vec![label.into()]),
             ..self
         }
     }
@@ -200,9 +204,12 @@ impl MietteDiagnostic {
     /// ];
     /// let diag = MietteDiagnostic::new("Typos in 'hello world'").with_labels(labels.clone());
     /// assert_eq!(diag.description, "Typos in 'hello world'");
-    /// assert_eq!(diag.labels, labels);
+    /// assert_eq!(diag.labels, Some(labels));
     /// ```
     pub fn with_labels(self, labels: Vec<LabeledSpan>) -> Self {
-        Self { labels, ..self }
+        Self {
+            labels: Some(labels),
+            ..self
+        }
     }
 }
