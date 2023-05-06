@@ -3,7 +3,7 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use crate::{Diagnostic, Severity};
+use crate::{Diagnostic, LabeledSpan, Severity};
 
 /// Diagnostic that can be created at runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -25,6 +25,8 @@ pub struct MietteDiagnostic {
     /// URL to visit for a more detailed explanation/help about this
     /// [`Diagnostic`].
     pub url: Option<String>,
+    /// Labels to apply to this `Diagnostic`'s [`Diagnostic::source_code`]
+    pub labels: Vec<LabeledSpan>,
 }
 
 impl Display for MietteDiagnostic {
@@ -60,6 +62,10 @@ impl Diagnostic for MietteDiagnostic {
             .map(Box::new)
             .map(|c| c as Box<dyn Display>)
     }
+
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+        Some(Box::new(self.labels.iter().cloned()))
+    }
 }
 
 impl MietteDiagnostic {
@@ -78,6 +84,7 @@ impl MietteDiagnostic {
         Self {
             description: description.into(),
             severity: Severity::Error,
+            labels: Vec::new(),
             code: None,
             help: None,
             url: None,
@@ -151,5 +158,45 @@ impl MietteDiagnostic {
             url: Some(url.into()),
             ..self
         }
+    }
+
+    /// Return new diagnostic with the given label
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, LabeledSpan, MietteDiagnostic};
+    ///
+    /// let source = "cpp is the best language";
+    ///
+    /// let label = LabeledSpan::new(Some("This should be Rust".to_string()), 0, 3);
+    /// let diag = MietteDiagnostic::new("Wrong best language").with_label(label.clone());
+    /// assert_eq!(diag.description, "Wrong best language");
+    /// assert_eq!(diag.labels, vec![label]);
+    /// ```
+    pub fn with_label(self, label: impl Into<LabeledSpan>) -> Self {
+        Self {
+            labels: vec![label.into()],
+            ..self
+        }
+    }
+
+    /// Return new diagnostic with the given labels
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, LabeledSpan, MietteDiagnostic};
+    ///
+    /// let source = "helo word";
+    ///
+    /// let labels = vec![
+    ///     LabeledSpan::new(Some("add 'l'".to_string()), 3, 0),
+    ///     LabeledSpan::new(Some("add 'l'".to_string()), 8, 0),
+    /// ];
+    /// let diag = MietteDiagnostic::new("Typos in 'hello world'").with_labels(labels.clone());
+    /// assert_eq!(diag.description, "Typos in 'hello world'");
+    /// assert_eq!(diag.labels, labels);
+    /// ```
+    pub fn with_labels(self, labels: Vec<LabeledSpan>) -> Self {
+        Self { labels, ..self }
     }
 }
