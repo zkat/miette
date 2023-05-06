@@ -619,12 +619,12 @@
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
 pub use miette_derive::*;
 
-pub use dynamic_diagnostic::*;
 pub use error::*;
 pub use eyreish::*;
 #[cfg(feature = "fancy-no-backtrace")]
 pub use handler::*;
 pub use handlers::*;
+pub use miette_diagnostic::*;
 pub use named_source::*;
 #[cfg(feature = "fancy")]
 pub use panic::*;
@@ -632,7 +632,6 @@ pub use protocol::*;
 
 mod chain;
 mod diagnostic_chain;
-mod dynamic_diagnostic;
 mod error;
 mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]
@@ -640,6 +639,7 @@ mod handler;
 mod handlers;
 #[doc(hidden)]
 pub mod macro_helpers;
+mod miette_diagnostic;
 mod named_source;
 #[cfg(feature = "fancy")]
 mod panic;

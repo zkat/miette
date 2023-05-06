@@ -7,7 +7,7 @@ use crate::Diagnostic;
 
 /// Diagnostic that can be created at runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DynamicDiagnostic {
+pub struct MietteDiagnostic {
     /// Displayed diagnostic description
     pub description: String,
     /// Unique diagnostic code to look up more information
@@ -18,15 +18,15 @@ pub struct DynamicDiagnostic {
     pub code: Option<String>,
 }
 
-impl Display for DynamicDiagnostic {
+impl Display for MietteDiagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", &self.description)
     }
 }
 
-impl Error for DynamicDiagnostic {}
+impl Error for MietteDiagnostic {}
 
-impl Diagnostic for DynamicDiagnostic {
+impl Diagnostic for MietteDiagnostic {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
         self.code
             .as_ref()
@@ -35,14 +35,14 @@ impl Diagnostic for DynamicDiagnostic {
     }
 }
 
-impl DynamicDiagnostic {
+impl MietteDiagnostic {
     /// Create a new dynamic diagnostic with the given description.
     ///
     /// # Examples
     /// ```
-    /// use miette::{Diagnostic, DynamicDiagnostic};
+    /// use miette::{Diagnostic, MietteDiagnostic};
     ///
-    /// let diag = DynamicDiagnostic::new("Oops, something went wrong!");
+    /// let diag = MietteDiagnostic::new("Oops, something went wrong!");
     /// assert_eq!(diag.to_string(), "Oops, something went wrong!");
     /// assert_eq!(diag.description, "Oops, something went wrong!");
     /// ```
@@ -57,9 +57,9 @@ impl DynamicDiagnostic {
     ///
     /// # Examples
     /// ```
-    /// use miette::{Diagnostic, DynamicDiagnostic};
+    /// use miette::{Diagnostic, MietteDiagnostic};
     ///
-    /// let diag = DynamicDiagnostic::new("Oops, something went wrong!").with_code("foo::bar::baz");
+    /// let diag = MietteDiagnostic::new("Oops, something went wrong!").with_code("foo::bar::baz");
     /// assert_eq!(diag.description, "Oops, something went wrong!");
     /// assert_eq!(diag.code, Some("foo::bar::baz".to_string()));
     /// ```
