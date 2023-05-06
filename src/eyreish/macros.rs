@@ -124,13 +124,11 @@ macro_rules! ensure {
     };
 }
 
-/// Construct an ad-hoc error from a string.
-///
-/// This evaluates to an `Error`. It can take either just a string, or a format
-/// string with arguments. It also can take any custom type which implements
-/// `Debug` and `Display`.
+/// Construct an ad-hoc [`Report`].
 ///
 /// # Examples
+///
+/// With string literal and interpolation:
 /// ```
 /// # type V = ();
 /// #
@@ -145,10 +143,22 @@ macro_rules! ensure {
 ///     # Ok(())
 /// }
 /// ```
-/// ```
-/// use miette::miette;
 ///
-/// let err = miette!("expected '('", code = "expected::lparen");
+/// With [`MietteDiagnostic`]-like arguments:
+/// ```
+/// use miette::{miette, LabeledSpan, Severity};
+///
+/// let source = "(2 + 2".to_string();
+/// let report = miette!(
+///     "expected closing ')'",
+///     // Those fields are optional
+///     severity = Severity::Error,
+///     code = "expected::rparen",
+///     help = "always close your parens",
+///     labels = vec![LabeledSpan::at_offset(6, "here")],
+///     url = "https://example.com"
+/// )
+/// .with_source_code(source);
 /// ```
 ///
 /// ## `anyhow`/`eyre` Users
@@ -166,12 +176,11 @@ macro_rules! miette {
         let error = $err;
         (&error).miette_kind().new(error)
     });
-    ($msg:literal, $(code = $code:literal)? ) => {
-        $crate::Report::from(
-            $crate::MietteDiagnostic::new($msg)
-                $(.with_code($code))?
-        )
-    };
+    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {{
+        let mut diag = $crate::MietteDiagnostic::new(format!("{}", $fmt));
+        $(diag.$key = Some($value.into());)*
+        $crate::Report::from(diag)
+    }};
     ($fmt:expr, $($arg:tt)*) => {
         $crate::private::new_adhoc(format!($fmt, $($arg)*))
     };
