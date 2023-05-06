@@ -14,12 +14,14 @@ pub struct MietteDiagnostic {
     /// about this Diagnostic. Ideally also globally unique, and documented
     /// in the toplevel crate's documentation for easy searching.
     /// Rust path format (`foo::bar::baz`) is recommended, but more classic
-    /// codes like `E0123` will work just fine.
+    /// codes like `E0123` will work just fine
     pub code: Option<String>,
     /// [`Diagnostic`] severity. Intended to be used by
     /// [`ReportHandler`](crate::ReportHandler)s to change the way different
-    /// [`Diagnostic`]s are displayed. Defaults to [`Severity::Error`].
+    /// [`Diagnostic`]s are displayed. Defaults to [`Severity::Error`]
     pub severity: Severity,
+    /// Additional help text related to this Diagnostic
+    pub help: Option<String>,
 }
 
 impl Display for MietteDiagnostic {
@@ -41,6 +43,13 @@ impl Diagnostic for MietteDiagnostic {
     fn severity(&self) -> Option<Severity> {
         Some(self.severity)
     }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.help
+            .as_ref()
+            .map(Box::new)
+            .map(|c| c as Box<dyn Display>)
+    }
 }
 
 impl MietteDiagnostic {
@@ -58,8 +67,9 @@ impl MietteDiagnostic {
     pub fn new(description: impl Into<String>) -> Self {
         Self {
             description: description.into(),
-            code: None,
             severity: Severity::Error,
+            code: None,
+            help: None,
         }
     }
 
@@ -92,5 +102,22 @@ impl MietteDiagnostic {
     /// ```
     pub fn with_severity(self, severity: Severity) -> Self {
         Self { severity, ..self }
+    }
+
+    /// Return new diagnostic with the given help message.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, MietteDiagnostic};
+    ///
+    /// let diag = MietteDiagnostic::new("PC is not working").with_help("Try to reboot it again");
+    /// assert_eq!(diag.description, "PC is not working");
+    /// assert_eq!(diag.help, Some("Try to reboot it again".to_string()));
+    /// ```
+    pub fn with_help(self, help: impl Into<String>) -> Self {
+        Self {
+            help: Some(help.into()),
+            ..self
+        }
     }
 }
