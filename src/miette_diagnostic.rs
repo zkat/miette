@@ -22,6 +22,9 @@ pub struct MietteDiagnostic {
     pub severity: Severity,
     /// Additional help text related to this Diagnostic
     pub help: Option<String>,
+    /// URL to visit for a more detailed explanation/help about this
+    /// [`Diagnostic`].
+    pub url: Option<String>,
 }
 
 impl Display for MietteDiagnostic {
@@ -50,6 +53,13 @@ impl Diagnostic for MietteDiagnostic {
             .map(Box::new)
             .map(|c| c as Box<dyn Display>)
     }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        self.url
+            .as_ref()
+            .map(Box::new)
+            .map(|c| c as Box<dyn Display>)
+    }
 }
 
 impl MietteDiagnostic {
@@ -70,6 +80,7 @@ impl MietteDiagnostic {
             severity: Severity::Error,
             code: None,
             help: None,
+            url: None,
         }
     }
 
@@ -117,6 +128,27 @@ impl MietteDiagnostic {
     pub fn with_help(self, help: impl Into<String>) -> Self {
         Self {
             help: Some(help.into()),
+            ..self
+        }
+    }
+
+    /// Return new diagnostic with the given URL.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, MietteDiagnostic};
+    ///
+    /// let diag = MietteDiagnostic::new("PC is not working")
+    ///     .with_url("https://letmegooglethat.com/?q=Why+my+pc+doesn%27t+work");
+    /// assert_eq!(diag.description, "PC is not working");
+    /// assert_eq!(
+    ///     diag.url,
+    ///     Some("https://letmegooglethat.com/?q=Why+my+pc+doesn%27t+work".to_string())
+    /// );
+    /// ```
+    pub fn with_url(self, url: impl Into<String>) -> Self {
+        Self {
+            url: Some(url.into()),
             ..self
         }
     }
