@@ -225,6 +225,54 @@ impl LabeledSpan {
         }
     }
 
+    /// Makes a new label at specified span
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::LabeledSpan;
+    ///
+    /// let source = "Cpp is the best";
+    /// let label = LabeledSpan::at(0..3, "should be Rust");
+    /// assert_eq!(
+    ///     label,
+    ///     LabeledSpan::new(Some("should be Rust".to_string()), 0, 3)
+    /// )
+    /// ```
+    pub fn at(span: impl Into<SourceSpan>, label: impl Into<String>) -> Self {
+        Self::new_with_span(Some(label.into()), span)
+    }
+
+    /// Makes a new label that points at a specific offset.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::LabeledSpan;
+    ///
+    /// let source = "(2 + 2";
+    /// let label = LabeledSpan::at_offset(4, "expected a closing parenthesis");
+    /// assert_eq!(
+    ///     label,
+    ///     LabeledSpan::new(Some("expected a closing parenthesis".to_string()), 4, 0)
+    /// )
+    /// ```
+    pub fn at_offset(offset: ByteOffset, label: impl Into<String>) -> Self {
+        Self::new(Some(label.into()), offset.into(), 0)
+    }
+
+    /// Makes a new label without text, that underlines a specific span.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::LabeledSpan;
+    ///
+    /// let source = "You have an eror here";
+    /// let label = LabeledSpan::underline(12..16);
+    /// assert_eq!(label, LabeledSpan::new(None, 12, 4))
+    /// ```
+    pub fn underline(span: impl Into<SourceSpan>) -> Self {
+        Self::new_with_span(None, span)
+    }
+
     /// Gets the (optional) label string for this `LabeledSpan`.
     pub fn label(&self) -> Option<&str> {
         self.label.as_deref()
