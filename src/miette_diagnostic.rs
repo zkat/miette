@@ -160,7 +160,9 @@ impl MietteDiagnostic {
         }
     }
 
-    /// Return new diagnostic with the given label
+    /// Return new diagnostic with the given label.
+    ///
+    /// Discards previous labels
     ///
     /// # Examples
     /// ```
@@ -168,7 +170,7 @@ impl MietteDiagnostic {
     ///
     /// let source = "cpp is the best language";
     ///
-    /// let label = LabeledSpan::new(Some("This should be Rust".to_string()), 0, 3);
+    /// let label = LabeledSpan::at(0..3, "This should be Rust");
     /// let diag = MietteDiagnostic::new("Wrong best language").with_label(label.clone());
     /// assert_eq!(diag.description, "Wrong best language");
     /// assert_eq!(diag.labels, vec![label]);
@@ -180,17 +182,19 @@ impl MietteDiagnostic {
         }
     }
 
-    /// Return new diagnostic with the given labels
+    /// Return new diagnostic with the given labels.
+    ///
+    /// Discards previous labels
     ///
     /// # Examples
     /// ```
     /// use miette::{Diagnostic, LabeledSpan, MietteDiagnostic};
     ///
-    /// let source = "helo word";
+    /// let source = "helo wrld";
     ///
     /// let labels = vec![
-    ///     LabeledSpan::new(Some("add 'l'".to_string()), 3, 0),
-    ///     LabeledSpan::new(Some("add 'l'".to_string()), 8, 0),
+    ///     LabeledSpan::at_offset(3, "add 'l'"),
+    ///     LabeledSpan::at_offset(6, "add 'r'"),
     /// ];
     /// let diag = MietteDiagnostic::new("Typos in 'hello world'").with_labels(labels.clone());
     /// assert_eq!(diag.description, "Typos in 'hello world'");
