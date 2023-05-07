@@ -13,7 +13,7 @@ pub struct JSONReportHandler;
 impl JSONReportHandler {
     /// Create a new [`JSONReportHandler`]. There are no customization
     /// options.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self
     }
 }
@@ -49,7 +49,7 @@ impl fmt::Display for Escape<'_> {
     }
 }
 
-fn escape(input: &'_ str) -> Escape<'_> {
+const fn escape(input: &'_ str) -> Escape<'_> {
     Escape(input)
 }
 

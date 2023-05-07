@@ -21,7 +21,7 @@ pub struct NarratableReportHandler {
 impl NarratableReportHandler {
     /// Create a new [`NarratableReportHandler`]. There are no customization
     /// options.
-    pub fn new() -> Self {
+    pub const fn new() -> Self {
         Self {
             footer: None,
             context_lines: 1,
@@ -31,13 +31,13 @@ impl NarratableReportHandler {
 
     /// Include the cause chain of the top-level error in the report, if
     /// available.
-    pub fn with_cause_chain(mut self) -> Self {
+    pub const fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = true;
         self
     }
 
     /// Do not include the cause chain of the top-level error in the report.
-    pub fn without_cause_chain(mut self) -> Self {
+    pub const fn without_cause_chain(mut self) -> Self {
         self.with_cause_chain = false;
         self
     }
@@ -49,7 +49,7 @@ impl NarratableReportHandler {
     }
 
     /// Sets the number of lines of context to show around each error.
-    pub fn with_context_lines(mut self, lines: usize) -> Self {
+    pub const fn with_context_lines(mut self, lines: usize) -> Self {
         self.context_lines = lines;
         self
     }

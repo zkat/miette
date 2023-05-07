@@ -241,10 +241,10 @@ pub struct LabeledSpan {
 
 impl LabeledSpan {
     /// Makes a new labeled span.
-    pub fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
+    pub const fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
         Self {
             label,
-            span: (offset, len).into(),
+            span: SourceSpan::new(SourceOffset(offset), SourceOffset(len)),
         }
     }
 
@@ -310,22 +310,22 @@ impl LabeledSpan {
     }
 
     /// Returns a reference to the inner [`SourceSpan`].
-    pub fn inner(&self) -> &SourceSpan {
+    pub const fn inner(&self) -> &SourceSpan {
         &self.span
     }
 
     /// Returns the 0-based starting byte offset.
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.span.offset()
     }
 
     /// Returns the number of bytes this `LabeledSpan` spans.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.span.len()
     }
 
     /// True if this `LabeledSpan` is empty.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.span.is_empty()
     }
 }
@@ -422,7 +422,7 @@ pub struct MietteSpanContents<'a> {
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [`MietteSpanContents`] object.
-    pub fn new(
+    pub const fn new(
         data: &'a [u8],
         span: SourceSpan,
         line: usize,
@@ -440,7 +440,7 @@ impl<'a> MietteSpanContents<'a> {
     }
 
     /// Make a new [`MietteSpanContents`] object, with a name for its 'file'.
-    pub fn new_named(
+    pub const fn new_named(
         name: String,
         data: &'a [u8],
         span: SourceSpan,
@@ -492,7 +492,7 @@ pub struct SourceSpan {
 
 impl SourceSpan {
     /// Create a new [`SourceSpan`].
-    pub fn new(start: SourceOffset, length: SourceOffset) -> Self {
+    pub const fn new(start: SourceOffset, length: SourceOffset) -> Self {
         Self {
             offset: start,
             length: length.offset(),
@@ -500,18 +500,18 @@ impl SourceSpan {
     }
 
     /// The absolute offset, in bytes, from the beginning of a [`SourceCode`].
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.offset.offset()
     }
 
     /// Total length of the [`SourceSpan`], in bytes.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.length
     }
 
     /// Whether this [`SourceSpan`] has a length of zero. It may still be useful
     /// to point to a specific point.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.length == 0
     }
 }
@@ -589,7 +589,7 @@ pub struct SourceOffset(ByteOffset);
 
 impl SourceOffset {
     /// Actual byte offset.
-    pub fn offset(&self) -> ByteOffset {
+    pub const fn offset(&self) -> ByteOffset {
         self.0
     }
 
