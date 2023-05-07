@@ -16,7 +16,7 @@
 /// #     let resource = 0;
 /// #
 /// if !has_permission(user, resource) {
-///     bail!("permission denied for accessing {}", resource);
+///     bail!("permission denied for accessing {resource}");
 /// }
 /// #     Ok(())
 /// # }
@@ -54,24 +54,26 @@
 ///
 /// fn divide(x: f64, y: f64) -> Result<f64> {
 ///     if y.abs() < 1e-3 {
-///         bail!("dividing by value close to 0", severity = Severity::Warning);
+///         bail!(
+///             severity = Severity::Warning;
+///             "dividing by value ({y}) close to 0"
+///         );
 ///     }
 ///     Ok(x / y)
 /// }
 /// ```
 #[macro_export]
 macro_rules! bail {
-    ($msg:literal $(,)?) => {
-        return $crate::private::Err($crate::miette!($msg));
-    };
     ($err:expr $(,)?) => {
         return $crate::private::Err($crate::miette!($err));
     };
-    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
-        return $crate::private::Err($crate::miette!($fmt, $($key = $value),*));
+    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {
+        return $crate::private::Err(
+            $crate::miette!($($key = $value),+; $($fmt)+)
+        );
     };
-    ($fmt:expr, $($arg:tt)*) => {
-        return $crate::private::Err($crate::miette!($fmt, $($arg)*));
+    ($($fmt:tt)+) => {
+        return $crate::private::Err($crate::miette!($($fmt)+));
     };
 }
 
@@ -126,8 +128,8 @@ macro_rules! bail {
 /// fn divide(x: f64, y: f64) -> Result<f64> {
 ///     ensure!(
 ///         y.abs() >= 1e-3,
-///         "dividing by value close to 0",
-///         severity = Severity::Warning
+///         severity = Severity::Warning;
+///         "dividing by value ({y}) close to 0"
 ///     );
 ///     Ok(x / y)
 /// }
@@ -144,9 +146,11 @@ macro_rules! ensure {
             return $crate::private::Err($crate::miette!($err));
         }
     };
-    ($cond:expr, $fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
+    ($cond:expr, $($key:ident = $value:expr),+; $($fmt:tt)+) => {
         if !$cond {
-            return $crate::private::Err($crate::miette!($fmt, $($key = $value),*));
+            return $crate::private::Err(
+                $crate::miette!($($key = $value),+; $($fmt)+)
+            );
         }
     };
     ($cond:expr, $fmt:expr, $($arg:tt)*) => {
@@ -162,33 +166,32 @@ macro_rules! ensure {
 ///
 /// With string literal and interpolation:
 /// ```
-/// # type V = ();
-/// #
-/// use miette::{miette, Result};
+/// # use miette::miette;
+/// let x = 1;
+/// let y = 2;
+/// let report = miette!("{x} + {} = {z}", y, z = x + y);
+/// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 ///
-/// fn lookup(key: &str) -> Result<V> {
-///     if key.len() != 16 {
-///         return Err(miette!("key length must be 16 characters, got {:?}", key));
-///     }
-///
-///     // ...
-///     # Ok(())
-/// }
+/// let report = miette!("{x} + {y} = {x + y}");
+/// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 /// ```
 ///
-/// With [`MietteDiagnostic`]-like arguments:
+/// With [`diagnostic!`]-like arguments:
 /// ```
 /// use miette::{miette, LabeledSpan, Severity};
 ///
 /// let source = "(2 + 2".to_string();
 /// let report = miette!(
-///     "expected closing ')'",
 ///     // Those fields are optional
 ///     severity = Severity::Error,
 ///     code = "expected::rparen",
 ///     help = "always close your parens",
 ///     labels = vec![LabeledSpan::at_offset(6, "here")],
-///     url = "https://example.com"
+///     url = "https://example.com"; // <- semicolon separates fields from message
+///
+///     // Rest of the arguments are passed to `format!`
+///     // to form diagnostic message
+///     "expected closing ')'"
 /// )
 /// .with_source_code(source);
 /// ```
@@ -198,21 +201,18 @@ macro_rules! ensure {
 /// You can just replace `use`s of the `anyhow!`/`eyre!` macros with `miette!`.
 #[macro_export]
 macro_rules! miette {
-    ($msg:literal $(,)?) => {
-        // Handle $:literal as a special case to make cargo-expanded code more
-        // concise in the common case.
-        $crate::private::new_adhoc($msg)
-    };
     ($err:expr $(,)?) => ({
         use $crate::private::kind::*;
         let error = $err;
         (&error).miette_kind().new(error)
     });
-    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {
-        $crate::Report::from($crate::diagnostic!($fmt, $($key = $value,)*))
+    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {
+        $crate::Report::from(
+            $crate::diagnostic!($($key = $value),+; $($fmt)+)
+        )
     };
-    ($fmt:expr, $($arg:tt)*) => {
-        $crate::private::new_adhoc(format!($fmt, $($arg)*))
+    ($($fmt:tt)+) => {
+        $crate::private::new_adhoc(format!($($fmt)+))
     };
 }
 
@@ -224,20 +224,35 @@ macro_rules! miette {
 ///
 /// let source = "(2 + 2".to_string();
 /// let diag = diagnostic!(
-///     "expected closing ')'",
 ///     // Those fields are optional
 ///     severity = Severity::Error,
 ///     code = "expected::rparen",
 ///     help = "always close your parens",
 ///     labels = vec![LabeledSpan::at_offset(6, "here")],
-///     url = "https://example.com"
+///     url = "https://example.com"; // <- semicolon separates fields from message
+///
+///     // Rest of the arguments are passed to `format!`
+///     // to form diagnostic message
+///     "expected closing ')'",
 /// );
+/// ```
+/// Diagnostic without any fields:
+/// ```
+/// # use miette::diagnostic;
+/// let x = 1;
+/// let y = 2;
+///
+/// let diag = diagnostic!("{x} + {} = {z}", y, z = x + y);
+/// assert_eq!(diag.message, "1 + 2 = 3");
 /// ```
 #[macro_export]
 macro_rules! diagnostic {
-    ($fmt:expr $(, $key:ident = $value:expr)* $(,)?) => {{
-        let mut diag = $crate::MietteDiagnostic::new(format!("{}", $fmt));
+    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {{
+        let mut diag = $crate::MietteDiagnostic::new(format!($($fmt)+));
         $(diag.$key = Some($value.into());)*
         diag
+    }};
+    ($($fmt:tt)+) => {{
+        $crate::MietteDiagnostic::new(format!($($fmt)+))
     }};
 }
