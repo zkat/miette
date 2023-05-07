@@ -136,11 +136,6 @@ macro_rules! bail {
 /// ```
 #[macro_export]
 macro_rules! ensure {
-    ($cond:expr, $msg:literal $(,)?) => {
-        if !$cond {
-            return $crate::private::Err($crate::miette!($msg));
-        }
-    };
     ($cond:expr, $err:expr $(,)?) => {
         if !$cond {
             return $crate::private::Err($crate::miette!($err));
