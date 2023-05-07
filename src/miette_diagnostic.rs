@@ -206,9 +206,60 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Typos in 'hello world'");
     /// assert_eq!(diag.labels, Some(labels));
     /// ```
-    pub fn with_labels(self, labels: Vec<LabeledSpan>) -> Self {
+    pub fn with_labels(self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
+        Self {
+            labels: Some(labels.into_iter().collect()),
+            ..self
+        }
+    }
+
+    /// Return new diagnostic with new label added to the existing ones.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, LabeledSpan, MietteDiagnostic};
+    ///
+    /// let source = "helo wrld";
+    ///
+    /// let label1 = LabeledSpan::at_offset(3, "add 'l'");
+    /// let label2 = LabeledSpan::at_offset(6, "add 'r'");
+    /// let diag = MietteDiagnostic::new("Typos in 'hello world'")
+    ///     .and_label(label1.clone())
+    ///     .and_label(label2.clone());
+    /// assert_eq!(diag.message, "Typos in 'hello world'");
+    /// assert_eq!(diag.labels, Some(vec![label1, label2]));
+    /// ```
+    pub fn and_label(self, label: impl Into<LabeledSpan>) -> Self {
+        let mut labels = self.labels.unwrap_or_default();
+        labels.push(label.into());
         Self {
             labels: Some(labels),
+            ..self
+        }
+    }
+
+    /// Return new diagnostic with new labels added to the existing ones.
+    ///
+    /// # Examples
+    /// ```
+    /// use miette::{Diagnostic, LabeledSpan, MietteDiagnostic};
+    ///
+    /// let source = "helo wrld";
+    ///
+    /// let label1 = LabeledSpan::at_offset(3, "add 'l'");
+    /// let label2 = LabeledSpan::at_offset(6, "add 'r'");
+    /// let label3 = LabeledSpan::at_offset(9, "add '!'");
+    /// let diag = MietteDiagnostic::new("Typos in 'hello world!'")
+    ///     .and_label(label1.clone())
+    ///     .and_labels([label2.clone(), label3.clone()]);
+    /// assert_eq!(diag.message, "Typos in 'hello world!'");
+    /// assert_eq!(diag.labels, Some(vec![label1, label2, label3]));
+    /// ```
+    pub fn and_labels(self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
+        let mut all_labels = self.labels.unwrap_or_default();
+        all_labels.extend(labels.into_iter());
+        Self {
+            labels: Some(all_labels),
             ..self
         }
     }
