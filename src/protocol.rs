@@ -169,7 +169,7 @@ pub enum Severity {
     /// Warning. Please take note.
     Warning,
     /// Critical failure. The program cannot continue.
-    /// This is the default severity, if you don't specify another one
+    /// This is the default severity, if you don't specify another one.
     Error,
 }
 
