@@ -596,7 +596,7 @@
 //! If you...
 //! - ...don't know all the possible errors upfront
 //! - ...need to serialize/deserialize errors
-//! then you may want to use [`miette!`], [`miette_diagnostic!`] macros or
+//! then you may want to use [`miette!`], [`diagnostic!`] macros or
 //! [`MietteDiagnostic`] directly to create diagnostic on the fly.
 //!
 //! ```rs
