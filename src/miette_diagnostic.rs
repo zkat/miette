@@ -8,8 +8,8 @@ use crate::{Diagnostic, LabeledSpan, Severity};
 /// Diagnostic that can be created at runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MietteDiagnostic {
-    /// Displayed diagnostic description
-    pub description: String,
+    /// Displayed diagnostic message
+    pub message: String,
     /// Unique diagnostic code to look up more information
     /// about this Diagnostic. Ideally also globally unique, and documented
     /// in the toplevel crate's documentation for easy searching.
@@ -31,7 +31,7 @@ pub struct MietteDiagnostic {
 
 impl Display for MietteDiagnostic {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", &self.description)
+        write!(f, "{}", &self.message)
     }
 }
 
@@ -73,7 +73,7 @@ impl Diagnostic for MietteDiagnostic {
 }
 
 impl MietteDiagnostic {
-    /// Create a new dynamic diagnostic with the given description.
+    /// Create a new dynamic diagnostic with the given message.
     ///
     /// # Examples
     /// ```
@@ -81,11 +81,11 @@ impl MietteDiagnostic {
     ///
     /// let diag = MietteDiagnostic::new("Oops, something went wrong!");
     /// assert_eq!(diag.to_string(), "Oops, something went wrong!");
-    /// assert_eq!(diag.description, "Oops, something went wrong!");
+    /// assert_eq!(diag.message, "Oops, something went wrong!");
     /// ```
-    pub fn new(description: impl Into<String>) -> Self {
+    pub fn new(message: impl Into<String>) -> Self {
         Self {
-            description: description.into(),
+            message: message.into(),
             labels: None,
             severity: None,
             code: None,
@@ -101,7 +101,7 @@ impl MietteDiagnostic {
     /// use miette::{Diagnostic, MietteDiagnostic};
     ///
     /// let diag = MietteDiagnostic::new("Oops, something went wrong!").with_code("foo::bar::baz");
-    /// assert_eq!(diag.description, "Oops, something went wrong!");
+    /// assert_eq!(diag.message, "Oops, something went wrong!");
     /// assert_eq!(diag.code, Some("foo::bar::baz".to_string()));
     /// ```
     pub fn with_code(self, code: impl Into<String>) -> Self {
@@ -118,7 +118,7 @@ impl MietteDiagnostic {
     /// use miette::{Diagnostic, MietteDiagnostic, Severity};
     ///
     /// let diag = MietteDiagnostic::new("I warn you to stop!").with_severity(Severity::Warning);
-    /// assert_eq!(diag.description, "I warn you to stop!");
+    /// assert_eq!(diag.message, "I warn you to stop!");
     /// assert_eq!(diag.severity, Some(Severity::Warning));
     /// ```
     pub fn with_severity(self, severity: Severity) -> Self {
@@ -135,7 +135,7 @@ impl MietteDiagnostic {
     /// use miette::{Diagnostic, MietteDiagnostic};
     ///
     /// let diag = MietteDiagnostic::new("PC is not working").with_help("Try to reboot it again");
-    /// assert_eq!(diag.description, "PC is not working");
+    /// assert_eq!(diag.message, "PC is not working");
     /// assert_eq!(diag.help, Some("Try to reboot it again".to_string()));
     /// ```
     pub fn with_help(self, help: impl Into<String>) -> Self {
@@ -153,7 +153,7 @@ impl MietteDiagnostic {
     ///
     /// let diag = MietteDiagnostic::new("PC is not working")
     ///     .with_url("https://letmegooglethat.com/?q=Why+my+pc+doesn%27t+work");
-    /// assert_eq!(diag.description, "PC is not working");
+    /// assert_eq!(diag.message, "PC is not working");
     /// assert_eq!(
     ///     diag.url,
     ///     Some("https://letmegooglethat.com/?q=Why+my+pc+doesn%27t+work".to_string())
@@ -178,7 +178,7 @@ impl MietteDiagnostic {
     ///
     /// let label = LabeledSpan::at(0..3, "This should be Rust");
     /// let diag = MietteDiagnostic::new("Wrong best language").with_label(label.clone());
-    /// assert_eq!(diag.description, "Wrong best language");
+    /// assert_eq!(diag.message, "Wrong best language");
     /// assert_eq!(diag.labels, Some(vec![label]));
     /// ```
     pub fn with_label(self, label: impl Into<LabeledSpan>) -> Self {
@@ -203,7 +203,7 @@ impl MietteDiagnostic {
     ///     LabeledSpan::at_offset(6, "add 'r'"),
     /// ];
     /// let diag = MietteDiagnostic::new("Typos in 'hello world'").with_labels(labels.clone());
-    /// assert_eq!(diag.description, "Typos in 'hello world'");
+    /// assert_eq!(diag.message, "Typos in 'hello world'");
     /// assert_eq!(diag.labels, Some(labels));
     /// ```
     pub fn with_labels(self, labels: Vec<LabeledSpan>) -> Self {
