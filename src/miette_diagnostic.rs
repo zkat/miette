@@ -104,11 +104,9 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Oops, something went wrong!");
     /// assert_eq!(diag.code, Some("foo::bar::baz".to_string()));
     /// ```
-    pub fn with_code(self, code: impl Into<String>) -> Self {
-        Self {
-            code: Some(code.into()),
-            ..self
-        }
+    pub fn with_code(mut self, code: impl Into<String>) -> Self {
+        self.code = Some(code.into());
+        self
     }
 
     /// Return new diagnostic with the given severity.
@@ -121,11 +119,9 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "I warn you to stop!");
     /// assert_eq!(diag.severity, Some(Severity::Warning));
     /// ```
-    pub fn with_severity(self, severity: Severity) -> Self {
-        Self {
-            severity: Some(severity),
-            ..self
-        }
+    pub fn with_severity(mut self, severity: Severity) -> Self {
+        self.severity = Some(severity);
+        self
     }
 
     /// Return new diagnostic with the given help message.
@@ -138,11 +134,9 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "PC is not working");
     /// assert_eq!(diag.help, Some("Try to reboot it again".to_string()));
     /// ```
-    pub fn with_help(self, help: impl Into<String>) -> Self {
-        Self {
-            help: Some(help.into()),
-            ..self
-        }
+    pub fn with_help(mut self, help: impl Into<String>) -> Self {
+        self.help = Some(help.into());
+        self
     }
 
     /// Return new diagnostic with the given URL.
@@ -159,11 +153,9 @@ impl MietteDiagnostic {
     ///     Some("https://letmegooglethat.com/?q=Why+my+pc+doesn%27t+work".to_string())
     /// );
     /// ```
-    pub fn with_url(self, url: impl Into<String>) -> Self {
-        Self {
-            url: Some(url.into()),
-            ..self
-        }
+    pub fn with_url(mut self, url: impl Into<String>) -> Self {
+        self.url = Some(url.into());
+        self
     }
 
     /// Return new diagnostic with the given label.
@@ -181,11 +173,9 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Wrong best language");
     /// assert_eq!(diag.labels, Some(vec![label]));
     /// ```
-    pub fn with_label(self, label: impl Into<LabeledSpan>) -> Self {
-        Self {
-            labels: Some(vec![label.into()]),
-            ..self
-        }
+    pub fn with_label(mut self, label: impl Into<LabeledSpan>) -> Self {
+        self.labels = Some(vec![label.into()]);
+        self
     }
 
     /// Return new diagnostic with the given labels.
@@ -206,11 +196,9 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Typos in 'hello world'");
     /// assert_eq!(diag.labels, Some(labels));
     /// ```
-    pub fn with_labels(self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
-        Self {
-            labels: Some(labels.into_iter().collect()),
-            ..self
-        }
+    pub fn with_labels(mut self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
+        self.labels = Some(labels.into_iter().collect());
+        self
     }
 
     /// Return new diagnostic with new label added to the existing ones.
@@ -229,13 +217,11 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Typos in 'hello world'");
     /// assert_eq!(diag.labels, Some(vec![label1, label2]));
     /// ```
-    pub fn and_label(self, label: impl Into<LabeledSpan>) -> Self {
+    pub fn and_label(mut self, label: impl Into<LabeledSpan>) -> Self {
         let mut labels = self.labels.unwrap_or_default();
         labels.push(label.into());
-        Self {
-            labels: Some(labels),
-            ..self
-        }
+        self.labels = Some(labels);
+        self
     }
 
     /// Return new diagnostic with new labels added to the existing ones.
@@ -255,12 +241,10 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.message, "Typos in 'hello world!'");
     /// assert_eq!(diag.labels, Some(vec![label1, label2, label3]));
     /// ```
-    pub fn and_labels(self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
+    pub fn and_labels(mut self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
         let mut all_labels = self.labels.unwrap_or_default();
         all_labels.extend(labels.into_iter());
-        Self {
-            labels: Some(all_labels),
-            ..self
-        }
+        self.labels = Some(all_labels);
+        self
     }
 }
