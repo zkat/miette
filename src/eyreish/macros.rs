@@ -55,7 +55,7 @@
 /// fn divide(x: f64, y: f64) -> Result<f64> {
 ///     if y.abs() < 1e-3 {
 ///         bail!(
-///             severity = Severity::Warning;
+///             severity = Severity::Warning,
 ///             "dividing by value ({y}) close to 0"
 ///         );
 ///     }
@@ -64,16 +64,13 @@
 /// ```
 #[macro_export]
 macro_rules! bail {
-    ($err:expr $(,)?) => {
-        return $crate::private::Err($crate::miette!($err));
-    };
-    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {
+    ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
         return $crate::private::Err(
-            $crate::miette!($($key = $value),+; $($fmt)+)
+            $crate::miette!($($key = $value,)* $fmt $($arg)*)
         );
     };
-    ($($fmt:tt)+) => {
-        return $crate::private::Err($crate::miette!($($fmt)+));
+    ($err:expr $(,)?) => {
+        return $crate::private::Err($crate::miette!($err));
     };
 }
 
@@ -128,7 +125,7 @@ macro_rules! bail {
 /// fn divide(x: f64, y: f64) -> Result<f64> {
 ///     ensure!(
 ///         y.abs() >= 1e-3,
-///         severity = Severity::Warning;
+///         severity = Severity::Warning,
 ///         "dividing by value ({y}) close to 0"
 ///     );
 ///     Ok(x / y)
@@ -136,21 +133,16 @@ macro_rules! bail {
 /// ```
 #[macro_export]
 macro_rules! ensure {
-    ($cond:expr, $err:expr $(,)?) => {
-        if !$cond {
-            return $crate::private::Err($crate::miette!($err));
-        }
-    };
-    ($cond:expr, $($key:ident = $value:expr),+; $($fmt:tt)+) => {
+    ($cond:expr, $($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
         if !$cond {
             return $crate::private::Err(
-                $crate::miette!($($key = $value),+; $($fmt)+)
+                $crate::miette!($($key = $value,)* $fmt $($arg)*)
             );
         }
     };
-    ($cond:expr, $fmt:expr, $($arg:tt)*) => {
+    ($cond:expr, $err:expr $(,)?) => {
         if !$cond {
-            return $crate::private::Err($crate::miette!($fmt, $($arg)*));
+            return $crate::private::Err($crate::miette!($err));
         }
     };
 }
@@ -167,7 +159,8 @@ macro_rules! ensure {
 /// let report = miette!("{x} + {} = {z}", y, z = x + y);
 /// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 ///
-/// let report = miette!("{x} + {y} = {x + y}");
+/// let z = x + y;
+/// let report = miette!("{x} + {y} = {z}");
 /// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 /// ```
 ///
@@ -182,8 +175,7 @@ macro_rules! ensure {
 ///     code = "expected::rparen",
 ///     help = "always close your parens",
 ///     labels = vec![LabeledSpan::at_offset(6, "here")],
-///     url = "https://example.com"; // <- semicolon separates fields from message
-///
+///     url = "https://example.com",
 ///     // Rest of the arguments are passed to `format!`
 ///     // to form diagnostic message
 ///     "expected closing ')'"
@@ -196,19 +188,16 @@ macro_rules! ensure {
 /// You can just replace `use`s of the `anyhow!`/`eyre!` macros with `miette!`.
 #[macro_export]
 macro_rules! miette {
+    ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
+        $crate::Report::from(
+            $crate::diagnostic!($($key = $value,)* $fmt $($arg)*)
+        )
+    };
     ($err:expr $(,)?) => ({
         use $crate::private::kind::*;
         let error = $err;
         (&error).miette_kind().new(error)
     });
-    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {
-        $crate::Report::from(
-            $crate::diagnostic!($($key = $value),+; $($fmt)+)
-        )
-    };
-    ($($fmt:tt)+) => {
-        $crate::private::new_adhoc(format!($($fmt)+))
-    };
 }
 
 /// Construct a [`MietteDiagnostic`] in more user-friendly way.
@@ -224,8 +213,7 @@ macro_rules! miette {
 ///     code = "expected::rparen",
 ///     help = "always close your parens",
 ///     labels = vec![LabeledSpan::at_offset(6, "here")],
-///     url = "https://example.com"; // <- semicolon separates fields from message
-///
+///     url = "https://example.com",
 ///     // Rest of the arguments are passed to `format!`
 ///     // to form diagnostic message
 ///     "expected closing ')'",
@@ -239,15 +227,16 @@ macro_rules! miette {
 ///
 /// let diag = diagnostic!("{x} + {} = {z}", y, z = x + y);
 /// assert_eq!(diag.message, "1 + 2 = 3");
+///
+/// let z = x + y;
+/// let diag = diagnostic!("{x} + {y} = {z}");
+/// assert_eq!(diag.message, "1 + 2 = 3");
 /// ```
 #[macro_export]
 macro_rules! diagnostic {
-    ($($key:ident = $value:expr),+; $($fmt:tt)+) => {{
-        let mut diag = $crate::MietteDiagnostic::new(format!($($fmt)+));
+    ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {{
+        let mut diag = $crate::MietteDiagnostic::new(format!($fmt $($arg)*));
         $(diag.$key = Some($value.into());)*
         diag
-    }};
-    ($($fmt:tt)+) => {{
-        $crate::MietteDiagnostic::new(format!($($fmt)+))
     }};
 }

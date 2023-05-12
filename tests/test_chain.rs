@@ -1,7 +1,7 @@
 use miette::{miette, Report};
 
 fn error() -> Report {
-    miette!(0).wrap_err(1).wrap_err(2).wrap_err(3)
+    miette!("0").wrap_err(1).wrap_err(2).wrap_err(3)
 }
 
 #[test]

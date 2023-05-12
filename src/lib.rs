@@ -604,11 +604,11 @@
 //!
 //! let source = "2 + 2 * 2 = 8".to_string();
 //! let report = miette!(
-//!   "Wrong answer",
 //!   labels = vec[
 //!       LabeledSpan::at(12..13, "this should be 6"),
 //!   ],
-//!   help = "'*' has greater precedence than '+'"
+//!   help = "'*' has greater precedence than '+'",
+//!   "Wrong answer"
 //! ).with_source_code(source);
 //! println!("{:?}", report)
 //! ```
