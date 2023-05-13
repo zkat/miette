@@ -256,7 +256,7 @@ impl LabeledSpan {
     /// )
     /// ```
     pub fn at_offset(offset: ByteOffset, label: impl Into<String>) -> Self {
-        Self::new(Some(label.into()), offset.into(), 0)
+        Self::new(Some(label.into()), offset, 0)
     }
 
     /// Makes a new label without text, that underlines a specific span.
