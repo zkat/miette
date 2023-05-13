@@ -16,7 +16,14 @@
 /// #     let resource = 0;
 /// #
 /// if !has_permission(user, resource) {
-///     bail!("permission denied for accessing {resource}");
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"     bail!("permission denied for accessing {resource}");"#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"     bail!("permission denied for accessing {}", resource);"#
+)]
 /// }
 /// #     Ok(())
 /// # }
@@ -56,7 +63,14 @@
 ///     if y.abs() < 1e-3 {
 ///         bail!(
 ///             severity = Severity::Warning,
-///             "dividing by value ({y}) close to 0"
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"             "dividing by value ({y}) close to 0""#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"             "dividing by value ({}) close to 0", y"#
+)]
 ///         );
 ///     }
 ///     Ok(x / y)
@@ -126,7 +140,14 @@ macro_rules! bail {
 ///     ensure!(
 ///         y.abs() >= 1e-3,
 ///         severity = Severity::Warning,
-///         "dividing by value ({y}) close to 0"
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"             "dividing by value ({y}) close to 0""#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"             "dividing by value ({}) close to 0", y"#
+)]
 ///     );
 ///     Ok(x / y)
 /// }
@@ -156,11 +177,26 @@ macro_rules! ensure {
 /// # use miette::miette;
 /// let x = 1;
 /// let y = 2;
-/// let report = miette!("{x} + {} = {z}", y, z = x + y);
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"let report = miette!("{x} + {} = {z}", y, z = x + y);"#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"let report = miette!("{} + {} = {z}", x, y, z = x + y);"#
+)]
+///
 /// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 ///
 /// let z = x + y;
-/// let report = miette!("{x} + {y} = {z}");
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"let report = miette!("{x} + {y} = {z}");"#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"let report = miette!("{} + {} = {}", x, y, z);"#
+)]
 /// assert_eq!(report.to_string().as_str(), "1 + 2 = 3");
 /// ```
 ///
@@ -225,11 +261,25 @@ macro_rules! miette {
 /// let x = 1;
 /// let y = 2;
 ///
-/// let diag = diagnostic!("{x} + {} = {z}", y, z = x + y);
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#" let diag = diagnostic!("{x} + {} = {z}", y, z = x + y);"#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#" let diag = diagnostic!("{} + {} = {z}", x, y, z = x + y);"#
+)]
 /// assert_eq!(diag.message, "1 + 2 = 3");
 ///
 /// let z = x + y;
-/// let diag = diagnostic!("{x} + {y} = {z}");
+#[cfg_attr(
+    not(feature = "no-format-args-capture"),
+    doc = r#"let diag = diagnostic!("{x} + {y} = {z}");"#
+)]
+#[cfg_attr(
+    feature = "no-format-args-capture",
+    doc = r#"let diag = diagnostic!("{} + {} = {}", x, y, z);"#
+)]
 /// assert_eq!(diag.message, "1 + 2 = 3");
 /// ```
 #[macro_export]

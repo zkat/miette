@@ -43,7 +43,11 @@ jobs:
       - name: Clippy
         run: cargo clippy --all -- -D warnings
       - name: Run tests
+        if: matrix.rust == 'stable'
         run: cargo test --all --verbose --features fancy
+      - name: Run tests
+        if: matrix.rust == '1.56.0'
+        run: cargo test --all --verbose --features fancy no-format-args-capture
 
   miri:
     name: Miri

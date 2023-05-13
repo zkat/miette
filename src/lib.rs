@@ -599,7 +599,7 @@
 //! then you may want to use [`miette!`], [`diagnostic!`] macros or
 //! [`MietteDiagnostic`] directly to create diagnostic on the fly.
 //!
-//! ```rs
+//! ```rust,ignore
 //! # use miette::{miette, LabeledSpan, Report};
 //!
 //! let source = "2 + 2 * 2 = 8".to_string();

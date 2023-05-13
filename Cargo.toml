@@ -42,7 +42,16 @@ lazy_static = "1.4"
 
 [features]
 default = []
-fancy-no-backtrace = ["owo-colors", "is-terminal", "textwrap", "terminal_size", "supports-hyperlinks", "supports-color", "supports-unicode"]
+no-format-args-capture = []
+fancy-no-backtrace = [
+    "owo-colors",
+    "is-terminal",
+    "textwrap",
+    "terminal_size",
+    "supports-hyperlinks",
+    "supports-color",
+    "supports-unicode",
+]
 fancy = ["fancy-no-backtrace", "backtrace", "backtrace-ext"]
 
 [workspace]
