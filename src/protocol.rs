@@ -514,7 +514,7 @@ impl From<(ByteOffset, usize)> for SourceSpan {
     fn from((start, len): (ByteOffset, usize)) -> Self {
         Self {
             offset: start.into(),
-            length: len.into(),
+            length: len,
         }
     }
 }
