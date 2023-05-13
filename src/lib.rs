@@ -46,6 +46,7 @@
 //!   - [... multiple related errors](#-multiple-related-errors)
 //!   - [... delayed source code](#-delayed-source-code)
 //!   - [... handler options](#-handler-options)
+//!   - [... dynamic diagnostics](#-dynamic-diagnostics)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
 //!
@@ -249,7 +250,7 @@
 //! To construct your own simple adhoc error use the [miette!] macro:
 //! ```rust
 //! // my_app/lib/my_internal_file.rs
-//! use miette::{IntoDiagnostic, Result, WrapErr, miette};
+//! use miette::{miette, IntoDiagnostic, Result, WrapErr};
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
@@ -590,6 +591,28 @@
 //! See the docs for [`MietteHandlerOpts`] for more details on what you can
 //! customize!
 //!
+//! ### ... dynamic diagnostics
+//!
+//! If you...
+//! - ...don't know all the possible errors upfront
+//! - ...need to serialize/deserialize errors
+//! then you may want to use [`miette!`], [`diagnostic!`] macros or
+//! [`MietteDiagnostic`] directly to create diagnostic on the fly.
+//!
+//! ```rust,ignore
+//! # use miette::{miette, LabeledSpan, Report};
+//!
+//! let source = "2 + 2 * 2 = 8".to_string();
+//! let report = miette!(
+//!   labels = vec[
+//!       LabeledSpan::at(12..13, "this should be 6"),
+//!   ],
+//!   help = "'*' has greater precedence than '+'",
+//!   "Wrong answer"
+//! ).with_source_code(source);
+//! println!("{:?}", report)
+//! ```
+//!
 //! ## Acknowledgements
 //!
 //! `miette` was not developed in a void. It owes enormous credit to various
@@ -624,6 +647,7 @@ pub use eyreish::*;
 #[cfg(feature = "fancy-no-backtrace")]
 pub use handler::*;
 pub use handlers::*;
+pub use miette_diagnostic::*;
 pub use named_source::*;
 #[cfg(feature = "fancy")]
 pub use panic::*;
@@ -638,6 +662,7 @@ mod handler;
 mod handlers;
 #[doc(hidden)]
 pub mod macro_helpers;
+mod miette_diagnostic;
 mod named_source;
 #[cfg(feature = "fancy")]
 mod panic;

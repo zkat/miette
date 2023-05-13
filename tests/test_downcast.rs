@@ -3,7 +3,7 @@ mod drop;
 
 use self::common::*;
 use self::drop::{DetectDrop, Flag};
-use miette::{Diagnostic, Report};
+use miette::{Diagnostic, MietteDiagnostic, Report};
 use std::error::Error as StdError;
 use std::fmt::{self, Display};
 use std::io;
@@ -12,11 +12,19 @@ use std::io;
 fn test_downcast() {
     assert_eq!(
         "oh no!",
-        bail_literal().unwrap_err().downcast::<&str>().unwrap(),
+        bail_literal()
+            .unwrap_err()
+            .downcast::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
-        bail_fmt().unwrap_err().downcast::<String>().unwrap(),
+        bail_fmt()
+            .unwrap_err()
+            .downcast::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
@@ -32,11 +40,19 @@ fn test_downcast() {
 fn test_downcast_ref() {
     assert_eq!(
         "oh no!",
-        *bail_literal().unwrap_err().downcast_ref::<&str>().unwrap(),
+        bail_literal()
+            .unwrap_err()
+            .downcast_ref::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
-        bail_fmt().unwrap_err().downcast_ref::<String>().unwrap(),
+        bail_fmt()
+            .unwrap_err()
+            .downcast_ref::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
@@ -52,11 +68,19 @@ fn test_downcast_ref() {
 fn test_downcast_mut() {
     assert_eq!(
         "oh no!",
-        *bail_literal().unwrap_err().downcast_mut::<&str>().unwrap(),
+        bail_literal()
+            .unwrap_err()
+            .downcast_mut::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
-        bail_fmt().unwrap_err().downcast_mut::<String>().unwrap(),
+        bail_fmt()
+            .unwrap_err()
+            .downcast_mut::<MietteDiagnostic>()
+            .unwrap()
+            .message,
     );
     assert_eq!(
         "oh no!",
