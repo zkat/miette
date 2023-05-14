@@ -284,7 +284,10 @@ macro_rules! miette {
 /// ```
 #[macro_export]
 macro_rules! diagnostic {
-    ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {{
+    ($fmt:literal $($arg:tt)*) => {{
+        $crate::MietteDiagnostic::new(format!($fmt $($arg)*))
+    }};
+    ($($key:ident = $value:expr,)+ $fmt:literal $($arg:tt)*) => {{
         let mut diag = $crate::MietteDiagnostic::new(format!($fmt $($arg)*));
         $(diag.$key = Some($value.into());)*
         diag
