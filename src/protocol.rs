@@ -234,6 +234,7 @@ pub trait SourceCode: Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct LabeledSpan {
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     label: Option<String>,
     span: SourceSpan,
 }
@@ -337,7 +338,6 @@ fn test_serialize_labeled_span() {
     assert_eq!(
         json!(LabeledSpan::new(None, 0, 0)),
         json!({
-            "label": null,
             "span": { "offset": 0, "length": 0 }
         })
     );
@@ -358,6 +358,12 @@ fn test_deserialize_labeled_span() {
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": null,
+        "span": { "offset": 0, "length": 0 }
+    }))
+    .unwrap();
+    assert_eq!(span, LabeledSpan::new(None, 0, 0));
+
+    let span: LabeledSpan = serde_json::from_value(json!({
         "span": { "offset": 0, "length": 0 }
     }))
     .unwrap();
