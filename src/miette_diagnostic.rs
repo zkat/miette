@@ -3,10 +3,14 @@ use std::{
     fmt::{Debug, Display},
 };
 
+#[cfg(feature = "serde")]
+use serde::{Deserialize, Serialize};
+
 use crate::{Diagnostic, LabeledSpan, Severity};
 
 /// Diagnostic that can be created at runtime.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct MietteDiagnostic {
     /// Displayed diagnostic message
     pub message: String,
@@ -15,17 +19,22 @@ pub struct MietteDiagnostic {
     /// in the toplevel crate's documentation for easy searching.
     /// Rust path format (`foo::bar::baz`) is recommended, but more classic
     /// codes like `E0123` will work just fine
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub code: Option<String>,
     /// [`Diagnostic`] severity. Intended to be used by
     /// [`ReportHandler`](crate::ReportHandler)s to change the way different
     /// [`Diagnostic`]s are displayed. Defaults to [`Severity::Error`]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub severity: Option<Severity>,
     /// Additional help text related to this Diagnostic
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub help: Option<String>,
     /// URL to visit for a more detailed explanation/help about this
     /// [`Diagnostic`].
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub url: Option<String>,
     /// Labels to apply to this `Diagnostic`'s [`Diagnostic::source_code`]
+    #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     pub labels: Option<Vec<LabeledSpan>>,
 }
 
@@ -247,4 +256,110 @@ impl MietteDiagnostic {
         self.labels = Some(all_labels);
         self
     }
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_serialize_miette_diagnostic() {
+    use serde_json::json;
+
+    use crate::diagnostic;
+
+    let diag = diagnostic!("message");
+    let json = json!({ "message": "message" });
+    assert_eq!(json!(diag), json);
+
+    let diag = diagnostic!(
+        code = "code",
+        help = "help",
+        url = "url",
+        labels = [
+            LabeledSpan::at_offset(0, "label1"),
+            LabeledSpan::at(1..3, "label2")
+        ],
+        severity = Severity::Warning,
+        "message"
+    );
+    let json = json!({
+        "message": "message",
+        "code": "code",
+        "help": "help",
+        "url": "url",
+        "severity": "Warning",
+        "labels": [
+            {
+                "span": {
+                    "offset": 0,
+                    "length": 0
+                },
+                "label": "label1"
+            },
+            {
+                "span": {
+                    "offset": 1,
+                    "length": 2
+                },
+                "label": "label2"
+            }
+        ]
+    });
+    assert_eq!(json!(diag), json);
+}
+
+#[cfg(feature = "serde")]
+#[test]
+fn test_deserialize_miette_diagnostic() {
+    use serde_json::json;
+
+    use crate::diagnostic;
+
+    let json = json!({ "message": "message" });
+    let diag = diagnostic!("message");
+    assert_eq!(diag, serde_json::from_value(json).unwrap());
+
+    let json = json!({
+        "message": "message",
+        "help": null,
+        "code": null,
+        "severity": null,
+        "url": null,
+        "labels": null
+    });
+    assert_eq!(diag, serde_json::from_value(json).unwrap());
+
+    let diag = diagnostic!(
+        code = "code",
+        help = "help",
+        url = "url",
+        labels = [
+            LabeledSpan::at_offset(0, "label1"),
+            LabeledSpan::at(1..3, "label2")
+        ],
+        severity = Severity::Warning,
+        "message"
+    );
+    let json = json!({
+        "message": "message",
+        "code": "code",
+        "help": "help",
+        "url": "url",
+        "severity": "Warning",
+        "labels": [
+            {
+                "span": {
+                    "offset": 0,
+                    "length": 0
+                },
+                "label": "label1"
+            },
+            {
+                "span": {
+                    "offset": 1,
+                    "length": 2
+                },
+                "label": "label2"
+            }
+        ]
+    });
+    assert_eq!(diag, serde_json::from_value(json).unwrap());
 }
