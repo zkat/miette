@@ -495,7 +495,7 @@ impl SourceSpan {
     pub fn new(start: SourceOffset, length: usize) -> Self {
         Self {
             offset: start,
-            length: length,
+            length,
         }
     }
 
