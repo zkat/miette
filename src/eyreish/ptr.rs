@@ -43,7 +43,7 @@ where
         Box::from_raw(self.ptr.as_ptr())
     }
 
-    pub(crate) fn by_ref<'a>(&self) -> Ref<'a, T> {
+    pub(crate) const fn by_ref<'a>(&self) -> Ref<'a, T> {
         Ref {
             ptr: self.ptr,
             lifetime: PhantomData,
@@ -91,7 +91,7 @@ where
         }
     }
 
-    pub(crate) fn from_raw(ptr: NonNull<T>) -> Self {
+    pub(crate) const fn from_raw(ptr: NonNull<T>) -> Self {
         Ref {
             ptr,
             lifetime: PhantomData,
@@ -112,7 +112,7 @@ where
         }
     }
 
-    pub(crate) fn as_ptr(self) -> *const T {
+    pub(crate) const fn as_ptr(self) -> *const T {
         self.ptr.as_ptr() as *const T
     }
 
@@ -154,7 +154,7 @@ where
         }
     }
 
-    pub(crate) fn by_ref(self) -> Ref<'a, T> {
+    pub(crate) const fn by_ref(self) -> Ref<'a, T> {
         Ref {
             ptr: self.ptr,
             lifetime: PhantomData,
