@@ -261,6 +261,7 @@ impl GraphicalReportHandler {
                         // Don't print footer for inner errors
                         let mut inner_renderer = self.clone();
                         inner_renderer.footer = None;
+                        inner_renderer.with_cause_chain = false;
                         inner_renderer.render_report(&mut inner, diag)?;
 
                         writeln!(f, "{}", textwrap::fill(&inner, opts))?;

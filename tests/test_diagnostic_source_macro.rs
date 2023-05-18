@@ -135,3 +135,59 @@ fn test_diagnostic_source_is_output() {
 
     assert_eq!(expected, out);
 }
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("A nested error happened")]
+struct NestedError {
+    #[source_code]
+    code: String,
+    #[label("here")]
+    label: (usize, usize),
+    #[diagnostic_source]
+    the_other_err: Box<dyn Diagnostic>,
+}
+
+#[test]
+fn test_nested_diagnostic_source_is_output() {
+    let inner_error = TestStructError {
+        asdf_inner_foo: SourceError {
+            code: String::from("This is another error"),
+            help: String::from("You should fix this"),
+            label: (3, 4),
+        },
+    };
+    let diag = NestedError {
+        code: String::from("right here"),
+        label: (6, 4),
+        the_other_err: Box::new(inner_error),
+    };
+    let mut out = String::new();
+    miette::GraphicalReportHandler::new_themed(miette::GraphicalTheme::unicode_nocolor())
+        .with_width(80)
+        .with_footer("Yooo, a footer".to_string())
+        .render_report(&mut out, &diag)
+        .unwrap();
+    println!("{}", out);
+
+    let expected = r#"  × A nested error happened
+  ├─▶   × TestError
+  │   
+  ╰─▶   × A complex error happened
+         ╭────
+       1 │ This is another error
+         ·    ──┬─
+         ·      ╰── here
+         ╰────
+        help: You should fix this
+      
+   ╭────
+ 1 │ right here
+   ·       ──┬─
+   ·         ╰── here
+   ╰────
+
+  Yooo, a footer
+"#;
+
+    assert_eq!(expected, out);
+}
