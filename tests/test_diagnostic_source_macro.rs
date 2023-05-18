@@ -19,7 +19,7 @@ struct AnErr;
 #[error("TestError")]
 struct TestStructError {
     #[diagnostic_source]
-    asdf_inner_foo: AnErr,
+    asdf_inner_foo: SourceError,
 }
 
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
@@ -48,7 +48,11 @@ struct TestArcedError(#[diagnostic_source] std::sync::Arc<dyn Diagnostic>);
 #[test]
 fn test_diagnostic_source() {
     let error = TestStructError {
-        asdf_inner_foo: AnErr,
+        asdf_inner_foo: SourceError {
+            code: String::new(),
+            help: String::new(),
+            label: (0, 0),
+        },
     };
     assert!(error.diagnostic_source().is_some());
 
@@ -99,5 +103,35 @@ fn test_diagnostic_source_pass_extra_info() {
   this is a footer
 "#
     .to_string();
+    assert_eq!(expected, out);
+}
+
+#[test]
+fn test_diagnostic_source_is_output() {
+    let diag = TestStructError {
+        asdf_inner_foo: SourceError {
+            code: String::from("right here"),
+            help: String::from("That's where the error is!"),
+            label: (6, 4),
+        },
+    };
+    let mut out = String::new();
+    miette::GraphicalReportHandler::new_themed(miette::GraphicalTheme::unicode_nocolor())
+        .with_width(80)
+        .render_report(&mut out, &diag)
+        .unwrap();
+    println!("{}", out);
+
+    let expected = r#"  × TestError
+  ╰─▶   × A complex error happened
+         ╭────
+       1 │ right here
+         ·       ──┬─
+         ·         ╰── here
+         ╰────
+        help: That's where the error is!
+      
+"#;
+
     assert_eq!(expected, out);
 }
