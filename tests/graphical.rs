@@ -85,8 +85,7 @@ fn single_line_highlight_span_full_line() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
+    let expected = r#"  × oops!
    ╭─[issue:1:1]
  1 │ source
  2 │ text
@@ -1201,8 +1200,7 @@ fn zero_length_eol_span() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
+    let expected = r#"  × oops!
    ╭─[issue:1:1]
  1 │ this is the first line
  2 │ this is the second line

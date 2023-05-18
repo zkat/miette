@@ -3,7 +3,7 @@ use std::fmt::{self, Write};
 use owo_colors::{OwoColorize, Style};
 use unicode_width::UnicodeWidthChar;
 
-use crate::diagnostic_chain::DiagnosticChain;
+use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
@@ -151,7 +151,6 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
-        writeln!(f)?;
         self.render_causes(f, diagnostic)?;
         let src = diagnostic.source_code();
         self.render_snippets(f, diagnostic, src)?;
@@ -190,6 +189,7 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -197,6 +197,7 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
+            writeln!(f)?;
         }
         Ok(())
     }
@@ -253,7 +254,22 @@ impl GraphicalReportHandler {
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
                     .subsequent_indent(&rest_indent);
-                writeln!(f, "{}", textwrap::fill(&error.to_string(), opts))?;
+                match error {
+                    ErrorKind::Diagnostic(diag) => {
+                        let mut inner = String::new();
+
+                        // Don't print footer for inner errors
+                        let mut inner_renderer = self.clone();
+                        inner_renderer.footer = None;
+                        inner_renderer.with_cause_chain = false;
+                        inner_renderer.render_report(&mut inner, diag)?;
+
+                        writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+                    }
+                    ErrorKind::StdError(err) => {
+                        writeln!(f, "{}", textwrap::fill(&err.to_string(), opts))?;
+                    }
+                }
             }
         }
 
@@ -287,7 +303,6 @@ impl GraphicalReportHandler {
                     Some(Severity::Advice) => write!(f, "Advice: ")?,
                 };
                 self.render_header(f, rel)?;
-                writeln!(f)?;
                 self.render_causes(f, rel)?;
                 let src = rel.source_code().or(parent_src);
                 self.render_snippets(f, rel, src)?;
