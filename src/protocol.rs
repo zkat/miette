@@ -69,14 +69,26 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-impl std::error::Error for Box<dyn Diagnostic> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        (**self).source()
-    }
+macro_rules! box_impls {
+    ($($box_type:ty),*) => {
+        $(
+            impl std::error::Error for $box_type {
+                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                    (**self).source()
+                }
 
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+                fn cause(&self) -> Option<&dyn std::error::Error> {
+                    self.source()
+                }
+            }
+        )*
     }
+}
+
+box_impls! {
+    Box<dyn Diagnostic>,
+    Box<dyn Diagnostic + Send>,
+    Box<dyn Diagnostic + Send + Sync>
 }
 
 impl<T: Diagnostic + Send + Sync + 'static> From<T>
