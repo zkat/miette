@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use miette::{miette, Diagnostic, Report};
+use miette::{miette, Diagnostic};
 use thiserror::Error;
 
 #[test]
