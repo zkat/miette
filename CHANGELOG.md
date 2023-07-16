@@ -1,5 +1,12 @@
 # `miette` Release Changelog
 
+<a name="5.10.0"></a>
+## 5.10.0 (2023-07-16)
+
+### Features
+
+* **protocol:** add StdError impl for Box<dyn Diagnostic + Send + Sync> (#273) ([2e3e5c9d](https://github.com/zkat/miette/commit/2e3e5c9d15e234495369e9b47d032644dd5664ad))
+
 <a name="5.9.0"></a>
 ## 5.9.0 (2023-05-18)
 
