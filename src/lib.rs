@@ -186,7 +186,7 @@
 //!
 //! ```rust
 //! // lib/error.rs
-//! use miette::Diagnostic;
+//! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
 //!
 //! #[derive(Error, Diagnostic, Debug)]
@@ -198,6 +198,18 @@
 //!     #[error("Oops it blew up")]
 //!     #[diagnostic(code(my_lib::bad_code))]
 //!     BadThingHappened,
+//!
+//!     #[error(transparent)]
+//!     // Use `#[diagnostic(transparent)]` to wrap another [`Diagnostic`]. You won't see labels otherwise
+//!     #[diagnostic(transparent)]
+//!     AnotherError(#[from] AnotherError),
+//! }
+//!
+//! #[derive(Error, Diagnostic, Debug)]
+//! #[error("another error")]
+//! pub struct AnotherError {
+//!    #[label("here")]
+//!    pub at: SourceSpan
 //! }
 //! ```
 //!
