@@ -96,7 +96,7 @@ You can derive a `Diagnostic` from any `std::error::Error` type.
 
 `thiserror` is a great way to define them, and plays nicely with `miette`!
 */
-use miette::{Diagnostic, NamedSource, Result, SourceSpan};
+use miette::{Diagnostic, SourceSpan};
 use thiserror::Error;
 
 #[derive(Error, Debug, Diagnostic)]
@@ -123,10 +123,12 @@ Use this `Result` type (or its expanded version) as the return type
 throughout your app (but NOT your libraries! Those should always return
 concrete types!).
 */
+use miette::{NamedSource, Result};
 fn this_fails() -> Result<()> {
     // You can use plain strings as a `Source`, or anything that implements
     // the one-method `Source` trait.
     let src = "source\n  text\n    here".to_string();
+    let len = src.len();
 
     Err(MyBad {
         src: NamedSource::new("bad_file.rs", src),
