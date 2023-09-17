@@ -1,5 +1,5 @@
-use is_terminal::IsTerminal;
 use owo_colors::Style;
+use std::io::IsTerminal;
 
 /**
 Theme used by [`GraphicalReportHandler`](crate::GraphicalReportHandler) to
