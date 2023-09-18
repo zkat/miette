@@ -232,7 +232,7 @@ whole thing--meaning you should be able to support `SourceCode`s which are
 gigabytes or larger in size.
 */
 pub trait SourceCode: Send + Sync {
-    /// Read the bytes for a specific span from this SourceCode, keeping a
+    /// Read the bytes for a specific span from this `SourceCode`, keeping a
     /// certain number of lines before and after the span as context.
     fn read_span<'a>(
         &'a self,
