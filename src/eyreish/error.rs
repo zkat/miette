@@ -30,9 +30,9 @@ impl Report {
 
     /// Create a new error object from a printable error message.
     ///
-    /// If the argument implements std::error::Error, prefer `Report::new`
+    /// If the argument implements [`std::error::Error`], prefer `Report::new`
     /// instead which preserves the underlying error's cause chain and
-    /// backtrace. If the argument may or may not implement std::error::Error
+    /// backtrace. If the argument may or may not implement [`std::error::Error`]
     /// now or in the future, use `miette!(err)` which handles either way
     /// correctly.
     ///
@@ -206,7 +206,7 @@ impl Report {
     /// Create a new error from an error message to wrap the existing error.
     ///
     /// For attaching a higher level error message to a `Result` as it is
-    /// propagated, the [crate::WrapErr] extension trait may be more
+    /// propagated, the [`WrapErr`](crate::WrapErr) extension trait may be more
     /// convenient than this function.
     ///
     /// The primary reason to use `error.wrap_err(...)` instead of
@@ -233,7 +233,7 @@ impl Report {
         unsafe { Report::construct(error, vtable, handler) }
     }
 
-    /// Compatibility re-export of wrap_err for interop with `anyhow`
+    /// Compatibility re-export of `wrap_err` for interop with `anyhow`
     pub fn context<D>(self, msg: D) -> Self
     where
         D: Display + Send + Sync + 'static,
