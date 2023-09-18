@@ -382,10 +382,10 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_context<'a>(
+    fn render_context(
         &self,
         f: &mut impl fmt::Write,
-        source: &'a dyn SourceCode,
+        source: &dyn SourceCode,
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
