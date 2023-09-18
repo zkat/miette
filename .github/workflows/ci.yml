@@ -10,14 +10,12 @@ jobs:
     name: Check fmt & build docs
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: stable
           components: rustfmt
-          override: true
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: docs
@@ -32,14 +30,12 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: ${{ matrix.rust }}
           components: clippy
-          override: true
       - name: Clippy
         run: cargo clippy --all -- -D warnings
       - name: Run tests
@@ -54,14 +50,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: nightly
           components: miri,rust-src
-          override: true
       - name: Run tests with miri
         env:
           MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-strict-provenance
@@ -75,13 +69,11 @@ jobs:
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
-          profile: minimal
           toolchain: nightly
-          override: true
       - name: Run minimal version build
         run: cargo build -Z minimal-versions --all-features
 
