@@ -36,6 +36,9 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy
+      - name: Force older version of is-terminal for MSRV builds
+        if: matrix.rust == '1.56.0'
+        run:  cargo update -p is-terminal --precise 0.4.7
       - name: Clippy
         run: cargo clippy --all -- -D warnings
       - name: Run tests
