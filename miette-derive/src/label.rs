@@ -20,6 +20,7 @@ struct Label {
     label: Option<Display>,
     ty: syn::Type,
     span: syn::Member,
+    primary: bool,
 }
 
 struct LabelAttr {
@@ -90,7 +91,16 @@ impl Labels {
         let mut labels = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
-                if attr.path().is_ident("label") {
+                let is_label = attr.path().is_ident("label");
+                let is_primary_label = attr.path().is_ident("primary_label");
+                if is_label || is_primary_label {
+                    if is_primary_label && labels.iter().any(|l: &Label| l.primary) {
+                        return Err(syn::Error::new(
+                            field.span(),
+                            "Cannot have more than one primary label.",
+                        ));
+                    }
+
                     let span = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
                     } else {
@@ -106,6 +116,7 @@ impl Labels {
                         label,
                         span,
                         ty: field.ty.clone(),
+                        primary: is_primary_label,
                     });
                 }
             }
@@ -120,13 +131,23 @@ impl Labels {
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
         let (display_pat, display_members) = display_pat_members(fields);
         let labels = self.0.iter().map(|highlight| {
-            let Label { span, label, ty } = highlight;
+            let Label {
+                span,
+                label,
+                ty,
+                primary,
+            } = highlight;
             let var = quote! { __miette_internal_var };
+            let ctor = if *primary {
+                quote! { miette::LabeledSpan::new_primary_with_span }
+            } else {
+                quote! { miette::LabeledSpan::new_with_span }
+            };
             if let Some(display) = label {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                 quote! {
                     miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
-                    .map(|#var| miette::LabeledSpan::new_with_span(
+                    .map(|#var| #ctor(
                         std::option::Option::Some(format!(#fmt #args)),
                         #var.clone(),
                     ))
@@ -134,7 +155,7 @@ impl Labels {
             } else {
                 quote! {
                     miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
-                    .map(|#var| miette::LabeledSpan::new_with_span(
+                    .map(|#var| #ctor(
                         std::option::Option::None,
                         #var.clone(),
                     ))
@@ -161,7 +182,7 @@ impl Labels {
                 let (display_pat, display_members) = display_pat_members(fields);
                 labels.as_ref().and_then(|labels| {
                     let variant_labels = labels.0.iter().map(|label| {
-                        let Label { span, label, ty } = label;
+                        let Label { span, label, ty, primary } = label;
                         let field = match &span {
                             syn::Member::Named(ident) => ident.clone(),
                             syn::Member::Unnamed(syn::Index { index, .. }) => {
@@ -169,11 +190,16 @@ impl Labels {
                             }
                         };
                         let var = quote! { __miette_internal_var };
+                        let ctor = if *primary {
+                            quote! { miette::LabeledSpan::new_primary_with_span }
+                        } else {
+                            quote! { miette::LabeledSpan::new_with_span }
+                        };
                         if let Some(display) = label {
                             let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                             quote! {
                                 miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
-                                .map(|#var| miette::LabeledSpan::new_with_span(
+                                .map(|#var| #ctor(
                                     std::option::Option::Some(format!(#fmt #args)),
                                     #var.clone(),
                                 ))
@@ -181,7 +207,7 @@ impl Labels {
                         } else {
                             quote! {
                                 miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
-                                .map(|#var| miette::LabeledSpan::new_with_span(
+                                .map(|#var| #ctor(
                                     std::option::Option::None,
                                     #var.clone(),
                                 ))

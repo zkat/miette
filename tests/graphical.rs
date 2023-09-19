@@ -1212,3 +1212,33 @@ fn zero_length_eol_span() {
 
     assert_eq!(expected, out);
 }
+
+#[test]
+fn primary_label() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[primary_label("The root cause")]
+        bad_bit: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
+        bad_bit: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"  × oops!
+   ╭─[issue:2:2]
+ 1 │ this is the first line
+ 2 │ this is the second line
+   ·  ──┬─
+   ·    ╰── The root cause
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
