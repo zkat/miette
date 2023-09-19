@@ -377,7 +377,7 @@ fn test_serialize_labeled_span() {
         json!({
             "label": "label",
             "span": { "offset": 0, "length": 0, },
-            "primary": false, 
+            "primary": false,
         })
     )
 }
@@ -397,7 +397,7 @@ fn test_deserialize_labeled_span() {
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "span": { "offset": 0, "length": 0, },
-        "primary": false 
+        "primary": false
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));

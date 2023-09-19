@@ -86,7 +86,7 @@ fn single_line_highlight_span_full_line() {
     println!("Error: {}", out);
 
     let expected = r#"  × oops!
-   ╭─[issue:1:1]
+   ╭─[issue:2:1]
  1 │ source
  2 │ text
    · ──┬─
@@ -120,7 +120,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:7]
  1 │ source
  2 │   👼🏼text
    ·     ───┬──
@@ -159,7 +159,7 @@ fn single_line_with_two_tabs() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │         text
    ·         ──┬─
@@ -198,7 +198,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:8]
  1 │ source
  2 │ text =  text
    ·         ──┬─
@@ -235,7 +235,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -270,7 +270,7 @@ fn external_source() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -343,7 +343,7 @@ fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:1:7]
  1 │ source
    ·       ▲
    ·       ╰── this bit here
@@ -379,7 +379,7 @@ fn single_line_highlight_include_end_of_line() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬──
@@ -416,7 +416,7 @@ fn single_line_highlight_include_end_of_line_crlf() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬──
@@ -453,7 +453,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ▲
@@ -490,7 +490,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ────
@@ -526,7 +526,7 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:1]
  1 │ source
  2 │ text
    · ──┬─
@@ -569,7 +569,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text text text text text
    ·   ──┬─ ──┬─      ──┬─
@@ -616,7 +616,7 @@ fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text text text    text text
    ·   ──┬─ ──┬─         ──┬─
@@ -655,7 +655,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │     source
  2 │ ╭─▶   text
  3 │ ├─▶     here
@@ -969,7 +969,7 @@ fn related() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1031,7 +1031,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1136,7 +1136,7 @@ fn related_severity() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1201,7 +1201,7 @@ fn zero_length_eol_span() {
     println!("Error: {}", out);
 
     let expected = r#"  × oops!
-   ╭─[issue:1:1]
+   ╭─[issue:2:1]
  1 │ this is the first line
  2 │ this is the second line
    · ▲
@@ -1220,22 +1220,27 @@ fn primary_label() {
     struct MyBad {
         #[source_code]
         src: NamedSource,
-        #[primary_label("The root cause")]
-        bad_bit: SourceSpan,
+        #[label]
+        first_label: SourceSpan,
+        #[label(primary, "nope")]
+        second_label: SourceSpan,
     }
     let err = MyBad {
         src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
-        bad_bit: (24, 4).into(),
+        first_label: (2, 4).into(),
+        second_label: (24, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
+    // line 2 should be the primary, not line 1
     let expected = r#"  × oops!
    ╭─[issue:2:2]
  1 │ this is the first line
+   ·   ────
  2 │ this is the second line
    ·  ──┬─
-   ·    ╰── The root cause
+   ·    ╰── nope
    ╰────
 "#
     .to_string();

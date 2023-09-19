@@ -252,7 +252,7 @@ impl MietteDiagnostic {
     /// ```
     pub fn and_labels(mut self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
         let mut all_labels = self.labels.unwrap_or_default();
-        all_labels.extend(labels.into_iter());
+        all_labels.extend(labels);
         self.labels = Some(all_labels);
         self
     }

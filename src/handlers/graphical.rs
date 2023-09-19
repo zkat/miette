@@ -391,7 +391,10 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         let (contents, lines) = self.get_lines(source, context.inner())?;
 
-        let primary_label = labels.iter().find(|label| label.primary());
+        let primary_label = labels
+            .iter()
+            .find(|label| label.primary())
+            .or_else(|| labels.first());
 
         // sorting is your friend
         let labels = labels
