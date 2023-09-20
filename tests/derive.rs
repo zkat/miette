@@ -189,7 +189,7 @@ fn fmt_help() {
 
     assert_eq!(
         "1 x hello x \"2\"".to_string(),
-        FooStruct("hello".into()).help().unwrap().to_string()
+        FooStruct("hello").help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
@@ -201,12 +201,7 @@ fn fmt_help() {
 
     assert_eq!(
         "1 x hello x \"2\"".to_string(),
-        BarStruct {
-            my_field: "hello".into()
-        }
-        .help()
-        .unwrap()
-        .to_string()
+        BarStruct { my_field: "hello" }.help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
@@ -224,7 +219,7 @@ fn fmt_help() {
 
     assert_eq!(
         "1 x bar x \"2\"".to_string(),
-        FooEnum::X("bar".into()).help().unwrap().to_string()
+        FooEnum::X("bar").help().unwrap().to_string()
     );
 
     assert_eq!(
@@ -250,12 +245,7 @@ fn help_field() {
 
     assert_eq!(
         "x".to_string(),
-        Foo {
-            do_this: Some("x".into())
-        }
-        .help()
-        .unwrap()
-        .to_string()
+        Foo { do_this: Some("x") }.help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
@@ -271,16 +261,11 @@ fn help_field() {
 
     assert_eq!(
         "x".to_string(),
-        Bar::A(Some("x".into())).help().unwrap().to_string()
+        Bar::A(Some("x")).help().unwrap().to_string()
     );
     assert_eq!(
         "x".to_string(),
-        Bar::B {
-            do_this: Some("x".into())
-        }
-        .help()
-        .unwrap()
-        .to_string()
+        Bar::B { do_this: Some("x") }.help().unwrap().to_string()
     );
 
     #[derive(Debug, Diagnostic, Error)]
@@ -288,20 +273,14 @@ fn help_field() {
     #[diagnostic()]
     struct Baz<'a>(#[help] Option<&'a str>);
 
-    assert_eq!(
-        "x".to_string(),
-        Baz(Some("x".into())).help().unwrap().to_string()
-    );
+    assert_eq!("x".to_string(), Baz(Some("x")).help().unwrap().to_string());
 
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic()]
     struct Quux<'a>(#[help] &'a str);
 
-    assert_eq!(
-        "x".to_string(),
-        Quux("x".into()).help().unwrap().to_string()
-    );
+    assert_eq!("x".to_string(), Quux("x").help().unwrap().to_string());
 }
 
 #[test]

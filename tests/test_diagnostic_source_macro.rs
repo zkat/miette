@@ -79,7 +79,7 @@ fn test_diagnostic_source() {
 fn test_diagnostic_source_pass_extra_info() {
     let diag = TestBoxedError(Box::new(SourceError {
         code: String::from("Hello\nWorld!"),
-        help: format!("Have you tried turning it on and off again?"),
+        help: String::from("Have you tried turning it on and off again?"),
         label: (1, 4),
     }));
     let mut out = String::new();

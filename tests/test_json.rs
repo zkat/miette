@@ -52,7 +52,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -98,7 +97,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -144,7 +142,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -190,7 +187,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -235,7 +231,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -281,7 +276,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -347,7 +341,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -393,7 +386,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -456,7 +448,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -532,7 +523,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -588,7 +578,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -644,7 +633,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -700,7 +688,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -728,7 +715,6 @@ mod json_report_handler {
             "related": []
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -822,7 +808,6 @@ mod json_report_handler {
             }]
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
@@ -920,7 +905,6 @@ mod json_report_handler {
             }]
         }"#
         .lines()
-        .into_iter()
         .map(|s| s.trim_matches(|c| c == ' ' || c == '\n'))
         .collect();
         assert_eq!(expected, out);
