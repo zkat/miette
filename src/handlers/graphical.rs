@@ -391,6 +391,11 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         let (contents, lines) = self.get_lines(source, context.inner())?;
 
+        let primary_label = labels
+            .iter()
+            .find(|label| label.primary())
+            .or_else(|| labels.first());
+
         // sorting is your friend
         let labels = labels
             .iter()
@@ -431,19 +436,33 @@ impl GraphicalReportHandler {
             self.theme.characters.hbar,
         )?;
 
-        if let Some(source_name) = contents.name() {
+        // If there is a primary label, then use its span
+        // as the reference point for line/column information.
+        let primary_contents = match primary_label {
+            Some(label) => source
+                .read_span(label.inner(), 0, 0)
+                .map_err(|_| fmt::Error)?,
+            None => contents,
+        };
+
+        if let Some(source_name) = primary_contents.name() {
             let source_name = source_name.style(self.theme.styles.link);
             writeln!(
                 f,
                 "[{}:{}:{}]",
                 source_name,
-                contents.line() + 1,
-                contents.column() + 1
+                primary_contents.line() + 1,
+                primary_contents.column() + 1
             )?;
         } else if lines.len() <= 1 {
             writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
         } else {
-            writeln!(f, "[{}:{}]", contents.line() + 1, contents.column() + 1)?;
+            writeln!(
+                f,
+                "[{}:{}]",
+                primary_contents.line() + 1,
+                primary_contents.column() + 1
+            )?;
         }
 
         // Now it's time for the fun part--actually rendering everything!

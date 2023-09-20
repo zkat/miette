@@ -91,7 +91,7 @@ fn test_diagnostic_source_pass_extra_info() {
     println!("Error: {}", out);
     let expected = r#"  × TestError
   ╰─▶   × A complex error happened
-         ╭─[1:1]
+         ╭─[1:2]
        1 │ Hello
          ·  ──┬─
          ·    ╰── here

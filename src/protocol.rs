@@ -249,6 +249,7 @@ pub struct LabeledSpan {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     label: Option<String>,
     span: SourceSpan,
+    primary: bool,
 }
 
 impl LabeledSpan {
@@ -257,6 +258,7 @@ impl LabeledSpan {
         Self {
             label,
             span: SourceSpan::new(SourceOffset(offset), SourceOffset(len)),
+            primary: false,
         }
     }
 
@@ -265,6 +267,16 @@ impl LabeledSpan {
         Self {
             label,
             span: span.into(),
+            primary: false,
+        }
+    }
+
+    /// Makes a new labeled primary span using an existing span.
+    pub fn new_primary_with_span(label: Option<String>, span: impl Into<SourceSpan>) -> Self {
+        Self {
+            label,
+            span: span.into(),
+            primary: true,
         }
     }
 
@@ -340,6 +352,11 @@ impl LabeledSpan {
     pub const fn is_empty(&self) -> bool {
         self.span.is_empty()
     }
+
+    /// True if this `LabeledSpan` is a primary span.
+    pub const fn primary(&self) -> bool {
+        self.primary
+    }
 }
 
 #[cfg(feature = "serde")]
@@ -350,7 +367,8 @@ fn test_serialize_labeled_span() {
     assert_eq!(
         json!(LabeledSpan::new(None, 0, 0)),
         json!({
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
     );
 
@@ -358,7 +376,8 @@ fn test_serialize_labeled_span() {
         json!(LabeledSpan::new(Some("label".to_string()), 0, 0)),
         json!({
             "label": "label",
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
     )
 }
@@ -370,20 +389,23 @@ fn test_deserialize_labeled_span() {
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": null,
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false,
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": "label",
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0))
