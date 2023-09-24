@@ -96,7 +96,7 @@ impl JSONReportHandler {
                 }
                 write!(f, r#""{}""#, escape(&error.to_string()))?;
             }
-            write!(f, "],")?
+            write!(f, "],")?;
         } else {
             write!(f, r#""causes": [],"#)?;
         }

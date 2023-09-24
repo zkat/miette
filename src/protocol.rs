@@ -379,7 +379,7 @@ fn test_serialize_labeled_span() {
             "span": { "offset": 0, "length": 0, },
             "primary": false,
         })
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -408,7 +408,7 @@ fn test_deserialize_labeled_span() {
         "primary": false
     }))
     .unwrap();
-    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0))
+    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0));
 }
 
 /**
@@ -597,7 +597,7 @@ fn test_serialize_source_span() {
     assert_eq!(
         json!(SourceSpan::from(0)),
         json!({ "offset": 0, "length": 0})
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -606,7 +606,7 @@ fn test_deserialize_source_span() {
     use serde_json::json;
 
     let span: SourceSpan = serde_json::from_value(json!({ "offset": 0, "length": 0})).unwrap();
-    assert_eq!(span, SourceSpan::from(0))
+    assert_eq!(span, SourceSpan::from(0));
 }
 
 /**
@@ -708,12 +708,12 @@ fn test_source_offset_from_location() {
 fn test_serialize_source_offset() {
     use serde_json::json;
 
-    assert_eq!(json!(SourceOffset::from(0)), 0)
+    assert_eq!(json!(SourceOffset::from(0)), 0);
 }
 
 #[cfg(feature = "serde")]
 #[test]
 fn test_deserialize_source_offset() {
     let offset: SourceOffset = serde_json::from_str("0").unwrap();
-    assert_eq!(offset, SourceOffset::from(0))
+    assert_eq!(offset, SourceOffset::from(0));
 }
