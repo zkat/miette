@@ -678,10 +678,10 @@ impl GraphicalReportHandler {
         for (c, width) in text.chars().zip(self.line_visual_char_width(text)) {
             if c == '\t' {
                 for _ in 0..width {
-                    f.write_char(' ')?
+                    f.write_char(' ')?;
                 }
             } else {
-                f.write_char(c)?
+                f.write_char(c)?;
             }
         }
         f.write_char('\n')?;

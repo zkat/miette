@@ -568,7 +568,7 @@ fn test_unit_struct_display() {
     #[error("unit only")]
     #[diagnostic(code(foo::bar::overridden), help("hello from unit help"))]
     struct UnitOnly;
-    assert_eq!(UnitOnly.help().unwrap().to_string(), "hello from unit help")
+    assert_eq!(UnitOnly.help().unwrap().to_string(), "hello from unit help");
 }
 
 #[test]
@@ -582,5 +582,5 @@ fn test_unit_enum_display() {
     assert_eq!(
         Enum::UnitVariant.help().unwrap().to_string(),
         "hello from unit help"
-    )
+    );
 }
