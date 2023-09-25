@@ -75,6 +75,7 @@ fn test_diagnostic_source() {
     assert!(error.diagnostic_source().is_some());
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_diagnostic_source_pass_extra_info() {
     let diag = TestBoxedError(Box::new(SourceError {
@@ -106,6 +107,7 @@ fn test_diagnostic_source_pass_extra_info() {
     assert_eq!(expected, out);
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_diagnostic_source_is_output() {
     let diag = TestStructError {
@@ -147,6 +149,7 @@ struct NestedError {
     the_other_err: Box<dyn Diagnostic>,
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_nested_diagnostic_source_is_output() {
     let inner_error = TestStructError {
