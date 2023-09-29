@@ -615,7 +615,7 @@ then you may want to use [`miette!`], [`diagnostic!`] macros or
 
 let source = "2 + 2 * 2 = 8".to_string();
 let report = miette!(
-  labels = vec[
+  labels = vec![
       LabeledSpan::at(12..13, "this should be 6"),
   ],
   help = "'*' has greater precedence than '+'",
