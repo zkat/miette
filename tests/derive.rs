@@ -584,3 +584,45 @@ fn test_unit_enum_display() {
         "hello from unit help"
     );
 }
+
+#[test]
+fn test_optional_source_code() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("struct with optional source")]
+    struct Struct {
+        #[source_code]
+        src: Option<String>,
+    }
+    assert!(Struct { src: None }.source_code().is_none());
+    assert!(Struct {
+        src: Some("".to_string())
+    }
+    .source_code()
+    .is_some());
+
+    #[derive(Debug, Diagnostic, Error)]
+    enum Enum {
+        #[error("variant1 with optional source")]
+        Variant1 {
+            #[source_code]
+            src: Option<String>,
+        },
+        #[error("variant2 with optional source")]
+        Variant2 {
+            #[source_code]
+            src: Option<String>,
+        },
+    }
+    assert!(Enum::Variant1 { src: None }.source_code().is_none());
+    assert!(Enum::Variant1 {
+        src: Some("".to_string())
+    }
+    .source_code()
+    .is_some());
+    assert!(Enum::Variant2 { src: None }.source_code().is_none());
+    assert!(Enum::Variant2 {
+        src: Some("".to_string())
+    }
+    .source_code()
+    .is_some());
+}
