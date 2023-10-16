@@ -39,9 +39,13 @@ impl Diagnostic for MietteError {
 
     fn url<'a>(&'a self) -> Option<Box<dyn fmt::Display + 'a>> {
         let crate_version = env!("CARGO_PKG_VERSION");
+        let variant = match self {
+            MietteError::IoError(_) => "#variant.IoError",
+            MietteError::OutOfBounds => "#variant.OutOfBounds",
+        };
         Some(Box::new(format!(
-            "https://docs.rs/miette/{}/miette/enum.MietteError.html",
-            crate_version,
+            "https://docs.rs/miette/{}/miette/enum.MietteError.html{}",
+            crate_version, variant,
         )))
     }
 }
