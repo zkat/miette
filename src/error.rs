@@ -40,7 +40,8 @@ impl Diagnostic for MietteError {
     fn url<'a>(&'a self) -> Option<Box<dyn fmt::Display + 'a>> {
         let crate_version = env!("CARGO_PKG_VERSION");
         Some(Box::new(format!(
-            "https://docs.rs/miette/{crate_version}/miette/enum.MietteError.html"
+            "https://docs.rs/miette/{}/miette/enum.MietteError.html",
+            crate_version,
         )))
     }
 }
