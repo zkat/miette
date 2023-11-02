@@ -651,11 +651,22 @@ impl GraphicalReportHandler {
     }
 
     /// Returns the visual column position of a byte offset on a specific line.
-    fn visual_offset(&self, line: &Line, offset: usize) -> usize {
+    ///
+    /// If the offset occurs in the middle of a character, the returned column
+    /// corresponds to that character's first column in `start` is true, or its
+    /// last column if `start` is false.
+    fn visual_offset(&self, line: &Line, offset: usize, start: bool) -> usize {
         let line_range = line.offset..=(line.offset + line.length);
         assert!(line_range.contains(&offset));
 
-        let text_index = offset - line.offset;
+        let mut text_index = offset - line.offset;
+        while text_index <= line.text.len() && !line.text.is_char_boundary(text_index) {
+            if start {
+                text_index -= 1;
+            } else {
+                text_index += 1;
+            }
+        }
         let text = &line.text[..text_index.min(line.text.len())];
         let text_width = self.line_visual_char_width(text).sum();
         if text_index > line.text.len() {
@@ -706,8 +717,8 @@ impl GraphicalReportHandler {
             .map(|hl| {
                 let byte_start = hl.offset();
                 let byte_end = hl.offset() + hl.len();
-                let start = self.visual_offset(line, byte_start).max(highest);
-                let end = self.visual_offset(line, byte_end).max(start + 1);
+                let start = self.visual_offset(line, byte_start, true).max(highest);
+                let end = self.visual_offset(line, byte_end, false).max(start + 1);
 
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
