@@ -26,6 +26,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        features: [fancy, syntect-highlighter]
         rust: [1.56.0, stable]
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
@@ -43,10 +44,10 @@ jobs:
         run: cargo clippy --all -- -D warnings
       - name: Run tests
         if: matrix.rust == 'stable'
-        run: cargo test --all --verbose --features fancy
+        run: cargo test --all --verbose --features ${{matrix.features}}
       - name: Run tests
         if: matrix.rust == '1.56.0'
-        run: cargo test --all --verbose --features fancy no-format-args-capture
+        run: cargo test --all --verbose --features ${{matrix.features}} no-format-args-capture
 
   miri:
     name: Miri

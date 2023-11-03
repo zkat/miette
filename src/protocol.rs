@@ -240,6 +240,11 @@ pub trait SourceCode: Send + Sync {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
+
+    /// Optional method. The name of this source, if any
+    fn name(&self) -> Option<&str> {
+        None
+    }
 }
 
 /// A labeled [`SourceSpan`].

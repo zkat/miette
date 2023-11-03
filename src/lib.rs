@@ -691,6 +691,8 @@ mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]
 mod handler;
 mod handlers;
+#[cfg(feature = "fancy-no-backtrace")]
+pub mod highlighters;
 #[doc(hidden)]
 pub mod macro_helpers;
 mod miette_diagnostic;

@@ -21,12 +21,14 @@ fn fmt_report(diag: Report) -> String {
             .unwrap();
     } else if let Ok(w) = std::env::var("REPLACE_TABS") {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .without_syntax_highlighting()
             .with_width(80)
             .tab_width(w.parse().expect("Invalid tab width."))
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .without_syntax_highlighting()
             .with_width(80)
             .render_report(&mut out, diag.as_ref())
             .unwrap();

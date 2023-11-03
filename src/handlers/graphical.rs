@@ -1,10 +1,11 @@
 use std::fmt::{self, Write};
 
-use owo_colors::{OwoColorize, Style};
+use owo_colors::{OwoColorize, Style, StyledList};
 use unicode_width::UnicodeWidthChar;
 
 use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
+use crate::highlighters::{Highlighter, MietteHighlighter};
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
@@ -33,6 +34,7 @@ pub struct GraphicalReportHandler {
     pub(crate) break_words: bool,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
+    pub(crate) highlighter: MietteHighlighter,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,6 +59,7 @@ impl GraphicalReportHandler {
             break_words: true,
             word_separator: None,
             word_splitter: None,
+            highlighter: MietteHighlighter::default(),
         }
     }
 
@@ -73,6 +76,7 @@ impl GraphicalReportHandler {
             break_words: true,
             word_separator: None,
             word_splitter: None,
+            highlighter: MietteHighlighter::default(),
         }
     }
 
@@ -158,6 +162,23 @@ impl GraphicalReportHandler {
     /// Sets the number of lines of context to show around each error.
     pub fn with_context_lines(mut self, lines: usize) -> Self {
         self.context_lines = lines;
+        self
+    }
+
+    /// Enable syntax highlighting for source code snippets, using the given
+    /// [`Highlighter`]. See the [crate::highlighters] crate for more details.
+    pub fn with_syntax_highlighting(
+        mut self,
+        highlighter: impl Highlighter + Send + Sync + 'static,
+    ) -> Self {
+        self.highlighter = MietteHighlighter::from(highlighter);
+        self
+    }
+
+    /// Disable syntax highlighting. This uses the
+    /// [`crate::highlighters::BlankHighlighter`] as a no-op highlighter.
+    pub fn without_syntax_highlighting(mut self) -> Self {
+        self.highlighter = MietteHighlighter::nocolor();
         self
     }
 }
@@ -461,6 +482,8 @@ impl GraphicalReportHandler {
             .map(|(label, st)| FancySpan::new(label.label().map(String::from), *label.inner(), st))
             .collect::<Vec<_>>();
 
+        let mut highlighter_state = self.highlighter.start_highlighter_state(source);
+
         // The max number of gutter-lines that will be active at any given
         // point. We need this to figure out indentation, so we do one loop
         // over the lines to see what the damage is gonna be.
@@ -534,7 +557,9 @@ impl GraphicalReportHandler {
             self.render_line_gutter(f, max_gutter, line, &labels)?;
 
             // And _now_ we can print out the line text itself!
-            self.render_line_text(f, &line.text)?;
+            let styled_text =
+                StyledList::from(highlighter_state.highlight_line(&line.text)).to_string();
+            self.render_line_text(f, &styled_text)?;
 
             // Next, we write all the highlights that apply to this particular line.
             let (single_line, multi_line): (Vec<_>, Vec<_>) = labels

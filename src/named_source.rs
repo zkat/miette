@@ -58,4 +58,8 @@ impl SourceCode for NamedSource {
             contents.line_count(),
         )))
     }
+
+    fn name(&self) -> Option<&str> {
+        Some(&self.name)
+    }
 }
