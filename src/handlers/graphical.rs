@@ -727,26 +727,24 @@ impl GraphicalReportHandler {
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
                 let num_right = end - vbar_offset - 1;
-                if start < end {
-                    underlines.push_str(
-                        &format!(
-                            "{:width$}{}{}{}",
-                            "",
-                            chars.underline.to_string().repeat(num_left),
-                            if hl.len() == 0 {
-                                chars.uarrow
-                            } else if hl.label().is_some() {
-                                chars.underbar
-                            } else {
-                                chars.underline
-                            },
-                            chars.underline.to_string().repeat(num_right),
-                            width = start.saturating_sub(highest),
-                        )
-                        .style(hl.style)
-                        .to_string(),
-                    );
-                }
+                underlines.push_str(
+                    &format!(
+                        "{:width$}{}{}{}",
+                        "",
+                        chars.underline.to_string().repeat(num_left),
+                        if hl.len() == 0 {
+                            chars.uarrow
+                        } else if hl.label().is_some() {
+                            chars.underbar
+                        } else {
+                            chars.underline
+                        },
+                        chars.underline.to_string().repeat(num_right),
+                        width = start.saturating_sub(highest),
+                    )
+                    .style(hl.style)
+                    .to_string(),
+                );
                 highest = std::cmp::max(highest, end);
 
                 (hl, vbar_offset)
