@@ -718,7 +718,11 @@ impl GraphicalReportHandler {
                 let byte_start = hl.offset();
                 let byte_end = hl.offset() + hl.len();
                 let start = self.visual_offset(line, byte_start, true).max(highest);
-                let end = self.visual_offset(line, byte_end, false).max(start + 1);
+                let end = if hl.len() == 0 {
+                    start + 1
+                } else {
+                    self.visual_offset(line, byte_end, false).max(start + 1)
+                };
 
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
