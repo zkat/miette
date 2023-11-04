@@ -29,6 +29,9 @@ jobs:
         features: [fancy, syntect-highlighter]
         rust: [1.56.0, stable]
         os: [ubuntu-latest, macOS-latest, windows-latest]
+        exclude:
+          - features: syntect-highlighter
+            rust: 1.56.0
 
     steps:
       - uses: actions/checkout@v4
@@ -80,4 +83,3 @@ jobs:
           toolchain: nightly
       - name: Run minimal version build
         run: cargo build -Z minimal-versions --all-features
-
