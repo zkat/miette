@@ -27,11 +27,6 @@ impl NamedSource {
         }
     }
 
-    /// Gets the name of this `NamedSource`.
-    pub fn name(&self) -> &str {
-        &self.name
-    }
-
     /// Returns a reference the inner [`SourceCode`] type for this
     /// `NamedSource`.
     pub fn inner(&self) -> &(dyn SourceCode + 'static) {
