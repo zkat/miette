@@ -860,13 +860,26 @@ impl GraphicalReportHandler {
     /// Returns an iterator over the visual width of each character in a line.
     fn line_visual_char_width<'a>(&self, text: &'a str) -> impl Iterator<Item = usize> + 'a {
         let mut column = 0;
+        let mut escaped = false;
         let tab_width = self.tab_width;
         text.chars().map(move |c| {
-            let width = if c == '\t' {
+            let width = match (escaped, c) {
                 // Round up to the next multiple of tab_width
-                tab_width - column % tab_width
-            } else {
-                c.width().unwrap_or(0)
+                (false, '\t') => tab_width - column % tab_width,
+                // start of ANSI escape
+                (false, '\x1b') => {
+                    escaped = true;
+                    0
+                }
+                // use Unicode width for all other characters
+                (false, c) => c.width().unwrap_or(0),
+                // end of ANSI escape
+                (true, 'm') => {
+                    escaped = false;
+                    0
+                }
+                // characters are zero width within escape sequence
+                (true, _) => 0,
             };
             column += width;
             width
