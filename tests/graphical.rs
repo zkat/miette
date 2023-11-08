@@ -68,6 +68,52 @@ fn empty_source() -> Result<(), MietteError> {
 }
 
 #[test]
+fn multiple_spans_multiline() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("big")]
+        big: SourceSpan,
+        #[label("small")]
+        small: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new(
+            "issue",
+            "\
+if true {
+    a
+} else {
+    b
+}",
+        ),
+        big: (0, 32).into(),
+        small: (14, 1).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"  × oops!
+   ╭─[issue:1:1]
+ 1 │ ╭─▶ if true {
+ 2 │ │       a
+   · │       ┬
+   · │       ╰── small
+ 3 │ │   } else {
+ 4 │ │       b
+ 5 │ ├─▶ }
+   · ╰──── big
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
+
+#[test]
 fn single_line_highlight_span_full_line() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]
