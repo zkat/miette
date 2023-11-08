@@ -410,7 +410,7 @@ impl GraphicalReportHandler {
         for line in &lines {
             let mut num_highlights = 0;
             for hl in &labels {
-                if !line.span_line_only(hl) && line.span_applies(hl) {
+                if !line.span_line_only(hl) && line.span_applies_gutter(hl) {
                     num_highlights += 1;
                 }
             }
@@ -529,7 +529,7 @@ impl GraphicalReportHandler {
         }
         let chars = &self.theme.characters;
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        let applicable = highlights.iter().filter(|hl| line.span_applies_gutter(hl));
         let mut arrow = false;
         for (i, hl) in applicable.enumerate() {
             if line.span_starts(hl) {
@@ -589,26 +589,51 @@ impl GraphicalReportHandler {
         if max_gutter == 0 {
             return Ok(());
         }
+
+        // keeps track of how many colums wide the gutter is
+        // important for ansi since simply measuring the size of the final string
+        // gives the wrong result when the string contains ansi codes.
+        let mut gutter_cols = 0;
+
         let chars = &self.theme.characters;
         let mut gutter = String::new();
-        let applicable = highlights.iter().filter(|hl| line.span_applies(hl));
+        let applicable = highlights.iter().filter(|hl| line.span_applies_gutter(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
+                let num_repeat = max_gutter.saturating_sub(i) + 2;
+
                 gutter.push_str(&chars.lbot.style(hl.style).to_string());
                 gutter.push_str(
                     &chars
                         .hbar
                         .to_string()
-                        .repeat(max_gutter.saturating_sub(i) + 2)
+                        .repeat(num_repeat)
                         .style(hl.style)
                         .to_string(),
                 );
+
+                // we count 1 for the lbot char, and then a few more, the same number
+                // as we just repeated for. For each repeat we only add 1, even though
+                // due to ansi escape codes the number of bytes in the string could grow
+                // a lot each time.
+                gutter_cols += num_repeat + 1;
                 break;
             } else {
                 gutter.push_str(&chars.vbar.style(hl.style).to_string());
+
+                // we may push many bytes for the ansi escape codes style adds,
+                // but we still only add a single character-width to the string in a terminal
+                gutter_cols += 1;
             }
         }
-        write!(f, "{:width$}", gutter, width = max_gutter + 1)?;
+
+        // now calculate how many spaces to add based on how many columns we just created.
+        // it's the max width of the gutter, minus how many character-widths we just generated
+        // capped at 0 (though this should never go below in reality), and then we add 3 to
+        // account for arrowheads when a gutter line ends
+        let num_spaces = (max_gutter + 3).saturating_sub(gutter_cols);
+        // we then write the gutter and as many spaces as we need
+        write!(f, "{}{:width$}", gutter, "", width = num_spaces)?;
         Ok(())
     }
 
@@ -877,14 +902,31 @@ impl Line {
         span.offset() >= self.offset && span.offset() + span.len() <= self.offset + self.length
     }
 
+    /// Returns whether `span` should be visible on this line, either in the gutter or under the
+    /// text on this line
     fn span_applies(&self, span: &FancySpan) -> bool {
         let spanlen = if span.len() == 0 { 1 } else { span.len() };
         // Span starts in this line
+
         (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-        // Span passes through this line
-        || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
-        // Span ends on this line
-        || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+            // Span passes through this line
+            || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
+            // Span ends on this line
+            || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+    }
+
+    /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans
+    /// that are only visible on this line and do not span multiple lines)
+    fn span_applies_gutter(&self, span: &FancySpan) -> bool {
+        let spanlen = if span.len() == 0 { 1 } else { span.len() };
+        // Span starts in this line
+        self.span_applies(span)
+            && !(
+                // as long as it doesn't start *and* end on this line
+                (span.offset() >= self.offset && span.offset() < self.offset + self.length)
+                    && (span.offset() + spanlen > self.offset
+                        && span.offset() + spanlen <= self.offset + self.length)
+            )
     }
 
     // A 'flyby' is a multi-line span that technically covers this line, but
