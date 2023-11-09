@@ -68,6 +68,52 @@ fn empty_source() -> Result<(), MietteError> {
 }
 
 #[test]
+fn multiple_spans_multiline() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("big")]
+        big: SourceSpan,
+        #[label("small")]
+        small: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new(
+            "issue",
+            "\
+if true {
+    a
+} else {
+    b
+}",
+        ),
+        big: (0, 32).into(),
+        small: (14, 1).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"  × oops!
+   ╭─[issue:1:1]
+ 1 │ ╭─▶ if true {
+ 2 │ │╭▶     a
+   · ││    ┬
+   · ││    ╰── small
+ 3 │ │   } else {
+ 4 │ │       b
+ 5 │ ├─▶ }
+   · ╰──── big
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
+
+#[test]
 fn single_line_highlight_span_full_line() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]
@@ -542,6 +588,94 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
 }
 
 #[test]
+fn multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here\nand\nthis\ntoo")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\ntext\n  here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:1]
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰─┤ this bit here
+   ·     │ and
+   ·     │ this
+   ·     │ too
+ 3 │   here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiple_multi_line_labels() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "x\ny"]
+        highlight1: SourceSpan,
+        #[label = "z\nw"]
+        highlight2: SourceSpan,
+        #[label = "a\nb"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n  text text text text text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
+        highlight3: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │ source
+ 2 │   text text text text text
+   ·   ──┬─ ──┬─      ──┬─
+   ·     │    │         ╰─┤ a
+   ·     │    │           │ b
+   ·     │    ╰─┤ z
+   ·     │      │ w
+   ·     ╰─┤ x
+   ·       │ y
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
@@ -660,6 +794,43 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiline_highlight_multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "these two lines\nare the problem"]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 11).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │     source
+ 2 │ ╭─▶   text
+ 3 │ ├─▶     here
+   · ╰──┤ these two lines
+   ·    │ are the problem
    ╰────
   help: try doing it better next time?
 "#
