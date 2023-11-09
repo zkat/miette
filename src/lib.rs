@@ -652,6 +652,7 @@
 //! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also
 //! under the Apache License. Some code is taken from
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
+#[cfg(feature = "derive")]
 pub use miette_derive::*;
 
 pub use error::*;
