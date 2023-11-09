@@ -82,7 +82,9 @@ impl SyntectHighlighter {
 
     /// Determine syntect SyntaxReference to use for given SourceCode
     fn get_syntax_from_source(&self, source: &dyn SourceCode) -> Option<&syntect::SyntaxReference> {
-        if let Some(name) = source.name() {
+        if let Some(language) = source.language() {
+            self.syntax_set.find_syntax_by_name(language)
+        } else if let Some(name) = source.name() {
             if let Some(ext) = Path::new(name).extension() {
                 self.syntax_set
                     .find_syntax_by_extension(ext.to_string_lossy().as_ref())

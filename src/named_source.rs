@@ -6,13 +6,15 @@ use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 pub struct NamedSource {
     source: Box<dyn SourceCode + 'static>,
     name: String,
+    language: Option<String>,
 }
 
 impl std::fmt::Debug for NamedSource {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("NamedSource")
             .field("name", &self.name)
-            .field("source", &"<redacted>");
+            .field("source", &"<redacted>")
+            .field("language", &self.language);
         Ok(())
     }
 }
@@ -24,6 +26,7 @@ impl NamedSource {
         Self {
             source: Box::new(source),
             name: name.as_ref().to_string(),
+            language: None,
         }
     }
 
@@ -31,6 +34,12 @@ impl NamedSource {
     /// `NamedSource`.
     pub fn inner(&self) -> &(dyn SourceCode + 'static) {
         &*self.source
+    }
+
+    /// Sets the [`language`](SourceCode::language) for this source code.
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
     }
 }
 
@@ -56,5 +65,12 @@ impl SourceCode for NamedSource {
 
     fn name(&self) -> Option<&str> {
         Some(&self.name)
+    }
+
+    fn language(&self) -> Option<&str> {
+        match &self.language {
+            Some(language) => Some(language),
+            None => self.source.language(),
+        }
     }
 }

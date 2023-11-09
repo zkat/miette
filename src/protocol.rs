@@ -245,6 +245,15 @@ pub trait SourceCode: Send + Sync {
     fn name(&self) -> Option<&str> {
         None
     }
+
+    /// Optional method. The language name for this source code, if any.
+    /// This is used to drive syntax highlighting.
+    ///
+    /// Examples: Rust, TOML, C
+    ///
+    fn language(&self) -> Option<&str> {
+        None
+    }
 }
 
 /// A labeled [`SourceSpan`].
