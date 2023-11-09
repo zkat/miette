@@ -718,31 +718,33 @@ impl GraphicalReportHandler {
                 let byte_start = hl.offset();
                 let byte_end = hl.offset() + hl.len();
                 let start = self.visual_offset(line, byte_start, true).max(highest);
-                let end = self.visual_offset(line, byte_end, false).max(start + 1);
+                let end = if hl.len() == 0 {
+                    start + 1
+                } else {
+                    self.visual_offset(line, byte_end, false).max(start + 1)
+                };
 
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
                 let num_right = end - vbar_offset - 1;
-                if start < end {
-                    underlines.push_str(
-                        &format!(
-                            "{:width$}{}{}{}",
-                            "",
-                            chars.underline.to_string().repeat(num_left),
-                            if hl.len() == 0 {
-                                chars.uarrow
-                            } else if hl.label().is_some() {
-                                chars.underbar
-                            } else {
-                                chars.underline
-                            },
-                            chars.underline.to_string().repeat(num_right),
-                            width = start.saturating_sub(highest),
-                        )
-                        .style(hl.style)
-                        .to_string(),
-                    );
-                }
+                underlines.push_str(
+                    &format!(
+                        "{:width$}{}{}{}",
+                        "",
+                        chars.underline.to_string().repeat(num_left),
+                        if hl.len() == 0 {
+                            chars.uarrow
+                        } else if hl.label().is_some() {
+                            chars.underbar
+                        } else {
+                            chars.underline
+                        },
+                        chars.underline.to_string().repeat(num_right),
+                        width = start.saturating_sub(highest),
+                    )
+                    .style(hl.style)
+                    .to_string(),
+                );
                 highest = std::cmp::max(highest, end);
 
                 (hl, vbar_offset)
