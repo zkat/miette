@@ -13,7 +13,7 @@
 
 use std::{ops::Deref, sync::Arc};
 
-use crate::SourceCode;
+use crate::SpanContents;
 use owo_colors::Styled;
 
 #[cfg(feature = "syntect-highlighter")]
@@ -24,22 +24,22 @@ mod blank;
 #[cfg(feature = "syntect-highlighter")]
 mod syntect;
 
-/// A syntax highlighter for highlighting miette [SourceCode] snippets.
+/// A syntax highlighter for highlighting miette [`SourceCode`](crate::SourceCode) snippets.
 pub trait Highlighter {
-    /// Creates a new [HighlighterState] to begin parsing and highlighting
-    /// a [SourceCode] snippet.
+    ///  Creates a new [HighlighterState] to begin parsing and highlighting
+    /// a [SpanContents].
     ///
     /// The [GraphicalReportHandler](crate::GraphicalReportHandler) will call
-    /// this method at the start of rendering a [Diagnostic](crate::Diagnostic).
+    /// this method at the start of rendering a [SpanContents].
     ///
-    /// The source is provided as input only so that the Highlighter can detect
-    /// language syntax and make other initialization decisions prior
+    /// The [SpanContents] is provided as input only so that the [Highlighter]
+    /// can detect language syntax and make other initialization decisions prior
     /// to highlighting, but it is not intended that the Highlighter begin
     /// highlighting at this point. The returned [HighlighterState] is
     /// responsible for the actual rendering.
     fn start_highlighter_state<'h>(
         &'h self,
-        source: &dyn SourceCode,
+        source: &dyn SpanContents<'_>,
     ) -> Box<dyn HighlighterState + 'h>;
 }
 

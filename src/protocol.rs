@@ -240,20 +240,6 @@ pub trait SourceCode: Send + Sync {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
-
-    /// Optional method. The name of this source, if any
-    fn name(&self) -> Option<&str> {
-        None
-    }
-
-    /// Optional method. The language name for this source code, if any.
-    /// This is used to drive syntax highlighting.
-    ///
-    /// Examples: Rust, TOML, C
-    ///
-    fn language(&self) -> Option<&str> {
-        None
-    }
 }
 
 /// A labeled [`SourceSpan`].
@@ -447,6 +433,15 @@ pub trait SpanContents<'a> {
     fn column(&self) -> usize;
     /// Total number of lines covered by this `SpanContents`.
     fn line_count(&self) -> usize;
+
+    /// Optional method. The language name for this source code, if any.
+    /// This is used to drive syntax highlighting.
+    ///
+    /// Examples: Rust, TOML, C
+    ///
+    fn language(&self) -> Option<&str> {
+        None
+    }
 }
 
 /**
@@ -466,6 +461,8 @@ pub struct MietteSpanContents<'a> {
     line_count: usize,
     // Optional filename
     name: Option<String>,
+    // Optional language
+    language: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
@@ -484,6 +481,7 @@ impl<'a> MietteSpanContents<'a> {
             column,
             line_count,
             name: None,
+            language: None,
         }
     }
 
@@ -503,7 +501,14 @@ impl<'a> MietteSpanContents<'a> {
             column,
             line_count,
             name: Some(name),
+            language: None,
         }
+    }
+
+    /// Sets the [`language`](SourceCode::language) for syntax highlighting.
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
     }
 }
 
@@ -525,6 +530,9 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     }
     fn name(&self) -> Option<&str> {
         self.name.as_deref()
+    }
+    fn language(&self) -> Option<&str> {
+        self.language.as_deref()
     }
 }
 

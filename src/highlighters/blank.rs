@@ -1,5 +1,7 @@
 use owo_colors::Style;
 
+use crate::SpanContents;
+
 use super::{Highlighter, HighlighterState};
 
 /// The default syntax highlighter. It applies `Style::default()` to input text.
@@ -10,7 +12,7 @@ pub struct BlankHighlighter;
 impl Highlighter for BlankHighlighter {
     fn start_highlighter_state<'h>(
         &'h self,
-        _source: &dyn crate::SourceCode,
+        _source: &dyn SpanContents<'_>,
     ) -> Box<dyn super::HighlighterState + 'h> {
         Box::new(BlankHighlighterState)
     }

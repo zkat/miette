@@ -14,7 +14,7 @@ use owo_colors::{Rgb, Style, Styled};
 
 use crate::{
     highlighters::{Highlighter, HighlighterState},
-    SourceCode,
+    SpanContents,
 };
 
 use super::BlankHighlighterState;
@@ -41,9 +41,9 @@ impl Default for SyntectHighlighter {
 impl Highlighter for SyntectHighlighter {
     fn start_highlighter_state<'h>(
         &'h self,
-        source: &dyn SourceCode,
+        source: &dyn SpanContents<'_>,
     ) -> Box<dyn HighlighterState + 'h> {
-        if let Some(syntax) = self.get_syntax_from_source(source) {
+        if let Some(syntax) = self.detect_syntax(source) {
             let highlighter = syntect::Highlighter::new(&self.theme);
             let parse_state = syntect::ParseState::new(syntax);
             let highlight_state =
@@ -81,19 +81,26 @@ impl SyntectHighlighter {
     }
 
     /// Determine syntect SyntaxReference to use for given SourceCode
-    fn get_syntax_from_source(&self, source: &dyn SourceCode) -> Option<&syntect::SyntaxReference> {
-        if let Some(language) = source.language() {
-            self.syntax_set.find_syntax_by_name(language)
-        } else if let Some(name) = source.name() {
-            if let Some(ext) = Path::new(name).extension() {
-                self.syntax_set
-                    .find_syntax_by_extension(ext.to_string_lossy().as_ref())
-            } else {
-                None
-            }
-        } else {
-            None
+    fn detect_syntax(&self, contents: &dyn SpanContents<'_>) -> Option<&syntect::SyntaxReference> {
+        // use language if given
+        if let Some(language) = contents.language() {
+            return self.syntax_set.find_syntax_by_name(language);
         }
+        // otherwise try to use any file extension provided in the name
+        if let Some(name) = contents.name() {
+            if let Some(ext) = Path::new(name).extension() {
+                return self
+                    .syntax_set
+                    .find_syntax_by_extension(ext.to_string_lossy().as_ref());
+            }
+        }
+        // finally, attempt to guess syntax based on first line
+        return self.syntax_set.find_syntax_by_first_line(
+            &std::str::from_utf8(contents.data())
+                .ok()?
+                .split('\n')
+                .next()?,
+        );
     }
 }
 
