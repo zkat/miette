@@ -56,6 +56,7 @@ pub struct MietteHandlerOpts {
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
     pub(crate) break_words: Option<bool>,
+    pub(crate) word_separator: Option<textwrap::WordSeparator>,
 }
 
 impl MietteHandlerOpts {
@@ -94,6 +95,12 @@ impl MietteHandlerOpts {
     /// Defaults to true.
     pub fn break_words(mut self, break_words: bool) -> Self {
         self.break_words = Some(break_words);
+        self
+    }
+
+    /// Sets the `textwrap::WordSeparator` to use when determining wrap points.
+    pub fn word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
+        self.word_separator = Some(word_separator);
         self
     }
 
@@ -247,6 +254,10 @@ impl MietteHandlerOpts {
             if let Some(b) = self.break_words {
                 handler = handler.with_break_words(b)
             }
+            if let Some(s) = self.word_separator {
+                handler = handler.with_word_separator(s)
+            }
+
             MietteHandler {
                 inner: Box::new(handler),
             }
