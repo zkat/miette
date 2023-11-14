@@ -32,6 +32,7 @@ pub struct GraphicalReportHandler {
     pub(crate) with_cause_chain: bool,
     pub(crate) break_words: bool,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
+    pub(crate) word_splitter: Option<textwrap::WordSplitter>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -55,6 +56,7 @@ impl GraphicalReportHandler {
             with_cause_chain: true,
             break_words: true,
             word_separator: None,
+            word_splitter: None,
         }
     }
 
@@ -70,6 +72,7 @@ impl GraphicalReportHandler {
             with_cause_chain: true,
             break_words: true,
             word_separator: None,
+            word_splitter: None,
         }
     }
 
@@ -134,9 +137,15 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Sets the word separator when wrapping.
+    /// Sets the word separator to use when wrapping.
     pub fn with_word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
         self.word_separator = Some(word_separator);
+        self
+    }
+
+    /// Sets the word splitter to usewhen wrapping.
+    pub fn with_word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
+        self.word_splitter = Some(word_splitter);
         self
     }
 
@@ -183,6 +192,9 @@ impl GraphicalReportHandler {
                 .break_words(self.break_words);
             if let Some(word_separator) = self.word_separator {
                 opts = opts.word_separator(word_separator);
+            }
+            if let Some(word_splitter) = self.word_splitter.clone() {
+                opts = opts.word_splitter(word_splitter);
             }
 
             writeln!(f, "{}", textwrap::fill(footer, opts))?;
@@ -242,6 +254,9 @@ impl GraphicalReportHandler {
         if let Some(word_separator) = self.word_separator {
             opts = opts.word_separator(word_separator);
         }
+        if let Some(word_splitter) = self.word_splitter.clone() {
+            opts = opts.word_splitter(word_splitter);
+        }
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
@@ -285,6 +300,9 @@ impl GraphicalReportHandler {
                 if let Some(word_separator) = self.word_separator {
                     opts = opts.word_separator(word_separator);
                 }
+                if let Some(word_splitter) = self.word_splitter.clone() {
+                    opts = opts.word_splitter(word_splitter);
+                }
 
                 match error {
                     ErrorKind::Diagnostic(diag) => {
@@ -318,6 +336,9 @@ impl GraphicalReportHandler {
                 .break_words(self.break_words);
             if let Some(word_separator) = self.word_separator {
                 opts = opts.word_separator(word_separator);
+            }
+            if let Some(word_splitter) = self.word_splitter.clone() {
+                opts = opts.word_splitter(word_splitter);
             }
 
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;

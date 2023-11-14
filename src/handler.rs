@@ -57,6 +57,7 @@ pub struct MietteHandlerOpts {
     pub(crate) with_cause_chain: Option<bool>,
     pub(crate) break_words: Option<bool>,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
+    pub(crate) word_splitter: Option<textwrap::WordSplitter>,
 }
 
 impl MietteHandlerOpts {
@@ -104,6 +105,11 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// Sets the `textwrap::WordSplitter` to use when determining wrap points.
+    pub fn word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
+        self.word_splitter = Some(word_splitter);
+        self
+    }
     /// Include the cause chain of the top-level error in the report.
     pub fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = Some(true);
@@ -256,6 +262,9 @@ impl MietteHandlerOpts {
             }
             if let Some(s) = self.word_separator {
                 handler = handler.with_word_separator(s)
+            }
+            if let Some(s) = self.word_splitter {
+                handler = handler.with_word_splitter(s)
             }
 
             MietteHandler {
