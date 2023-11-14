@@ -55,6 +55,7 @@ pub struct MietteHandlerOpts {
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
+    pub(crate) break_words: Option<bool>,
 }
 
 impl MietteHandlerOpts {
@@ -83,6 +84,16 @@ impl MietteHandlerOpts {
     /// Sets the width to wrap the report at. Defaults to 80.
     pub fn width(mut self, width: usize) -> Self {
         self.width = Some(width);
+        self
+    }
+
+    /// If true, long words can be broken when wrapping.
+    ///
+    /// If false, long words will not be broken when they exceed the width.
+    ///
+    /// Defaults to true.
+    pub fn break_words(mut self, break_words: bool) -> Self {
+        self.break_words = Some(break_words);
         self
     }
 
@@ -232,6 +243,9 @@ impl MietteHandlerOpts {
             }
             if let Some(w) = self.tab_width {
                 handler = handler.tab_width(w);
+            }
+            if let Some(b) = self.break_words {
+                handler = handler.with_break_words(b)
             }
             MietteHandler {
                 inner: Box::new(handler),

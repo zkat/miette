@@ -30,6 +30,7 @@ pub struct GraphicalReportHandler {
     pub(crate) context_lines: usize,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
+    pub(crate) break_words: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +52,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            break_words: true,
         }
     }
 
@@ -64,6 +66,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            break_words: true,
         }
     }
 
@@ -122,6 +125,12 @@ impl GraphicalReportHandler {
         self
     }
 
+    /// Enables or disables breaking of words during wrapping.
+    pub fn with_break_words(mut self, break_words: bool) -> Self {
+        self.break_words = break_words;
+        self
+    }
+
     /// Sets the 'global' footer for this handler.
     pub fn with_footer(mut self, footer: String) -> Self {
         self.footer = Some(footer);
@@ -161,7 +170,8 @@ impl GraphicalReportHandler {
             let width = self.termwidth.saturating_sub(4);
             let opts = textwrap::Options::new(width)
                 .initial_indent("  ")
-                .subsequent_indent("  ");
+                .subsequent_indent("  ")
+                .break_words(self.break_words);
             writeln!(f, "{}", textwrap::fill(footer, opts))?;
         }
         Ok(())
@@ -214,7 +224,8 @@ impl GraphicalReportHandler {
         let width = self.termwidth.saturating_sub(2);
         let opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
-            .subsequent_indent(&rest_indent);
+            .subsequent_indent(&rest_indent)
+            .break_words(self.break_words);
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
@@ -253,7 +264,9 @@ impl GraphicalReportHandler {
                 .to_string();
                 let opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
-                    .subsequent_indent(&rest_indent);
+                    .subsequent_indent(&rest_indent)
+                    .break_words(self.break_words);
+
                 match error {
                     ErrorKind::Diagnostic(diag) => {
                         let mut inner = String::new();
@@ -282,7 +295,9 @@ impl GraphicalReportHandler {
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
             let opts = textwrap::Options::new(width)
                 .initial_indent(&initial_indent)
-                .subsequent_indent("        ");
+                .subsequent_indent("        ")
+                .break_words(self.break_words);
+
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
         Ok(())
