@@ -305,6 +305,23 @@ enabled:
 miette = { version = "X.Y.Z", features = ["fancy"] }
 ```
 
+Another way to display a diagnostic is by printing them using the debug formatter. 
+This is, in fact, what returning diagnostics from main ends up doing.
+To do it yourself, you can write the following:
+
+```rust
+use miette::{IntoDiagnostic, Result};
+use semver::Version;
+
+fn just_a_random_function() {
+    let version_result: Result<Version> = "1.2.x".parse().into_diagnostic();
+    match version_result {
+        Err(e) => println!("{:?}", e),
+        Ok(version) => println!("{}", version),
+    }
+}
+```
+
 #### ... diagnostic code URLs
 
 `miette` supports providing a URL for individual diagnostics. This URL will

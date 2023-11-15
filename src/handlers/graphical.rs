@@ -30,6 +30,9 @@ pub struct GraphicalReportHandler {
     pub(crate) context_lines: usize,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
+    pub(crate) break_words: bool,
+    pub(crate) word_separator: Option<textwrap::WordSeparator>,
+    pub(crate) word_splitter: Option<textwrap::WordSplitter>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -51,6 +54,9 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            break_words: true,
+            word_separator: None,
+            word_splitter: None,
         }
     }
 
@@ -64,6 +70,9 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            break_words: true,
+            word_separator: None,
+            word_splitter: None,
         }
     }
 
@@ -122,6 +131,24 @@ impl GraphicalReportHandler {
         self
     }
 
+    /// Enables or disables breaking of words during wrapping.
+    pub fn with_break_words(mut self, break_words: bool) -> Self {
+        self.break_words = break_words;
+        self
+    }
+
+    /// Sets the word separator to use when wrapping.
+    pub fn with_word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
+        self.word_separator = Some(word_separator);
+        self
+    }
+
+    /// Sets the word splitter to usewhen wrapping.
+    pub fn with_word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
+        self.word_splitter = Some(word_splitter);
+        self
+    }
+
     /// Sets the 'global' footer for this handler.
     pub fn with_footer(mut self, footer: String) -> Self {
         self.footer = Some(footer);
@@ -159,9 +186,17 @@ impl GraphicalReportHandler {
         if let Some(footer) = &self.footer {
             writeln!(f)?;
             let width = self.termwidth.saturating_sub(4);
-            let opts = textwrap::Options::new(width)
+            let mut opts = textwrap::Options::new(width)
                 .initial_indent("  ")
-                .subsequent_indent("  ");
+                .subsequent_indent("  ")
+                .break_words(self.break_words);
+            if let Some(word_separator) = self.word_separator {
+                opts = opts.word_separator(word_separator);
+            }
+            if let Some(word_splitter) = self.word_splitter.clone() {
+                opts = opts.word_splitter(word_splitter);
+            }
+
             writeln!(f, "{}", textwrap::fill(footer, opts))?;
         }
         Ok(())
@@ -212,9 +247,16 @@ impl GraphicalReportHandler {
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
         let rest_indent = format!("  {} ", self.theme.characters.vbar.style(severity_style));
         let width = self.termwidth.saturating_sub(2);
-        let opts = textwrap::Options::new(width)
+        let mut opts = textwrap::Options::new(width)
             .initial_indent(&initial_indent)
-            .subsequent_indent(&rest_indent);
+            .subsequent_indent(&rest_indent)
+            .break_words(self.break_words);
+        if let Some(word_separator) = self.word_separator {
+            opts = opts.word_separator(word_separator);
+        }
+        if let Some(word_splitter) = self.word_splitter.clone() {
+            opts = opts.word_splitter(word_splitter);
+        }
 
         writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
 
@@ -251,9 +293,17 @@ impl GraphicalReportHandler {
                 )
                 .style(severity_style)
                 .to_string();
-                let opts = textwrap::Options::new(width)
+                let mut opts = textwrap::Options::new(width)
                     .initial_indent(&initial_indent)
-                    .subsequent_indent(&rest_indent);
+                    .subsequent_indent(&rest_indent)
+                    .break_words(self.break_words);
+                if let Some(word_separator) = self.word_separator {
+                    opts = opts.word_separator(word_separator);
+                }
+                if let Some(word_splitter) = self.word_splitter.clone() {
+                    opts = opts.word_splitter(word_splitter);
+                }
+
                 match error {
                     ErrorKind::Diagnostic(diag) => {
                         let mut inner = String::new();
@@ -280,9 +330,17 @@ impl GraphicalReportHandler {
         if let Some(help) = diagnostic.help() {
             let width = self.termwidth.saturating_sub(4);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
-            let opts = textwrap::Options::new(width)
+            let mut opts = textwrap::Options::new(width)
                 .initial_indent(&initial_indent)
-                .subsequent_indent("        ");
+                .subsequent_indent("        ")
+                .break_words(self.break_words);
+            if let Some(word_separator) = self.word_separator {
+                opts = opts.word_separator(word_separator);
+            }
+            if let Some(word_splitter) = self.word_splitter.clone() {
+                opts = opts.word_splitter(word_splitter);
+            }
+
             writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
         }
         Ok(())
@@ -487,7 +545,13 @@ impl GraphicalReportHandler {
                 // no line number!
                 self.write_no_linum(f, linum_width)?;
                 // gutter _again_
-                self.render_highlight_gutter(f, max_gutter, line, &labels)?;
+                self.render_highlight_gutter(
+                    f,
+                    max_gutter,
+                    line,
+                    &labels,
+                    LabelRenderMode::SingleLine,
+                )?;
                 self.render_single_line_highlights(
                     f,
                     line,
@@ -499,11 +563,7 @@ impl GraphicalReportHandler {
             }
             for hl in multi_line {
                 if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
-                    // no line number!
-                    self.write_no_linum(f, linum_width)?;
-                    // gutter _again_
-                    self.render_highlight_gutter(f, max_gutter, line, &labels)?;
-                    self.render_multi_line_end(f, hl)?;
+                    self.render_multi_line_end(f, &labels, max_gutter, linum_width, line, hl)?;
                 }
             }
         }
@@ -514,6 +574,91 @@ impl GraphicalReportHandler {
             self.theme.characters.lbot,
             self.theme.characters.hbar.to_string().repeat(4),
         )?;
+        Ok(())
+    }
+
+    fn render_multi_line_end(
+        &self,
+        f: &mut impl fmt::Write,
+        labels: &[FancySpan],
+        max_gutter: usize,
+        linum_width: usize,
+        line: &Line,
+        label: &FancySpan,
+    ) -> fmt::Result {
+        // no line number!
+        self.write_no_linum(f, linum_width)?;
+
+        if let Some(label_parts) = label.label_parts() {
+            // if it has a label, how long is it?
+            let (first, rest) = label_parts
+                .split_first()
+                .expect("cannot crash because rest would have been None, see docs on the `label` field of FancySpan");
+
+            if rest.is_empty() {
+                // gutter _again_
+                self.render_highlight_gutter(
+                    f,
+                    max_gutter,
+                    line,
+                    &labels,
+                    LabelRenderMode::SingleLine,
+                )?;
+
+                self.render_multi_line_end_single(
+                    f,
+                    first,
+                    label.style,
+                    LabelRenderMode::SingleLine,
+                )?;
+            } else {
+                // gutter _again_
+                self.render_highlight_gutter(
+                    f,
+                    max_gutter,
+                    line,
+                    &labels,
+                    LabelRenderMode::MultiLineFirst,
+                )?;
+
+                self.render_multi_line_end_single(
+                    f,
+                    first,
+                    label.style,
+                    LabelRenderMode::MultiLineFirst,
+                )?;
+                for label_line in rest {
+                    // no line number!
+                    self.write_no_linum(f, linum_width)?;
+                    // gutter _again_
+                    self.render_highlight_gutter(
+                        f,
+                        max_gutter,
+                        line,
+                        &labels,
+                        LabelRenderMode::MultiLineRest,
+                    )?;
+                    self.render_multi_line_end_single(
+                        f,
+                        label_line,
+                        label.style,
+                        LabelRenderMode::MultiLineRest,
+                    )?;
+                }
+            }
+        } else {
+            // gutter _again_
+            self.render_highlight_gutter(
+                f,
+                max_gutter,
+                line,
+                &labels,
+                LabelRenderMode::SingleLine,
+            )?;
+            // has no label
+            writeln!(f, "{}", self.theme.characters.hbar.style(label.style))?;
+        }
+
         Ok(())
     }
 
@@ -585,6 +730,7 @@ impl GraphicalReportHandler {
         max_gutter: usize,
         line: &Line,
         highlights: &[FancySpan],
+        render_mode: LabelRenderMode,
     ) -> fmt::Result {
         if max_gutter == 0 {
             return Ok(());
@@ -600,23 +746,50 @@ impl GraphicalReportHandler {
         let applicable = highlights.iter().filter(|hl| line.span_applies_gutter(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
-                let num_repeat = max_gutter.saturating_sub(i) + 2;
+                if render_mode == LabelRenderMode::MultiLineRest {
+                    // this is to make multiline labels work. We want to make the right amount
+                    // of horizontal space for them, but not actually draw the lines
+                    let horizontal_space = max_gutter.saturating_sub(i) + 2;
+                    for _ in 0..horizontal_space {
+                        gutter.push(' ');
+                    }
+                    // account for one more horizontal space, since in multiline mode
+                    // we also add in the vertical line before the label like this:
+                    // 2 │ ╭─▶   text
+                    // 3 │ ├─▶     here
+                    //   · ╰──┤ these two lines
+                    //   ·    │ are the problem
+                    //        ^this
+                    gutter_cols += horizontal_space + 1;
+                } else {
+                    let num_repeat = max_gutter.saturating_sub(i) + 2;
 
-                gutter.push_str(&chars.lbot.style(hl.style).to_string());
-                gutter.push_str(
-                    &chars
-                        .hbar
-                        .to_string()
-                        .repeat(num_repeat)
-                        .style(hl.style)
-                        .to_string(),
-                );
+                    gutter.push_str(&chars.lbot.style(hl.style).to_string());
 
-                // we count 1 for the lbot char, and then a few more, the same number
-                // as we just repeated for. For each repeat we only add 1, even though
-                // due to ansi escape codes the number of bytes in the string could grow
-                // a lot each time.
-                gutter_cols += num_repeat + 1;
+                    gutter.push_str(
+                        &chars
+                            .hbar
+                            .to_string()
+                            .repeat(
+                                num_repeat
+                                    // if we are rendering a multiline label, then leave a bit of space for the
+                                    // rcross character
+                                    - if render_mode == LabelRenderMode::MultiLineFirst {
+                                        1
+                                    } else {
+                                        0
+                                    },
+                            )
+                            .style(hl.style)
+                            .to_string(),
+                    );
+
+                    // we count 1 for the lbot char, and then a few more, the same number
+                    // as we just repeated for. For each repeat we only add 1, even though
+                    // due to ansi escape codes the number of bytes in the string could grow
+                    // a lot each time.
+                    gutter_cols += num_repeat + 1;
+                }
                 break;
             } else {
                 gutter.push_str(&chars.vbar.style(hl.style).to_string());
@@ -743,31 +916,33 @@ impl GraphicalReportHandler {
                 let byte_start = hl.offset();
                 let byte_end = hl.offset() + hl.len();
                 let start = self.visual_offset(line, byte_start, true).max(highest);
-                let end = self.visual_offset(line, byte_end, false).max(start + 1);
+                let end = if hl.len() == 0 {
+                    start + 1
+                } else {
+                    self.visual_offset(line, byte_end, false).max(start + 1)
+                };
 
                 let vbar_offset = (start + end) / 2;
                 let num_left = vbar_offset - start;
                 let num_right = end - vbar_offset - 1;
-                if start < end {
-                    underlines.push_str(
-                        &format!(
-                            "{:width$}{}{}{}",
-                            "",
-                            chars.underline.to_string().repeat(num_left),
-                            if hl.len() == 0 {
-                                chars.uarrow
-                            } else if hl.label().is_some() {
-                                chars.underbar
-                            } else {
-                                chars.underline
-                            },
-                            chars.underline.to_string().repeat(num_right),
-                            width = start.saturating_sub(highest),
-                        )
-                        .style(hl.style)
-                        .to_string(),
-                    );
-                }
+                underlines.push_str(
+                    &format!(
+                        "{:width$}{}{}{}",
+                        "",
+                        chars.underline.to_string().repeat(num_left),
+                        if hl.len() == 0 {
+                            chars.uarrow
+                        } else if hl.label().is_some() {
+                            chars.underbar
+                        } else {
+                            chars.underline
+                        },
+                        chars.underline.to_string().repeat(num_right),
+                        width = start.saturating_sub(highest),
+                    )
+                    .style(hl.style)
+                    .to_string(),
+                );
                 highest = std::cmp::max(highest, end);
 
                 (hl, vbar_offset)
@@ -776,27 +951,40 @@ impl GraphicalReportHandler {
         writeln!(f, "{}", underlines)?;
 
         for hl in single_liners.iter().rev() {
-            if let Some(label) = hl.label() {
-                self.write_no_linum(f, linum_width)?;
-                self.render_highlight_gutter(f, max_gutter, line, all_highlights)?;
-                let mut curr_offset = 1usize;
-                for (offset_hl, vbar_offset) in &vbar_offsets {
-                    while curr_offset < *vbar_offset + 1 {
-                        write!(f, " ")?;
-                        curr_offset += 1;
-                    }
-                    if *offset_hl != hl {
-                        write!(f, "{}", chars.vbar.to_string().style(offset_hl.style))?;
-                        curr_offset += 1;
-                    } else {
-                        let lines = format!(
-                            "{}{} {}",
-                            chars.lbot,
-                            chars.hbar.to_string().repeat(2),
-                            label,
-                        );
-                        writeln!(f, "{}", lines.style(hl.style))?;
-                        break;
+            if let Some(label) = hl.label_parts() {
+                if label.len() == 1 {
+                    self.write_label_text(
+                        f,
+                        line,
+                        linum_width,
+                        max_gutter,
+                        all_highlights,
+                        chars,
+                        &vbar_offsets,
+                        hl,
+                        &label[0],
+                        LabelRenderMode::SingleLine,
+                    )?;
+                } else {
+                    let mut first = true;
+                    for label_line in &label {
+                        self.write_label_text(
+                            f,
+                            line,
+                            linum_width,
+                            max_gutter,
+                            all_highlights,
+                            chars,
+                            &vbar_offsets,
+                            hl,
+                            label_line,
+                            if first {
+                                LabelRenderMode::MultiLineFirst
+                            } else {
+                                LabelRenderMode::MultiLineRest
+                            },
+                        )?;
+                        first = false;
                     }
                 }
             }
@@ -804,13 +992,80 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_multi_line_end(&self, f: &mut impl fmt::Write, hl: &FancySpan) -> fmt::Result {
-        writeln!(
+    // I know it's not good practice, but making this a function makes a lot of sense
+    // and making a struct for this does not...
+    #[allow(clippy::too_many_arguments)]
+    fn write_label_text(
+        &self,
+        f: &mut impl fmt::Write,
+        line: &Line,
+        linum_width: usize,
+        max_gutter: usize,
+        all_highlights: &[FancySpan],
+        chars: &ThemeCharacters,
+        vbar_offsets: &[(&&FancySpan, usize)],
+        hl: &&FancySpan,
+        label: &str,
+        render_mode: LabelRenderMode,
+    ) -> fmt::Result {
+        self.write_no_linum(f, linum_width)?;
+        self.render_highlight_gutter(
             f,
-            "{} {}",
-            self.theme.characters.hbar.style(hl.style),
-            hl.label().unwrap_or_else(|| "".into()),
+            max_gutter,
+            line,
+            all_highlights,
+            LabelRenderMode::SingleLine,
         )?;
+        let mut curr_offset = 1usize;
+        for (offset_hl, vbar_offset) in vbar_offsets {
+            while curr_offset < *vbar_offset + 1 {
+                write!(f, " ")?;
+                curr_offset += 1;
+            }
+            if *offset_hl != hl {
+                write!(f, "{}", chars.vbar.to_string().style(offset_hl.style))?;
+                curr_offset += 1;
+            } else {
+                let lines = match render_mode {
+                    LabelRenderMode::SingleLine => format!(
+                        "{}{} {}",
+                        chars.lbot,
+                        chars.hbar.to_string().repeat(2),
+                        label,
+                    ),
+                    LabelRenderMode::MultiLineFirst => {
+                        format!("{}{}{} {}", chars.lbot, chars.hbar, chars.rcross, label,)
+                    }
+                    LabelRenderMode::MultiLineRest => {
+                        format!("  {} {}", chars.vbar, label,)
+                    }
+                };
+                writeln!(f, "{}", lines.style(hl.style))?;
+                break;
+            }
+        }
+        Ok(())
+    }
+
+    fn render_multi_line_end_single(
+        &self,
+        f: &mut impl fmt::Write,
+        label: &str,
+        style: Style,
+        render_mode: LabelRenderMode,
+    ) -> fmt::Result {
+        match render_mode {
+            LabelRenderMode::SingleLine => {
+                writeln!(f, "{} {}", self.theme.characters.hbar.style(style), label)?;
+            }
+            LabelRenderMode::MultiLineFirst => {
+                writeln!(f, "{} {}", self.theme.characters.rcross.style(style), label)?;
+            }
+            LabelRenderMode::MultiLineRest => {
+                writeln!(f, "{} {}", self.theme.characters.vbar.style(style), label)?;
+            }
+        }
+
         Ok(())
     }
 
@@ -889,6 +1144,16 @@ impl ReportHandler for GraphicalReportHandler {
 Support types
 */
 
+#[derive(PartialEq, Debug)]
+enum LabelRenderMode {
+    /// we're rendering a single line label (or not rendering in any special way)
+    SingleLine,
+    /// we're rendering a multiline label
+    MultiLineFirst,
+    /// we're rendering the rest of a multiline label
+    MultiLineRest,
+}
+
 #[derive(Debug)]
 struct Line {
     line_number: usize,
@@ -956,7 +1221,10 @@ impl Line {
 
 #[derive(Debug, Clone)]
 struct FancySpan {
-    label: Option<String>,
+    /// this is deliberately an option of a vec because I wanted to be very explicit
+    /// that there can also be *no* label. If there is a label, it can have multiple
+    /// lines which is what the vec is for.
+    label: Option<Vec<String>>,
     span: SourceSpan,
     style: Style,
 }
@@ -967,9 +1235,17 @@ impl PartialEq for FancySpan {
     }
 }
 
+fn split_label(v: String) -> Vec<String> {
+    v.split('\n').map(|i| i.to_string()).collect()
+}
+
 impl FancySpan {
     fn new(label: Option<String>, span: SourceSpan, style: Style) -> Self {
-        FancySpan { label, span, style }
+        FancySpan {
+            label: label.map(split_label),
+            span,
+            style,
+        }
     }
 
     fn style(&self) -> Style {
@@ -979,7 +1255,15 @@ impl FancySpan {
     fn label(&self) -> Option<String> {
         self.label
             .as_ref()
-            .map(|l| l.style(self.style()).to_string())
+            .map(|l| l.join("\n").style(self.style()).to_string())
+    }
+
+    fn label_parts(&self) -> Option<Vec<String>> {
+        self.label.as_ref().map(|l| {
+            l.iter()
+                .map(|i| i.style(self.style()).to_string())
+                .collect()
+        })
     }
 
     fn offset(&self) -> usize {

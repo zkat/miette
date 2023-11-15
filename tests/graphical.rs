@@ -34,6 +34,190 @@ fn fmt_report(diag: Report) -> String {
     out
 }
 
+fn fmt_report_with_settings(
+    diag: Report,
+    with_settings: fn(GraphicalReportHandler) -> GraphicalReportHandler,
+) -> String {
+    let mut out = String::new();
+
+    let handler = with_settings(GraphicalReportHandler::new_themed(
+        GraphicalTheme::unicode_nocolor(),
+    ));
+
+    handler.render_report(&mut out, diag.as_ref()).unwrap();
+
+    println!("Error:\n```\n{}\n```", out);
+
+    out
+}
+
+#[test]
+fn word_wrap_options() -> Result<(), MietteError> {
+    // By default, a long word should not break
+    let out =
+        fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| handler);
+
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // A long word can break with a smaller width
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10)
+    });
+    let expected = r#"  × abcd
+  │ efgh
+  │ ijkl
+  │ mnop
+  │ qrst
+  │ uvwx
+  │ yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, word breaking is disabled
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10).with_break_words(false)
+    });
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // Breaks should start at the boundary of each word if possible
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 1234
+  │ 5
+  │ 1234
+  │ 56
+  │ 1234
+  │ 567
+  │ 1234
+  │ 5678
+  │ 90
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // But long words should not break if word breaking is disabled
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 12345
+  │ 123456
+  │ 1234567
+  │ 1234567890
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, of course, there are hyphens
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a-b
+  │ a-b-
+  │ c a-
+  │ b-c-
+  │ d a-
+  │ b-c-
+  │ d-e
+  │ a-b-
+  │ c-d-
+  │ e-f
+  │ a-b-
+  │ c-d-
+  │ e-f-
+  │ g a-
+  │ b-c-
+  │ d-e-
+  │ f-g-
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Which requires an additional opt-out
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_splitter(textwrap::WordSplitter::NoHyphenation)
+        },
+    );
+    let expected = r#"  × a-b
+  │ a-b-c
+  │ a-b-c-d
+  │ a-b-c-d-e
+  │ a-b-c-d-e-f
+  │ a-b-c-d-e-f-g
+  │ a-b-c-d-e-f-g-h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Or if there are _other_ unicode word boundaries
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a/b
+  │ a/b/
+  │ c a/
+  │ b/c/
+  │ d a/
+  │ b/c/
+  │ d/e
+  │ a/b/
+  │ c/d/
+  │ e/f
+  │ a/b/
+  │ c/d/
+  │ e/f/
+  │ g a/
+  │ b/c/
+  │ d/e/
+  │ f/g/
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Such things require you to opt-in to only breaking on ASCII whitespace
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_separator(textwrap::WordSeparator::AsciiSpace)
+        },
+    );
+    let expected = r#"  × a/b
+  │ a/b/c
+  │ a/b/c/d
+  │ a/b/c/d/e
+  │ a/b/c/d/e/f
+  │ a/b/c/d/e/f/g
+  │ a/b/c/d/e/f/g/h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    Ok(())
+}
+
 #[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
@@ -588,6 +772,94 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
 }
 
 #[test]
+fn multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here\nand\nthis\ntoo")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\ntext\n  here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:1]
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰─┤ this bit here
+   ·     │ and
+   ·     │ this
+   ·     │ too
+ 3 │   here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiple_multi_line_labels() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "x\ny"]
+        highlight1: SourceSpan,
+        #[label = "z\nw"]
+        highlight2: SourceSpan,
+        #[label = "a\nb"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n  text text text text text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
+        highlight3: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │ source
+ 2 │   text text text text text
+   ·   ──┬─ ──┬─      ──┬─
+   ·     │    │         ╰─┤ a
+   ·     │    │           │ b
+   ·     │    ╰─┤ z
+   ·     │      │ w
+   ·     ╰─┤ x
+   ·       │ y
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
@@ -706,6 +978,43 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiline_highlight_multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "these two lines\nare the problem"]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 11).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │     source
+ 2 │ ╭─▶   text
+ 3 │ ├─▶     here
+   · ╰──┤ these two lines
+   ·    │ are the problem
    ╰────
   help: try doing it better next time?
 "#
@@ -1358,6 +1667,43 @@ fn single_line_with_wide_char_unaligned_span_end() -> Result<(), MietteError> {
  2 │   text 👼🏼
    ·   ───┬───
    ·      ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  👼🏼text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (10, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:4]
+ 1 │ source
+ 2 │   👼🏼text
+   ·   ▲
+   ·   ╰── this bit here
  3 │     here
    ╰────
   help: try doing it better next time?
