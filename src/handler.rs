@@ -55,6 +55,9 @@ pub struct MietteHandlerOpts {
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
+    pub(crate) break_words: Option<bool>,
+    pub(crate) word_separator: Option<textwrap::WordSeparator>,
+    pub(crate) word_splitter: Option<textwrap::WordSplitter>,
 }
 
 impl MietteHandlerOpts {
@@ -86,6 +89,27 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// If true, long words can be broken when wrapping.
+    ///
+    /// If false, long words will not be broken when they exceed the width.
+    ///
+    /// Defaults to true.
+    pub fn break_words(mut self, break_words: bool) -> Self {
+        self.break_words = Some(break_words);
+        self
+    }
+
+    /// Sets the `textwrap::WordSeparator` to use when determining wrap points.
+    pub fn word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
+        self.word_separator = Some(word_separator);
+        self
+    }
+
+    /// Sets the `textwrap::WordSplitter` to use when determining wrap points.
+    pub fn word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
+        self.word_splitter = Some(word_splitter);
+        self
+    }
     /// Include the cause chain of the top-level error in the report.
     pub fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = Some(true);
@@ -233,6 +257,16 @@ impl MietteHandlerOpts {
             if let Some(w) = self.tab_width {
                 handler = handler.tab_width(w);
             }
+            if let Some(b) = self.break_words {
+                handler = handler.with_break_words(b)
+            }
+            if let Some(s) = self.word_separator {
+                handler = handler.with_word_separator(s)
+            }
+            if let Some(s) = self.word_splitter {
+                handler = handler.with_word_splitter(s)
+            }
+
             MietteHandler {
                 inner: Box::new(handler),
             }

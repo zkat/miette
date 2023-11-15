@@ -34,6 +34,190 @@ fn fmt_report(diag: Report) -> String {
     out
 }
 
+fn fmt_report_with_settings(
+    diag: Report,
+    with_settings: fn(GraphicalReportHandler) -> GraphicalReportHandler,
+) -> String {
+    let mut out = String::new();
+
+    let handler = with_settings(GraphicalReportHandler::new_themed(
+        GraphicalTheme::unicode_nocolor(),
+    ));
+
+    handler.render_report(&mut out, diag.as_ref()).unwrap();
+
+    println!("Error:\n```\n{}\n```", out);
+
+    out
+}
+
+#[test]
+fn word_wrap_options() -> Result<(), MietteError> {
+    // By default, a long word should not break
+    let out =
+        fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| handler);
+
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // A long word can break with a smaller width
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10)
+    });
+    let expected = r#"  × abcd
+  │ efgh
+  │ ijkl
+  │ mnop
+  │ qrst
+  │ uvwx
+  │ yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, word breaking is disabled
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10).with_break_words(false)
+    });
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // Breaks should start at the boundary of each word if possible
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 1234
+  │ 5
+  │ 1234
+  │ 56
+  │ 1234
+  │ 567
+  │ 1234
+  │ 5678
+  │ 90
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // But long words should not break if word breaking is disabled
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 12345
+  │ 123456
+  │ 1234567
+  │ 1234567890
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, of course, there are hyphens
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a-b
+  │ a-b-
+  │ c a-
+  │ b-c-
+  │ d a-
+  │ b-c-
+  │ d-e
+  │ a-b-
+  │ c-d-
+  │ e-f
+  │ a-b-
+  │ c-d-
+  │ e-f-
+  │ g a-
+  │ b-c-
+  │ d-e-
+  │ f-g-
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Which requires an additional opt-out
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_splitter(textwrap::WordSplitter::NoHyphenation)
+        },
+    );
+    let expected = r#"  × a-b
+  │ a-b-c
+  │ a-b-c-d
+  │ a-b-c-d-e
+  │ a-b-c-d-e-f
+  │ a-b-c-d-e-f-g
+  │ a-b-c-d-e-f-g-h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Or if there are _other_ unicode word boundaries
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a/b
+  │ a/b/
+  │ c a/
+  │ b/c/
+  │ d a/
+  │ b/c/
+  │ d/e
+  │ a/b/
+  │ c/d/
+  │ e/f
+  │ a/b/
+  │ c/d/
+  │ e/f/
+  │ g a/
+  │ b/c/
+  │ d/e/
+  │ f/g/
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Such things require you to opt-in to only breaking on ASCII whitespace
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_separator(textwrap::WordSeparator::AsciiSpace)
+        },
+    );
+    let expected = r#"  × a/b
+  │ a/b/c
+  │ a/b/c/d
+  │ a/b/c/d/e
+  │ a/b/c/d/e/f
+  │ a/b/c/d/e/f/g
+  │ a/b/c/d/e/f/g/h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    Ok(())
+}
+
 #[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]

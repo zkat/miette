@@ -593,6 +593,7 @@
 //!             .unicode(false)
 //!             .context_lines(3)
 //!             .tab_width(4)
+//!             .break_words(true)
 //!             .build(),
 //!     )
 //! }))
