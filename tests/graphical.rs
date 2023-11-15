@@ -283,9 +283,9 @@ if true {
     let expected = r#"  × oops!
    ╭─[issue:1:1]
  1 │ ╭─▶ if true {
- 2 │ │╭▶     a
-   · ││    ┬
-   · ││    ╰── small
+ 2 │ │       a
+   · │       ┬
+   · │       ╰── small
  3 │ │   } else {
  4 │ │       b
  5 │ ├─▶ }
