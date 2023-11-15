@@ -1,5 +1,25 @@
 # `miette` Release Changelog
 
+<a name="5.10.0"></a>
+## 5.10.0 (2023-07-16)
+
+### Features
+
+* **protocol:** add StdError impl for Box<dyn Diagnostic + Send + Sync> (#273) ([2e3e5c9d](https://github.com/zkat/miette/commit/2e3e5c9d15e234495369e9b47d032644dd5664ad))
+
+<a name="5.9.0"></a>
+## 5.9.0 (2023-05-18)
+
+### Features
+
+* **serde:** Add `serde` support (#264) ([c25676cb](https://github.com/zkat/miette/commit/c25676cb1f4266c2607836e6359f15b9cbd8637e))
+* **const:** Constify various functions (#263) ([46adb3bc](https://github.com/zkat/miette/commit/46adb3bc6aa6518d82a4187b34c56e287922136f))
+* **nested:** Render inner diagnostics (#170) ([aefe3237](https://github.com/zkat/miette/commit/aefe323780bda4e60feb44bb96ee98634ad677ad))
+
+### Bug Fixes
+
+* **misc:** Correct some typos (#255) ([675f3411](https://github.com/zkat/miette/commit/675f3411e33d5fae86d4018c3b72f751a4c4bc2f))
+
 <a name="5.8.0"></a>
 ## 5.8.0 (2023-04-18)
 

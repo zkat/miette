@@ -69,14 +69,26 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-impl std::error::Error for Box<dyn Diagnostic> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        (**self).source()
-    }
+macro_rules! box_impls {
+    ($($box_type:ty),*) => {
+        $(
+            impl std::error::Error for $box_type {
+                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                    (**self).source()
+                }
 
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+                fn cause(&self) -> Option<&dyn std::error::Error> {
+                    self.source()
+                }
+            }
+        )*
     }
+}
+
+box_impls! {
+    Box<dyn Diagnostic>,
+    Box<dyn Diagnostic + Send>,
+    Box<dyn Diagnostic + Send + Sync>
 }
 
 impl<T: Diagnostic + Send + Sync + 'static> From<T>
@@ -220,7 +232,7 @@ whole thing--meaning you should be able to support `SourceCode`s which are
 gigabytes or larger in size.
 */
 pub trait SourceCode: Send + Sync {
-    /// Read the bytes for a specific span from this SourceCode, keeping a
+    /// Read the bytes for a specific span from this `SourceCode`, keeping a
     /// certain number of lines before and after the span as context.
     fn read_span<'a>(
         &'a self,
@@ -237,14 +249,16 @@ pub struct LabeledSpan {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     label: Option<String>,
     span: SourceSpan,
+    primary: bool,
 }
 
 impl LabeledSpan {
     /// Makes a new labeled span.
-    pub fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
+    pub const fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
         Self {
             label,
-            span: (offset, len).into(),
+            span: SourceSpan::new(SourceOffset(offset), SourceOffset(len)),
+            primary: false,
         }
     }
 
@@ -253,6 +267,16 @@ impl LabeledSpan {
         Self {
             label,
             span: span.into(),
+            primary: false,
+        }
+    }
+
+    /// Makes a new labeled primary span using an existing span.
+    pub fn new_primary_with_span(label: Option<String>, span: impl Into<SourceSpan>) -> Self {
+        Self {
+            label,
+            span: span.into(),
+            primary: true,
         }
     }
 
@@ -310,23 +334,28 @@ impl LabeledSpan {
     }
 
     /// Returns a reference to the inner [`SourceSpan`].
-    pub fn inner(&self) -> &SourceSpan {
+    pub const fn inner(&self) -> &SourceSpan {
         &self.span
     }
 
     /// Returns the 0-based starting byte offset.
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.span.offset()
     }
 
     /// Returns the number of bytes this `LabeledSpan` spans.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.span.len()
     }
 
     /// True if this `LabeledSpan` is empty.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.span.is_empty()
+    }
+
+    /// True if this `LabeledSpan` is a primary span.
+    pub const fn primary(&self) -> bool {
+        self.primary
     }
 }
 
@@ -338,7 +367,8 @@ fn test_serialize_labeled_span() {
     assert_eq!(
         json!(LabeledSpan::new(None, 0, 0)),
         json!({
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
     );
 
@@ -346,9 +376,10 @@ fn test_serialize_labeled_span() {
         json!(LabeledSpan::new(Some("label".to_string()), 0, 0)),
         json!({
             "label": "label",
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -358,23 +389,26 @@ fn test_deserialize_labeled_span() {
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": null,
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false,
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": "label",
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
-    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0))
+    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0));
 }
 
 /**
@@ -422,7 +456,7 @@ pub struct MietteSpanContents<'a> {
 
 impl<'a> MietteSpanContents<'a> {
     /// Make a new [`MietteSpanContents`] object.
-    pub fn new(
+    pub const fn new(
         data: &'a [u8],
         span: SourceSpan,
         line: usize,
@@ -440,7 +474,7 @@ impl<'a> MietteSpanContents<'a> {
     }
 
     /// Make a new [`MietteSpanContents`] object, with a name for its 'file'.
-    pub fn new_named(
+    pub const fn new_named(
         name: String,
         data: &'a [u8],
         span: SourceSpan,
@@ -492,7 +526,7 @@ pub struct SourceSpan {
 
 impl SourceSpan {
     /// Create a new [`SourceSpan`].
-    pub fn new(start: SourceOffset, length: usize) -> Self {
+    pub const fn new(start: SourceOffset, length: usize) -> Self {
         Self {
             offset: start,
             length,
@@ -500,18 +534,18 @@ impl SourceSpan {
     }
 
     /// The absolute offset, in bytes, from the beginning of a [`SourceCode`].
-    pub fn offset(&self) -> usize {
+    pub const fn offset(&self) -> usize {
         self.offset.offset()
     }
 
     /// Total length of the [`SourceSpan`], in bytes.
-    pub fn len(&self) -> usize {
+    pub const fn len(&self) -> usize {
         self.length
     }
 
     /// Whether this [`SourceSpan`] has a length of zero. It may still be useful
     /// to point to a specific point.
-    pub fn is_empty(&self) -> bool {
+    pub const fn is_empty(&self) -> bool {
         self.length == 0
     }
 }
@@ -563,7 +597,7 @@ fn test_serialize_source_span() {
     assert_eq!(
         json!(SourceSpan::from(0)),
         json!({ "offset": 0, "length": 0})
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -572,7 +606,7 @@ fn test_deserialize_source_span() {
     use serde_json::json;
 
     let span: SourceSpan = serde_json::from_value(json!({ "offset": 0, "length": 0})).unwrap();
-    assert_eq!(span, SourceSpan::from(0))
+    assert_eq!(span, SourceSpan::from(0));
 }
 
 /**
@@ -589,7 +623,7 @@ pub struct SourceOffset(ByteOffset);
 
 impl SourceOffset {
     /// Actual byte offset.
-    pub fn offset(&self) -> ByteOffset {
+    pub const fn offset(&self) -> ByteOffset {
         self.0
     }
 
@@ -674,12 +708,12 @@ fn test_source_offset_from_location() {
 fn test_serialize_source_offset() {
     use serde_json::json;
 
-    assert_eq!(json!(SourceOffset::from(0)), 0)
+    assert_eq!(json!(SourceOffset::from(0)), 0);
 }
 
 #[cfg(feature = "serde")]
 #[test]
 fn test_deserialize_source_offset() {
     let offset: SourceOffset = serde_json::from_str("0").unwrap();
-    assert_eq!(offset, SourceOffset::from(0))
+    assert_eq!(offset, SourceOffset::from(0));
 }

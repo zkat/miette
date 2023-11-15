@@ -186,7 +186,7 @@
 //!
 //! ```rust
 //! // lib/error.rs
-//! use miette::Diagnostic;
+//! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
 //!
 //! #[derive(Error, Diagnostic, Debug)]
@@ -198,6 +198,18 @@
 //!     #[error("Oops it blew up")]
 //!     #[diagnostic(code(my_lib::bad_code))]
 //!     BadThingHappened,
+//!
+//!     #[error(transparent)]
+//!     // Use `#[diagnostic(transparent)]` to wrap another [`Diagnostic`]. You won't see labels otherwise
+//!     #[diagnostic(transparent)]
+//!     AnotherError(#[from] AnotherError),
+//! }
+//!
+//! #[derive(Error, Diagnostic, Debug)]
+//! #[error("another error")]
+//! pub struct AnotherError {
+//!    #[label("here")]
+//!    pub at: SourceSpan
 //! }
 //! ```
 //!
@@ -290,6 +302,23 @@
 //!
 //! ```toml
 //! miette = { version = "X.Y.Z", features = ["fancy"] }
+//! ```
+//!
+//! Another way to display a diagnostic is by printing them using the debug formatter.
+//! This is, in fact, what returning diagnostics from main ends up doing.
+//! To do it yourself, you can write the following:
+//!
+//! ```rust
+//! use miette::{IntoDiagnostic, Result};
+//! use semver::Version;
+//!
+//! fn just_a_random_function() {
+//!     let version_result: Result<Version> = "1.2.x".parse().into_diagnostic();
+//!     match version_result {
+//!         Err(e) => println!("{:?}", e),
+//!         Ok(version) => println!("{}", version),
+//!     }
+//! }
 //! ```
 //!
 //! ### ... diagnostic code URLs
@@ -581,6 +610,7 @@
 //!             .unicode(false)
 //!             .context_lines(3)
 //!             .tab_width(4)
+//!             .break_words(true)
 //!             .build(),
 //!     )
 //! }))
@@ -640,6 +670,7 @@
 //! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also
 //! under the Apache License. Some code is taken from
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
+#[cfg(feature = "derive")]
 pub use miette_derive::*;
 
 pub use error::*;

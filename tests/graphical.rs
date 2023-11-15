@@ -34,6 +34,190 @@ fn fmt_report(diag: Report) -> String {
     out
 }
 
+fn fmt_report_with_settings(
+    diag: Report,
+    with_settings: fn(GraphicalReportHandler) -> GraphicalReportHandler,
+) -> String {
+    let mut out = String::new();
+
+    let handler = with_settings(GraphicalReportHandler::new_themed(
+        GraphicalTheme::unicode_nocolor(),
+    ));
+
+    handler.render_report(&mut out, diag.as_ref()).unwrap();
+
+    println!("Error:\n```\n{}\n```", out);
+
+    out
+}
+
+#[test]
+fn word_wrap_options() -> Result<(), MietteError> {
+    // By default, a long word should not break
+    let out =
+        fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| handler);
+
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // A long word can break with a smaller width
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10)
+    });
+    let expected = r#"  × abcd
+  │ efgh
+  │ ijkl
+  │ mnop
+  │ qrst
+  │ uvwx
+  │ yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, word breaking is disabled
+    let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
+        handler.with_width(10).with_break_words(false)
+    });
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    assert_eq!(expected, out);
+
+    // Breaks should start at the boundary of each word if possible
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 1234
+  │ 5
+  │ 1234
+  │ 56
+  │ 1234
+  │ 567
+  │ 1234
+  │ 5678
+  │ 90
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // But long words should not break if word breaking is disabled
+    let out = fmt_report_with_settings(
+        Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × 12
+  │ 123
+  │ 1234
+  │ 12345
+  │ 123456
+  │ 1234567
+  │ 1234567890
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, of course, there are hyphens
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a-b
+  │ a-b-
+  │ c a-
+  │ b-c-
+  │ d a-
+  │ b-c-
+  │ d-e
+  │ a-b-
+  │ c-d-
+  │ e-f
+  │ a-b-
+  │ c-d-
+  │ e-f-
+  │ g a-
+  │ b-c-
+  │ d-e-
+  │ f-g-
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Which requires an additional opt-out
+    let out = fmt_report_with_settings(
+        Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_splitter(textwrap::WordSplitter::NoHyphenation)
+        },
+    );
+    let expected = r#"  × a-b
+  │ a-b-c
+  │ a-b-c-d
+  │ a-b-c-d-e
+  │ a-b-c-d-e-f
+  │ a-b-c-d-e-f-g
+  │ a-b-c-d-e-f-g-h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Or if there are _other_ unicode word boundaries
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| handler.with_width(10).with_break_words(false),
+    );
+    let expected = r#"  × a/b
+  │ a/b/
+  │ c a/
+  │ b/c/
+  │ d a/
+  │ b/c/
+  │ d/e
+  │ a/b/
+  │ c/d/
+  │ e/f
+  │ a/b/
+  │ c/d/
+  │ e/f/
+  │ g a/
+  │ b/c/
+  │ d/e/
+  │ f/g/
+  │ h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Such things require you to opt-in to only breaking on ASCII whitespace
+    let out = fmt_report_with_settings(
+        Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
+        |handler| {
+            handler
+                .with_width(10)
+                .with_break_words(false)
+                .with_word_separator(textwrap::WordSeparator::AsciiSpace)
+        },
+    );
+    let expected = r#"  × a/b
+  │ a/b/c
+  │ a/b/c/d
+  │ a/b/c/d/e
+  │ a/b/c/d/e/f
+  │ a/b/c/d/e/f/g
+  │ a/b/c/d/e/f/g/h
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    Ok(())
+}
+
 #[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
@@ -68,6 +252,52 @@ fn empty_source() -> Result<(), MietteError> {
 }
 
 #[test]
+fn multiple_spans_multiline() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("big")]
+        big: SourceSpan,
+        #[label("small")]
+        small: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new(
+            "issue",
+            "\
+if true {
+    a
+} else {
+    b
+}",
+        ),
+        big: (0, 32).into(),
+        small: (14, 1).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    let expected = r#"  × oops!
+   ╭─[issue:1:1]
+ 1 │ ╭─▶ if true {
+ 2 │ │╭▶     a
+   · ││    ┬
+   · ││    ╰── small
+ 3 │ │   } else {
+ 4 │ │       b
+ 5 │ ├─▶ }
+   · ╰──── big
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
+
+#[test]
 fn single_line_highlight_span_full_line() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]
@@ -85,9 +315,8 @@ fn single_line_highlight_span_full_line() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
-   ╭─[issue:1:1]
+    let expected = r#"  × oops!
+   ╭─[issue:2:1]
  1 │ source
  2 │ text
    · ──┬─
@@ -121,7 +350,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:7]
  1 │ source
  2 │   👼🏼text
    ·     ───┬──
@@ -160,7 +389,7 @@ fn single_line_with_two_tabs() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │         text
    ·         ──┬─
@@ -199,7 +428,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:8]
  1 │ source
  2 │ text =  text
    ·         ──┬─
@@ -236,7 +465,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -271,7 +500,7 @@ fn external_source() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -344,7 +573,7 @@ fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:1:7]
  1 │ source
    ·       ▲
    ·       ╰── this bit here
@@ -380,7 +609,7 @@ fn single_line_highlight_include_end_of_line() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬──
@@ -417,7 +646,7 @@ fn single_line_highlight_include_end_of_line_crlf() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬──
@@ -454,7 +683,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ▲
@@ -491,7 +720,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ────
@@ -527,12 +756,100 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:1]
  1 │ source
  2 │ text
    · ──┬─
    ·   ╰── this bit here
  3 │   here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here\nand\nthis\ntoo")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\ntext\n  here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (7, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:1]
+ 1 │ source
+ 2 │ text
+   · ──┬─
+   ·   ╰─┤ this bit here
+   ·     │ and
+   ·     │ this
+   ·     │ too
+ 3 │   here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiple_multi_line_labels() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "x\ny"]
+        highlight1: SourceSpan,
+        #[label = "z\nw"]
+        highlight2: SourceSpan,
+        #[label = "a\nb"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n  text text text text text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (9, 4).into(),
+        highlight2: (14, 4).into(),
+        highlight3: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │ source
+ 2 │   text text text text text
+   ·   ──┬─ ──┬─      ──┬─
+   ·     │    │         ╰─┤ a
+   ·     │    │           │ b
+   ·     │    ╰─┤ z
+   ·     │      │ w
+   ·     ╰─┤ x
+   ·       │ y
+ 3 │     here
    ╰────
   help: try doing it better next time?
 "#
@@ -570,7 +887,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text text text text text
    ·   ──┬─ ──┬─      ──┬─
@@ -617,7 +934,7 @@ fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text text text    text text
    ·   ──┬─ ──┬─         ──┬─
@@ -656,11 +973,48 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │     source
  2 │ ╭─▶   text
  3 │ ├─▶     here
    · ╰──── these two lines
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multiline_highlight_multiline_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "these two lines\nare the problem"]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 11).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │     source
+ 2 │ ╭─▶   text
+ 3 │ ├─▶     here
+   · ╰──┤ these two lines
+   ·    │ are the problem
    ╰────
   help: try doing it better next time?
 "#
@@ -970,7 +1324,7 @@ fn related() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1032,7 +1386,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1137,7 +1491,7 @@ fn related_severity() -> Result<(), MietteError> {
     let expected = r#"oops::my::bad
 
   × oops!
-   ╭─[bad_file.rs:1:1]
+   ╭─[bad_file.rs:2:3]
  1 │ source
  2 │   text
    ·   ──┬─
@@ -1201,9 +1555,8 @@ fn zero_length_eol_span() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"
-  × oops!
-   ╭─[issue:1:1]
+    let expected = r#"  × oops!
+   ╭─[issue:2:1]
  1 │ this is the first line
  2 │ this is the second line
    · ▲
@@ -1213,4 +1566,150 @@ fn zero_length_eol_span() {
     .to_string();
 
     assert_eq!(expected, out);
+}
+
+#[test]
+fn primary_label() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label]
+        first_label: SourceSpan,
+        #[label(primary, "nope")]
+        second_label: SourceSpan,
+    }
+    let err = MyBad {
+        src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
+        first_label: (2, 4).into(),
+        second_label: (24, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    // line 2 should be the primary, not line 1
+    let expected = r#"  × oops!
+   ╭─[issue:2:2]
+ 1 │ this is the first line
+   ·   ────
+ 2 │ this is the second line
+   ·  ──┬─
+   ·    ╰── nope
+   ╰────
+"#
+    .to_string();
+
+    assert_eq!(expected, out);
+}
+
+#[test]
+fn single_line_with_wide_char_unaligned_span_start() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  👼🏼text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (10, 5).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:4]
+ 1 │ source
+ 2 │   👼🏼text
+   ·   ──┬─
+   ·     ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_with_wide_char_unaligned_span_end() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  text 👼🏼\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 6).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 1 │ source
+ 2 │   text 👼🏼
+   ·   ───┬───
+   ·      ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "source\n  👼🏼text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (10, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:4]
+ 1 │ source
+ 2 │   👼🏼text
+   ·   ▲
+   ·   ╰── this bit here
+ 3 │     here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
 }
