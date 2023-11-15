@@ -46,7 +46,7 @@ fn fmt_report_with_settings(
 
     handler.render_report(&mut out, diag.as_ref()).unwrap();
 
-    println!("Error:\n```\n{out}\n```");
+    println!("Error:\n```\n{}\n```", out);
 
     out
 }
