@@ -237,10 +237,9 @@ impl MietteHandlerOpts {
                 ThemeStyles::none()
             };
             let theme = self.theme.unwrap_or(GraphicalTheme { characters, styles });
-            let mut handler = GraphicalReportHandler::new()
+            let mut handler = GraphicalReportHandler::new_themed(theme)
                 .with_width(width)
-                .with_links(linkify)
-                .with_theme(theme);
+                .with_links(linkify);
             if let Some(with_cause_chain) = self.with_cause_chain {
                 if with_cause_chain {
                     handler = handler.with_cause_chain();
