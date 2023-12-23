@@ -222,15 +222,15 @@ impl MietteHandlerOpts {
             };
             let styles = if self.color == Some(false) {
                 ThemeStyles::none()
+            } else if self.color == Some(true) {
+                match self.rgb_colors {
+                    RgbColors::Always => ThemeStyles::rgb(),
+                    _ => ThemeStyles::ansi(),
+                }
             } else if let Some(color) = supports_color::on(supports_color::Stream::Stderr) {
                 match self.rgb_colors {
                     RgbColors::Always => ThemeStyles::rgb(),
                     RgbColors::Preferred if color.has_16m => ThemeStyles::rgb(),
-                    _ => ThemeStyles::ansi(),
-                }
-            } else if self.color == Some(true) {
-                match self.rgb_colors {
-                    RgbColors::Always => ThemeStyles::rgb(),
                     _ => ThemeStyles::ansi(),
                 }
             } else {
