@@ -30,6 +30,7 @@ pub struct GraphicalReportHandler {
     pub(crate) context_lines: usize,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
+    pub(crate) wrap_lines: bool,
     pub(crate) break_words: bool,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
@@ -54,6 +55,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            wrap_lines: true,
             break_words: true,
             word_separator: None,
             word_splitter: None,
@@ -69,6 +71,7 @@ impl GraphicalReportHandler {
             footer: None,
             context_lines: 1,
             tab_width: 4,
+            wrap_lines: true,
             with_cause_chain: true,
             break_words: true,
             word_separator: None,
@@ -128,6 +131,12 @@ impl GraphicalReportHandler {
     /// Sets the width to wrap the report at.
     pub fn with_width(mut self, width: usize) -> Self {
         self.termwidth = width;
+        self
+    }
+
+    /// Enables or disables wrapping of lines to fit the width.
+    pub fn with_wrap_lines(mut self, wrap_lines: bool) -> Self {
+        self.wrap_lines = wrap_lines;
         self
     }
 
@@ -197,7 +206,7 @@ impl GraphicalReportHandler {
                 opts = opts.word_splitter(word_splitter);
             }
 
-            writeln!(f, "{}", textwrap::fill(footer, opts))?;
+            writeln!(f, "{}", self.wrap(footer, opts))?;
         }
         Ok(())
     }
@@ -258,7 +267,7 @@ impl GraphicalReportHandler {
             opts = opts.word_splitter(word_splitter);
         }
 
-        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+        writeln!(f, "{}", self.wrap(&diagnostic.to_string(), opts))?;
 
         if !self.with_cause_chain {
             return Ok(());
@@ -314,10 +323,10 @@ impl GraphicalReportHandler {
                         inner_renderer.with_cause_chain = false;
                         inner_renderer.render_report(&mut inner, diag)?;
 
-                        writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+                        writeln!(f, "{}", self.wrap(&inner, opts))?;
                     }
                     ErrorKind::StdError(err) => {
-                        writeln!(f, "{}", textwrap::fill(&err.to_string(), opts))?;
+                        writeln!(f, "{}", self.wrap(&err.to_string(), opts))?;
                     }
                 }
             }
@@ -341,7 +350,7 @@ impl GraphicalReportHandler {
                 opts = opts.word_splitter(word_splitter);
             }
 
-            writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
+            writeln!(f, "{}", self.wrap(&help.to_string(), opts))?;
         }
         Ok(())
     }
@@ -808,6 +817,41 @@ impl GraphicalReportHandler {
         // we then write the gutter and as many spaces as we need
         write!(f, "{}{:width$}", gutter, "", width = num_spaces)?;
         Ok(())
+    }
+
+    fn wrap(&self, text: &str, opts: textwrap::Options<'_>) -> String {
+        if self.wrap_lines {
+            textwrap::fill(text, opts)
+        } else {
+            // Format without wrapping, but retain the indentation options
+            // Implementation based on `textwrap::indent`
+            let mut result = String::with_capacity(2 * text.len());
+            let trimmed_indent = opts.subsequent_indent.trim_end();
+            for (idx, line) in text.split_terminator('\n').enumerate() {
+                if idx > 0 {
+                    result.push('\n');
+                }
+                if idx == 0 {
+                    if line.trim().is_empty() {
+                        result.push_str(opts.initial_indent.trim_end());
+                    } else {
+                        result.push_str(opts.initial_indent);
+                    }
+                } else {
+                    if line.trim().is_empty() {
+                        result.push_str(trimmed_indent);
+                    } else {
+                        result.push_str(opts.subsequent_indent);
+                    }
+                }
+                result.push_str(line);
+            }
+            if text.ends_with('\n') {
+                // split_terminator will have eaten the final '\n'.
+                result.push('\n');
+            }
+            result
+        }
     }
 
     fn write_linum(&self, f: &mut impl fmt::Write, width: usize, linum: usize) -> fmt::Result {
