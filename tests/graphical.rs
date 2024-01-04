@@ -219,6 +219,50 @@ fn word_wrap_options() -> Result<(), MietteError> {
 }
 
 #[test]
+fn wrap_option() -> Result<(), MietteError> {
+    // A line should break on the width
+    let out = fmt_report_with_settings(
+        Report::msg("abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz"),
+        |handler| handler.with_width(15),
+    );
+    let expected = r#"  × abc def
+  │ ghi jkl
+  │ mno pqr
+  │ stu vwx
+  │ yz abc
+  │ def ghi
+  │ jkl mno
+  │ pqr stu
+  │ vwx yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, wrapping is disabled
+    let out = fmt_report_with_settings(
+        Report::msg("abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz"),
+        |handler| handler.with_width(15).with_wrap_lines(false),
+    );
+    let expected =
+        "  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
+    assert_eq!(expected, out);
+
+    // Then, user-defined new lines should be preserved wrapping is disabled
+    let out = fmt_report_with_settings(
+      Report::msg("abc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz"),
+      |handler| handler.with_width(15).with_wrap_lines(false),
+  );
+    let expected = r#"  × abc def ghi jkl mno pqr stu vwx yz
+  │ abc def ghi jkl mno pqr stu vwx yz
+  │ abc def ghi jkl mno pqr stu vwx yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    Ok(())
+}
+
+#[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
