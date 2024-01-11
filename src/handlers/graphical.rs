@@ -405,16 +405,12 @@ impl GraphicalReportHandler {
                 // The snippets will overlap, so we create one Big Chunky Boi
                 let left_end = left.offset() + left.len();
                 let right_end = right.offset() + right.len();
+                let new_end = std::cmp::max(left_end, right_end);
+
                 let new_span = LabeledSpan::new(
                     left.label().map(String::from),
                     left.offset(),
-                    if right_end >= left_end {
-                        // Right end goes past left end
-                        right_end - left.offset()
-                    } else {
-                        // right is contained inside left
-                        left.len()
-                    },
+                    new_end - left.offset(),
                 );
                 // Check that the two contexts can be combined
                 if let Ok(new_conts) =
