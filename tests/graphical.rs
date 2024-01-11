@@ -1730,12 +1730,12 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
         highlight3: SourceSpan,
     }
 
-    let src = "source\n  text\n    here".to_string();
+    let src = "source\n\n\n  text\n\n\n    here".to_string();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
         highlight1: (0, 6).into(),
-        highlight2: (9, 4).into(),
-        highlight3: (18, 4).into(),
+        highlight2: (11, 4).into(),
+        highlight3: (22, 4).into(),
     };
     let out = fmt_report(err.into());
     println!("Error: {}", out);
@@ -1746,17 +1746,19 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
  1 │ source
    · ───┬──
    ·    ╰── this bit here
- 2 │   text
+ 2 │ 
+ 3 │ 
+ 4 │   text
    ·   ──┬─
    ·     ╰── also this bit
- 3 │     here
+ 5 │ 
+ 6 │ 
+ 7 │     here
    ·     ──┬─
    ·       ╰── finally we got
    ╰────
   help: try doing it better next time?
-"
-    .trim_start()
-    .to_string();
-    assert_eq!(expected, out);
+";
+    assert_eq!(expected, &out);
     Ok(())
 }
