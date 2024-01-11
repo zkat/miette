@@ -1757,3 +1757,95 @@ fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> 
     assert_eq!(expected, out);
     Ok(())
 }
+
+#[test]
+fn triple_adjacent_highlight() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "this bit here"]
+        highlight1: SourceSpan,
+        #[label = "also this bit"]
+        highlight2: SourceSpan,
+        #[label = "finally we got"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n\n\n  text\n\n\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 6).into(),
+        highlight2: (11, 4).into(),
+        highlight3: (22, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │ 
+ 3 │ 
+ 4 │   text
+   ·   ──┬─
+   ·     ╰── also this bit
+ 5 │ 
+ 6 │ 
+ 7 │     here
+   ·     ──┬─
+   ·       ╰── finally we got
+   ╰────
+  help: try doing it better next time?
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn non_adjacent_highlight() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "this bit here"]
+        highlight1: SourceSpan,
+        #[label = "also this bit"]
+        highlight2: SourceSpan,
+    }
+
+    let src = "source\n\n\n\n  text    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 6).into(),
+        highlight2: (12, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │ 
+   ╰────
+   ╭─[bad_file.rs:5:3]
+ 4 │ 
+ 5 │   text    here
+   ·   ──┬─
+   ·     ╰── also this bit
+   ╰────
+  help: try doing it better next time?
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
