@@ -377,11 +377,13 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
         opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
-        let Some(source) = opt_source else {
-            return Ok(());
+        let source = match opt_source {
+            Some(source) => source,
+            None => return Ok(()),
         };
-        let Some(labels) = diagnostic.labels() else {
-            return Ok(());
+        let labels = match diagnostic.labels() {
+            Some(labels) => labels,
+            None => return Ok(()),
         };
 
         let mut labels = labels.collect::<Vec<_>>();
@@ -394,12 +396,12 @@ impl GraphicalReportHandler {
                 .map_err(|_| fmt::Error)?;
 
             if contexts.is_empty() {
-                contexts.push((right, (right_conts.line(), right_conts.line_count())));
+                contexts.push((right, right_conts));
                 continue;
             }
 
-            let (left, (left_line, left_line_count)) = contexts.last().unwrap().clone();
-            if left_line + left_line_count >= right_conts.line() {
+            let (left, left_conts) = contexts.last().unwrap();
+            if left_conts.line() + left_conts.line_count() >= right_conts.line() {
                 // The snippets will overlap, so we create one Big Chunky Boi
                 let left_end = left.offset() + left.len();
                 let right_end = right.offset() + right.len();
@@ -419,16 +421,13 @@ impl GraphicalReportHandler {
                     source.read_span(new_span.inner(), self.context_lines, self.context_lines)
                 {
                     contexts.pop();
-                    contexts.push((
-                        // We'll throw this away later
-                        new_span,
-                        (new_conts.line(), new_conts.line_count()),
-                    ));
+                    // We'll throw the contents away later
+                    contexts.push((new_span, new_conts));
                     continue;
                 }
             }
 
-            contexts.push((right, (right_conts.line(), right_conts.line_count())));
+            contexts.push((right, right_conts));
         }
         for (ctx, _) in contexts {
             self.render_context(f, source, &ctx, &labels[..])?;
