@@ -317,9 +317,10 @@ impl GraphicalReportHandler {
                     ErrorKind::Diagnostic(diag) => {
                         let mut inner = String::new();
 
-                        // Don't print footer for inner errors
                         let mut inner_renderer = self.clone();
+                        // Don't print footer for inner errors
                         inner_renderer.footer = None;
+                        // Cause chains are already flattened, so don't double-print the nested error
                         inner_renderer.with_cause_chain = false;
                         inner_renderer.render_report(&mut inner, diag)?;
 
@@ -362,6 +363,9 @@ impl GraphicalReportHandler {
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
+            let mut inner_renderer = self.clone();
+            // Re-enable the printing of nested cause chains for related errors
+            inner_renderer.with_cause_chain = true;
             writeln!(f)?;
             for rel in related {
                 match rel.severity() {
@@ -369,12 +373,12 @@ impl GraphicalReportHandler {
                     Some(Severity::Warning) => write!(f, "Warning: ")?,
                     Some(Severity::Advice) => write!(f, "Advice: ")?,
                 };
-                self.render_header(f, rel)?;
-                self.render_causes(f, rel)?;
+                inner_renderer.render_header(f, rel)?;
+                inner_renderer.render_causes(f, rel)?;
                 let src = rel.source_code().or(parent_src);
-                self.render_snippets(f, rel, src)?;
-                self.render_footer(f, rel)?;
-                self.render_related(f, rel, src)?;
+                inner_renderer.render_snippets(f, rel, src)?;
+                inner_renderer.render_footer(f, rel)?;
+                inner_renderer.render_related(f, rel, src)?;
             }
         }
         Ok(())
