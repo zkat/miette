@@ -1342,6 +1342,28 @@ fn disable_url_links() -> Result<(), MietteError> {
 }
 
 #[test]
+fn url_links_with_display_text() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(
+        code(oops::my::bad),
+        help("try doing it better next time?"),
+        url("https://example.com")
+    )]
+    struct MyBad;
+    let err = MyBad;
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler.with_link_display_text("Read the documentation")
+    });
+
+    println!("Error: {}", out);
+    assert!(out.contains("https://example.com"));
+    assert!(out.contains("Read the documentation"));
+    assert!(out.contains("oops::my::bad"));
+    Ok(())
+}
+
+#[test]
 fn related() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]

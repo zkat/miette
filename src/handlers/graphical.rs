@@ -36,6 +36,7 @@ pub struct GraphicalReportHandler {
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
     pub(crate) highlighter: MietteHighlighter,
+    pub(crate) link_display_text: Option<String>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +63,7 @@ impl GraphicalReportHandler {
             word_separator: None,
             word_splitter: None,
             highlighter: MietteHighlighter::default(),
+            link_display_text: None,
         }
     }
 
@@ -80,6 +82,7 @@ impl GraphicalReportHandler {
             word_separator: None,
             word_splitter: None,
             highlighter: MietteHighlighter::default(),
+            link_display_text: None,
         }
     }
 
@@ -190,6 +193,13 @@ impl GraphicalReportHandler {
         self.highlighter = MietteHighlighter::nocolor();
         self
     }
+
+    /// Sets the display text for links.
+    /// Miette displays `(link)` if this option is not set.
+    pub fn with_link_display_text(mut self, text: impl Into<String>) -> Self {
+        self.link_display_text = Some(text.into());
+        self
+    }
 }
 
 impl Default for GraphicalReportHandler {
@@ -246,11 +256,12 @@ impl GraphicalReportHandler {
             } else {
                 "".to_string()
             };
+            let display_text = self.link_display_text.as_deref().unwrap_or("(link)");
             let link = format!(
                 "\u{1b}]8;;{}\u{1b}\\{}{}\u{1b}]8;;\u{1b}\\",
                 url,
                 code.style(severity_style),
-                "(link)".style(self.theme.styles.link)
+                display_text.style(self.theme.styles.link)
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
