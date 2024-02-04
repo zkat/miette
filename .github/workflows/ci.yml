@@ -26,8 +26,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        features: [fancy, syntect-highlighter]
         rust: [1.56.0, stable]
         os: [ubuntu-latest, macOS-latest, windows-latest]
+        exclude:
+          - features: syntect-highlighter
+            rust: 1.56.0
 
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +47,10 @@ jobs:
         run: cargo clippy --all -- -D warnings
       - name: Run tests
         if: matrix.rust == 'stable'
-        run: cargo test --all --verbose --features fancy
+        run: cargo test --all --verbose --features ${{matrix.features}}
       - name: Run tests
         if: matrix.rust == '1.56.0'
-        run: cargo test --all --verbose --features fancy no-format-args-capture
+        run: cargo test --all --verbose --features ${{matrix.features}} no-format-args-capture
 
   miri:
     name: Miri
@@ -78,5 +82,4 @@ jobs:
         with:
           toolchain: nightly
       - name: Run minimal version build
-        run: cargo build -Z minimal-versions --all-features
-
+        run: cargo build -Z minimal-versions --features fancy,no-format-args-capture

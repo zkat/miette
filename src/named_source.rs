@@ -6,13 +6,15 @@ use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 pub struct NamedSource<S: SourceCode + 'static> {
     source: S,
     name: String,
+    language: Option<String>,
 }
 
 impl<S: SourceCode> std::fmt::Debug for NamedSource<S> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("NamedSource")
             .field("name", &self.name)
-            .field("source", &"<redacted>");
+            .field("source", &"<redacted>")
+            .field("language", &self.language);
         Ok(())
     }
 }
@@ -27,6 +29,7 @@ impl<S: SourceCode + 'static> NamedSource<S> {
         Self {
             source,
             name: name.as_ref().to_string(),
+            language: None,
         }
     }
 
@@ -40,6 +43,12 @@ impl<S: SourceCode + 'static> NamedSource<S> {
     pub fn inner(&self) -> &S {
         &self.source
     }
+
+    /// Sets the [`language`](SpanContents::language) for this source code.
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
+    }
 }
 
 impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
@@ -49,16 +58,20 @@ impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
-        let contents = self
-            .inner()
-            .read_span(span, context_lines_before, context_lines_after)?;
-        Ok(Box::new(MietteSpanContents::new_named(
+        let inner_contents =
+            self.inner()
+                .read_span(span, context_lines_before, context_lines_after)?;
+        let mut contents = MietteSpanContents::new_named(
             self.name.clone(),
-            contents.data(),
-            *contents.span(),
-            contents.line(),
-            contents.column(),
-            contents.line_count(),
-        )))
+            inner_contents.data(),
+            *inner_contents.span(),
+            inner_contents.line(),
+            inner_contents.column(),
+            inner_contents.line_count(),
+        );
+        if let Some(language) = &self.language {
+            contents = contents.with_language(language);
+        }
+        Ok(Box::new(contents))
     }
 }

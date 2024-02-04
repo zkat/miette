@@ -21,12 +21,14 @@ fn fmt_report(diag: Report) -> String {
             .unwrap();
     } else if let Ok(w) = std::env::var("REPLACE_TABS") {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .without_syntax_highlighting()
             .with_width(80)
             .tab_width(w.parse().expect("Invalid tab width."))
             .render_report(&mut out, diag.as_ref())
             .unwrap();
     } else {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
+            .without_syntax_highlighting()
             .with_width(80)
             .render_report(&mut out, diag.as_ref())
             .unwrap();
@@ -1757,6 +1759,102 @@ fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> 
     assert_eq!(expected, out);
     Ok(())
 }
+
+#[test]
+#[cfg(feature = "syntect-highlighter")]
+fn syntax_highlighter() {
+    std::env::set_var("REPLACE_TABS", "4");
+    #[derive(Debug, Error, Diagnostic)]
+    #[error("This is an error")]
+    #[diagnostic()]
+    pub struct Test {
+        #[source_code]
+        src: NamedSource,
+        #[label("this is a label")]
+        src_span: SourceSpan,
+    }
+    let src = NamedSource::new(
+        "hello_world", //NOTE: intentionally missing file extension
+        "fn main() {\n    println!(\"Hello, World!\");\n}\n".to_string(),
+    )
+    .with_language("Rust");
+    let err = Test {
+        src,
+        src_span: (16, 26).into(),
+    };
+    let mut out = String::new();
+    GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+        .render_report(&mut out, &err)
+        .unwrap();
+    let expected = r#"  × This is an error
+   ╭─[hello_world:2:5]
+ 1 │ fn main() {
+ 2 │     println!("Hello, World!");
+   ·     ─────────────┬────────────
+   ·                  ╰── this is a label
+ 3 │ }
+   ╰────
+"#;
+    assert!(out.contains("\u{1b}[38;2;180;142;173m"));
+    assert_eq!(expected, strip_ansi_escapes::strip_str(out))
+}
+
+// This test reads a line from the current source file and renders it with Rust
+// syntax highlighting. The goal is to test syntax highlighting on a non-trivial
+// source code example. However, if tests are running in an environment where
+// source files are missing, this will cause problems. In that case, it would
+// be better to use include_str!() on a sufficiently complex example file.
+#[test]
+#[cfg(feature = "syntect-highlighter")]
+fn syntax_highlighter_on_real_file() {
+    std::env::set_var("REPLACE_TABS", "4");
+
+    #[derive(Debug, Error, Diagnostic)]
+    #[error("This is an error")]
+    #[diagnostic()]
+    pub struct Test {
+        #[source_code]
+        src: NamedSource,
+        #[label("this is a label")]
+        src_span: SourceSpan,
+    }
+    // BEGIN SOURCE SNIPPET
+
+    let (filename, line) = (file!(), line!() as usize);
+
+    // END SOURCE SNIPPET
+    // SourceSpan constants for column and length
+    const CO: usize = 28;
+    const LEN: usize = 27;
+    let file_src = std::fs::read_to_string(&filename).unwrap();
+    let offset = miette::SourceOffset::from_location(&file_src, line, CO);
+    let err = Test {
+        src: NamedSource::new(&filename, file_src.clone()),
+        src_span: SourceSpan::new(offset, LEN.into()),
+    };
+
+    let mut out = String::new();
+    GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+        .with_context_lines(1)
+        .render_report(&mut out, &err)
+        .unwrap();
+
+    let expected = format!(
+        r#"  × This is an error
+      ╭─[{filename}:{l2}:{CO}]
+ {l1} │ 
+ {l2} │     let (filename, line) = (file!(), line!() as usize);
+      ·                            ─────────────┬─────────────
+      ·                                         ╰── this is a label
+ {l3} │ 
+      ╰────
+"#,
+        l1 = line - 1,
+        l2 = line,
+        l3 = line + 1
+    );
+    assert!(out.contains("\u{1b}[38;2;180;142;173m"));
+    assert_eq!(expected, strip_ansi_escapes::strip_str(out));
 
 #[test]
 fn triple_adjacent_highlight() -> Result<(), MietteError> {

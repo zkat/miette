@@ -47,6 +47,7 @@
 //!   - [... delayed source code](#-delayed-source-code)
 //!   - [... handler options](#-handler-options)
 //!   - [... dynamic diagnostics](#-dynamic-diagnostics)
+//!   - [... syntax highlighting](#-syntax-highlighting)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
 //!
@@ -643,6 +644,34 @@
 //! println!("{:?}", report)
 //! ```
 //!
+//! ### ... syntax highlighting
+//!
+//! `miette` can be configured to highlight syntax in source code snippets.
+//!
+//! <!-- TODO: screenshot goes here once default Theme is decided -->
+//!
+//! To use the built-in highlighting functionality, you must enable the
+//! `syntect-highlighter` crate feature. When this feature is enabled, `miette` will
+//! automatically use the [`syntect`] crate to highlight the `#[source_code]`
+//! field of your [`Diagnostic`].
+//!
+//! Syntax detection with [`syntect`] is handled by checking 2 methods on the [`SpanContents`] trait, in order:
+//! * [language()](SpanContents::language) - Provides the name of the language
+//!   as a string. For example `"Rust"` will indicate Rust syntax highlighting.
+//!   You can set the language of the [`SpanContents`] produced by a
+//!   [`NamedSource`] via the [`with_language`](NamedSource::with_language)
+//!   method.
+//! * [name()](SpanContents::name) - In the absence of an explicitly set
+//!   language, the name is assumed to contain a file name or file path.
+//!   The highlighter will check for a file extension at the end of the name and
+//!   try to guess the syntax from that.
+//!
+//! If you want to use a custom highlighter, you can provide a custom
+//! implementation of the [`Highlighter`](highlighters::Highlighter)
+//! trait to [`MietteHandlerOpts`] by calling the
+//! [`with_syntax_highlighting`](MietteHandlerOpts::with_syntax_highlighting)
+//! method. See the [`highlighters`] module docs for more details.
+//!
 //! ## Acknowledgements
 //!
 //! `miette` was not developed in a void. It owes enormous credit to various
@@ -691,6 +720,8 @@ mod eyreish;
 #[cfg(feature = "fancy-no-backtrace")]
 mod handler;
 mod handlers;
+#[cfg(feature = "fancy-no-backtrace")]
+pub mod highlighters;
 #[doc(hidden)]
 pub mod macro_helpers;
 mod miette_diagnostic;
