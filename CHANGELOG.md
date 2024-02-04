@@ -1,5 +1,14 @@
 # `miette` Release Changelog
 
+<a name="6.0.1"></a>
+## 6.0.1 (2024-02-04)
+
+### Bug Fixes
+
+* **graphical:** oops. Fix theme issue ([8b46679c](https://github.com/zkat/miette/commit/8b46679c3647e1455d91b4c68743c619fb3f3eb3))
+* **fmt:** remove nightly-only fmt flags ([1fa7f524](https://github.com/zkat/miette/commit/1fa7f5241fb91d2e5bad9b0e26bcc7cd5f9011f1))
+* **highlighter:** ugh, missed another spot ([ab7c066e](https://github.com/zkat/miette/commit/ab7c066e7675d8c7ecb956000d278fc31f3bc6a1))
+
 <a name="6.0.0"></a>
 ## 6.0.0 (2024-02-04)
 
