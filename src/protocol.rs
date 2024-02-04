@@ -191,8 +191,6 @@ pub enum Severity {
     Error,
 }
 
-
-
 #[cfg(feature = "serde")]
 #[test]
 fn test_serialize_severity() {

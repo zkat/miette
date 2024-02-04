@@ -1855,7 +1855,7 @@ fn syntax_highlighter_on_real_file() {
     );
     assert!(out.contains("\u{1b}[38;2;180;142;173m"));
     assert_eq!(expected, strip_ansi_escapes::strip_str(out));
-  }
+}
 
 #[test]
 fn triple_adjacent_highlight() -> Result<(), MietteError> {
