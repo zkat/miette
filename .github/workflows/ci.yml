@@ -27,11 +27,11 @@ jobs:
     strategy:
       matrix:
         features: [fancy, syntect-highlighter]
-        rust: [1.56.0, stable]
+        rust: [1.70.0, stable]
         os: [ubuntu-latest, macOS-latest, windows-latest]
         exclude:
           - features: syntect-highlighter
-            rust: 1.56.0
+            rust: 1.70.0
 
     steps:
       - uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
           toolchain: ${{ matrix.rust }}
           components: clippy
       - name: Force older version of is-terminal for MSRV builds
-        if: matrix.rust == '1.56.0'
+        if: matrix.rust == '1.70.0'
         run:  cargo update -p is-terminal --precise 0.4.7
       - name: Clippy
         run: cargo clippy --all -- -D warnings
@@ -49,7 +49,7 @@ jobs:
         if: matrix.rust == 'stable'
         run: cargo test --all --verbose --features ${{matrix.features}}
       - name: Run tests
-        if: matrix.rust == '1.56.0'
+        if: matrix.rust == '1.70.0'
         run: cargo test --all --verbose --features ${{matrix.features}} no-format-args-capture
 
   miri:

@@ -1,4 +1,5 @@
-use is_terminal::IsTerminal;
+use std::io::IsTerminal;
+
 use owo_colors::Style;
 
 /**

@@ -1842,11 +1842,11 @@ fn syntax_highlighter_on_real_file() {
     let expected = format!(
         r#"  × This is an error
       ╭─[{filename}:{l2}:{CO}]
- {l1} │ 
+ {l1} │
  {l2} │     let (filename, line) = (file!(), line!() as usize);
       ·                            ─────────────┬─────────────
       ·                                         ╰── this is a label
- {l3} │ 
+ {l3} │
       ╰────
 "#,
         l1 = line - 1,
@@ -1855,6 +1855,7 @@ fn syntax_highlighter_on_real_file() {
     );
     assert!(out.contains("\u{1b}[38;2;180;142;173m"));
     assert_eq!(expected, strip_ansi_escapes::strip_str(out));
+  }
 
 #[test]
 fn triple_adjacent_highlight() -> Result<(), MietteError> {
@@ -1888,13 +1889,13 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
  1 │ source
    · ───┬──
    ·    ╰── this bit here
- 2 │ 
- 3 │ 
+ 2 │
+ 3 │
  4 │   text
    ·   ──┬─
    ·     ╰── also this bit
- 5 │ 
- 6 │ 
+ 5 │
+ 6 │
  7 │     here
    ·     ──┬─
    ·       ╰── finally we got
@@ -1934,10 +1935,10 @@ fn non_adjacent_highlight() -> Result<(), MietteError> {
  1 │ source
    · ───┬──
    ·    ╰── this bit here
- 2 │ 
+ 2 │
    ╰────
    ╭─[bad_file.rs:5:3]
- 4 │ 
+ 4 │
  5 │   text    here
    ·   ──┬─
    ·     ╰── also this bit

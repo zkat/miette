@@ -257,7 +257,7 @@ impl LabeledSpan {
     pub const fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
         Self {
             label,
-            span: SourceSpan::new(SourceOffset(offset), SourceOffset(len)),
+            span: SourceSpan::new(SourceOffset(offset), len),
             primary: false,
         }
     }
