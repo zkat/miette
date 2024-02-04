@@ -672,6 +672,10 @@
 //! [`with_syntax_highlighting`](MietteHandlerOpts::with_syntax_highlighting)
 //! method. See the [`highlighters`] module docs for more details.
 //!
+//! ## MSRV
+//!
+//! This crate requires rustc 1.70.0 or later.
+//!
 //! ## Acknowledgements
 //!
 //! `miette` was not developed in a void. It owes enormous credit to various

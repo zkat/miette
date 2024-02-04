@@ -179,6 +179,7 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
 */
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum Severity {
     /// Just some help. Here's how you could be doing it better.
     Advice,
@@ -186,14 +187,11 @@ pub enum Severity {
     Warning,
     /// Critical failure. The program cannot continue.
     /// This is the default severity, if you don't specify another one.
+    #[default]
     Error,
 }
 
-impl Default for Severity {
-    fn default() -> Self {
-        Severity::Error
-    }
-}
+
 
 #[cfg(feature = "serde")]
 #[test]
