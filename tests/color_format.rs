@@ -3,6 +3,7 @@
 use lazy_static::lazy_static;
 use miette::{Diagnostic, MietteHandler, MietteHandlerOpts, ReportHandler, RgbColors};
 use regex::Regex;
+use std::ffi::OsString;
 use std::fmt::{self, Debug};
 use std::sync::Mutex;
 use thiserror::Error;
@@ -42,16 +43,29 @@ fn color_format(handler: MietteHandler) -> ColorFormat {
     }
 }
 
-/// Runs a function with an environment variable set to a specific value, then
-/// sets it back to it's original value once completed.
-fn with_env_var<F: FnOnce()>(var: &str, value: &str, body: F) {
-    let old_value = std::env::var_os(var);
-    std::env::set_var(var, value);
-    body();
-    if let Some(old_value) = old_value {
-        std::env::set_var(var, old_value);
-    } else {
-        std::env::remove_var(var);
+/// Store the current value of an environment variable on construction, and then
+/// restore that value when the guard is dropped.
+struct EnvVarGuard<'a> {
+    var: &'a str,
+    old_value: Option<OsString>,
+}
+
+impl EnvVarGuard<'_> {
+    fn new(var: &str) -> EnvVarGuard<'_> {
+        EnvVarGuard {
+            var,
+            old_value: std::env::var_os(var),
+        }
+    }
+}
+
+impl Drop for EnvVarGuard<'_> {
+    fn drop(&mut self) {
+        if let Some(old_value) = &self.old_value {
+            std::env::set_var(self.var, old_value);
+        } else {
+            std::env::remove_var(self.var);
+        }
     }
 }
 
@@ -72,22 +86,33 @@ fn check_colors<F: Fn(MietteHandlerOpts) -> MietteHandlerOpts>(
     //
     // Since environment variables are shared for the entire process, we need
     // to ensure that only one test that modifies these env vars runs at a time.
-    let guard = COLOR_ENV_VARS.lock().unwrap();
+    let lock = COLOR_ENV_VARS.lock().unwrap();
 
-    with_env_var("NO_COLOR", "1", || {
-        let handler = make_handler(MietteHandlerOpts::new()).build();
-        assert_eq!(color_format(handler), no_support);
-    });
-    with_env_var("FORCE_COLOR", "1", || {
-        let handler = make_handler(MietteHandlerOpts::new()).build();
-        assert_eq!(color_format(handler), ansi_support);
-    });
-    with_env_var("FORCE_COLOR", "3", || {
-        let handler = make_handler(MietteHandlerOpts::new()).build();
-        assert_eq!(color_format(handler), rgb_support);
-    });
+    let guards = (
+        EnvVarGuard::new("NO_COLOR"),
+        EnvVarGuard::new("FORCE_COLOR"),
+    );
+    // Clear color environment variables that may be set outside of 'cargo test'
+    std::env::remove_var("NO_COLOR");
+    std::env::remove_var("FORCE_COLOR");
 
-    drop(guard);
+    std::env::set_var("NO_COLOR", "1");
+    let handler = make_handler(MietteHandlerOpts::new()).build();
+    assert_eq!(color_format(handler), no_support);
+    std::env::remove_var("NO_COLOR");
+
+    std::env::set_var("FORCE_COLOR", "1");
+    let handler = make_handler(MietteHandlerOpts::new()).build();
+    assert_eq!(color_format(handler), ansi_support);
+    std::env::remove_var("FORCE_COLOR");
+
+    std::env::set_var("FORCE_COLOR", "3");
+    let handler = make_handler(MietteHandlerOpts::new()).build();
+    assert_eq!(color_format(handler), rgb_support);
+    std::env::remove_var("FORCE_COLOR");
+
+    drop(guards);
+    drop(lock);
 }
 
 #[test]

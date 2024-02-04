@@ -221,6 +221,50 @@ fn word_wrap_options() -> Result<(), MietteError> {
 }
 
 #[test]
+fn wrap_option() -> Result<(), MietteError> {
+    // A line should break on the width
+    let out = fmt_report_with_settings(
+        Report::msg("abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz"),
+        |handler| handler.with_width(15),
+    );
+    let expected = r#"  × abc def
+  │ ghi jkl
+  │ mno pqr
+  │ stu vwx
+  │ yz abc
+  │ def ghi
+  │ jkl mno
+  │ pqr stu
+  │ vwx yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    // Unless, wrapping is disabled
+    let out = fmt_report_with_settings(
+        Report::msg("abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz"),
+        |handler| handler.with_width(15).with_wrap_lines(false),
+    );
+    let expected =
+        "  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
+    assert_eq!(expected, out);
+
+    // Then, user-defined new lines should be preserved wrapping is disabled
+    let out = fmt_report_with_settings(
+      Report::msg("abc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz"),
+      |handler| handler.with_width(15).with_wrap_lines(false),
+  );
+    let expected = r#"  × abc def ghi jkl mno pqr stu vwx yz
+  │ abc def ghi jkl mno pqr stu vwx yz
+  │ abc def ghi jkl mno pqr stu vwx yz
+"#
+    .to_string();
+    assert_eq!(expected, out);
+
+    Ok(())
+}
+
+#[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
@@ -1811,4 +1855,95 @@ fn syntax_highlighter_on_real_file() {
     );
     assert!(out.contains("\u{1b}[38;2;180;142;173m"));
     assert_eq!(expected, strip_ansi_escapes::strip_str(out));
+
+#[test]
+fn triple_adjacent_highlight() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "this bit here"]
+        highlight1: SourceSpan,
+        #[label = "also this bit"]
+        highlight2: SourceSpan,
+        #[label = "finally we got"]
+        highlight3: SourceSpan,
+    }
+
+    let src = "source\n\n\n  text\n\n\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 6).into(),
+        highlight2: (11, 4).into(),
+        highlight3: (22, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │ 
+ 3 │ 
+ 4 │   text
+   ·   ──┬─
+   ·     ╰── also this bit
+ 5 │ 
+ 6 │ 
+ 7 │     here
+   ·     ──┬─
+   ·       ╰── finally we got
+   ╰────
+  help: try doing it better next time?
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn non_adjacent_highlight() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource,
+        #[label = "this bit here"]
+        highlight1: SourceSpan,
+        #[label = "also this bit"]
+        highlight2: SourceSpan,
+    }
+
+    let src = "source\n\n\n\n  text    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 6).into(),
+        highlight2: (12, 4).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:1:1]
+ 1 │ source
+   · ───┬──
+   ·    ╰── this bit here
+ 2 │ 
+   ╰────
+   ╭─[bad_file.rs:5:3]
+ 4 │ 
+ 5 │   text    here
+   ·   ──┬─
+   ·     ╰── also this bit
+   ╰────
+  help: try doing it better next time?
+";
+    assert_eq!(expected, &out);
+    Ok(())
 }

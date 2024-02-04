@@ -7,7 +7,7 @@ use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
 use crate::highlighters::{Highlighter, MietteHighlighter};
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
@@ -31,6 +31,7 @@ pub struct GraphicalReportHandler {
     pub(crate) context_lines: usize,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
+    pub(crate) wrap_lines: bool,
     pub(crate) break_words: bool,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
@@ -56,6 +57,7 @@ impl GraphicalReportHandler {
             context_lines: 1,
             tab_width: 4,
             with_cause_chain: true,
+            wrap_lines: true,
             break_words: true,
             word_separator: None,
             word_splitter: None,
@@ -72,6 +74,7 @@ impl GraphicalReportHandler {
             footer: None,
             context_lines: 1,
             tab_width: 4,
+            wrap_lines: true,
             with_cause_chain: true,
             break_words: true,
             word_separator: None,
@@ -132,6 +135,12 @@ impl GraphicalReportHandler {
     /// Sets the width to wrap the report at.
     pub fn with_width(mut self, width: usize) -> Self {
         self.termwidth = width;
+        self
+    }
+
+    /// Enables or disables wrapping of lines to fit the width.
+    pub fn with_wrap_lines(mut self, wrap_lines: bool) -> Self {
+        self.wrap_lines = wrap_lines;
         self
     }
 
@@ -218,7 +227,7 @@ impl GraphicalReportHandler {
                 opts = opts.word_splitter(word_splitter);
             }
 
-            writeln!(f, "{}", textwrap::fill(footer, opts))?;
+            writeln!(f, "{}", self.wrap(footer, opts))?;
         }
         Ok(())
     }
@@ -279,7 +288,7 @@ impl GraphicalReportHandler {
             opts = opts.word_splitter(word_splitter);
         }
 
-        writeln!(f, "{}", textwrap::fill(&diagnostic.to_string(), opts))?;
+        writeln!(f, "{}", self.wrap(&diagnostic.to_string(), opts))?;
 
         if !self.with_cause_chain {
             return Ok(());
@@ -329,16 +338,17 @@ impl GraphicalReportHandler {
                     ErrorKind::Diagnostic(diag) => {
                         let mut inner = String::new();
 
-                        // Don't print footer for inner errors
                         let mut inner_renderer = self.clone();
+                        // Don't print footer for inner errors
                         inner_renderer.footer = None;
+                        // Cause chains are already flattened, so don't double-print the nested error
                         inner_renderer.with_cause_chain = false;
                         inner_renderer.render_report(&mut inner, diag)?;
 
-                        writeln!(f, "{}", textwrap::fill(&inner, opts))?;
+                        writeln!(f, "{}", self.wrap(&inner, opts))?;
                     }
                     ErrorKind::StdError(err) => {
-                        writeln!(f, "{}", textwrap::fill(&err.to_string(), opts))?;
+                        writeln!(f, "{}", self.wrap(&err.to_string(), opts))?;
                     }
                 }
             }
@@ -362,7 +372,7 @@ impl GraphicalReportHandler {
                 opts = opts.word_splitter(word_splitter);
             }
 
-            writeln!(f, "{}", textwrap::fill(&help.to_string(), opts))?;
+            writeln!(f, "{}", self.wrap(&help.to_string(), opts))?;
         }
         Ok(())
     }
@@ -374,6 +384,9 @@ impl GraphicalReportHandler {
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
+            let mut inner_renderer = self.clone();
+            // Re-enable the printing of nested cause chains for related errors
+            inner_renderer.with_cause_chain = true;
             writeln!(f)?;
             for rel in related {
                 match rel.severity() {
@@ -381,12 +394,12 @@ impl GraphicalReportHandler {
                     Some(Severity::Warning) => write!(f, "Warning: ")?,
                     Some(Severity::Advice) => write!(f, "Advice: ")?,
                 };
-                self.render_header(f, rel)?;
-                self.render_causes(f, rel)?;
+                inner_renderer.render_header(f, rel)?;
+                inner_renderer.render_causes(f, rel)?;
                 let src = rel.source_code().or(parent_src);
-                self.render_snippets(f, rel, src)?;
-                self.render_footer(f, rel)?;
-                self.render_related(f, rel, src)?;
+                inner_renderer.render_snippets(f, rel, src)?;
+                inner_renderer.render_footer(f, rel)?;
+                inner_renderer.render_related(f, rel, src)?;
             }
         }
         Ok(())
@@ -398,66 +411,58 @@ impl GraphicalReportHandler {
         diagnostic: &(dyn Diagnostic),
         opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
-        if let Some(source) = opt_source {
-            if let Some(labels) = diagnostic.labels() {
-                let mut labels = labels.collect::<Vec<_>>();
-                labels.sort_unstable_by_key(|l| l.inner().offset());
-                if !labels.is_empty() {
-                    let contents = labels
-                        .iter()
-                        .map(|label| {
-                            source.read_span(label.inner(), self.context_lines, self.context_lines)
-                        })
-                        .collect::<Result<Vec<Box<dyn SpanContents<'_>>>, MietteError>>()
-                        .map_err(|_| fmt::Error)?;
-                    let mut contexts = Vec::with_capacity(contents.len());
-                    for (right, right_conts) in labels.iter().cloned().zip(contents.iter()) {
-                        if contexts.is_empty() {
-                            contexts.push((right, right_conts));
-                        } else {
-                            let (left, left_conts) = contexts.last().unwrap().clone();
-                            let left_end = left.offset() + left.len();
-                            let right_end = right.offset() + right.len();
-                            if left_conts.line() + left_conts.line_count() >= right_conts.line() {
-                                // The snippets will overlap, so we create one Big Chunky Boi
-                                let new_span = LabeledSpan::new(
-                                    left.label().map(String::from),
-                                    left.offset(),
-                                    if right_end >= left_end {
-                                        // Right end goes past left end
-                                        right_end - left.offset()
-                                    } else {
-                                        // right is contained inside left
-                                        left.len()
-                                    },
-                                );
-                                if source
-                                    .read_span(
-                                        new_span.inner(),
-                                        self.context_lines,
-                                        self.context_lines,
-                                    )
-                                    .is_ok()
-                                {
-                                    contexts.pop();
-                                    contexts.push((
-                                        // We'll throw this away later
-                                        new_span, left_conts,
-                                    ));
-                                } else {
-                                    contexts.push((right, right_conts));
-                                }
-                            } else {
-                                contexts.push((right, right_conts));
-                            }
-                        }
-                    }
-                    for (ctx, _) in contexts {
-                        self.render_context(f, source, &ctx, &labels[..])?;
-                    }
+        let source = match opt_source {
+            Some(source) => source,
+            None => return Ok(()),
+        };
+        let labels = match diagnostic.labels() {
+            Some(labels) => labels,
+            None => return Ok(()),
+        };
+
+        let mut labels = labels.collect::<Vec<_>>();
+        labels.sort_unstable_by_key(|l| l.inner().offset());
+
+        let mut contexts = Vec::with_capacity(labels.len());
+        for right in labels.iter().cloned() {
+            let right_conts = source
+                .read_span(right.inner(), self.context_lines, self.context_lines)
+                .map_err(|_| fmt::Error)?;
+
+            if contexts.is_empty() {
+                contexts.push((right, right_conts));
+                continue;
+            }
+
+            let (left, left_conts) = contexts.last().unwrap();
+            if left_conts.line() + left_conts.line_count() >= right_conts.line() {
+                // The snippets will overlap, so we create one Big Chunky Boi
+                let left_end = left.offset() + left.len();
+                let right_end = right.offset() + right.len();
+                let new_end = std::cmp::max(left_end, right_end);
+
+                let new_span = LabeledSpan::new(
+                    left.label().map(String::from),
+                    left.offset(),
+                    new_end - left.offset(),
+                );
+                // Check that the two contexts can be combined
+                if let Ok(new_conts) =
+                    source.read_span(new_span.inner(), self.context_lines, self.context_lines)
+                {
+                    contexts.pop();
+                    // We'll throw the contents away later
+                    contexts.push((new_span, new_conts));
+                    continue;
                 }
             }
+
+            contexts.push((right, right_conts));
         }
+        for (ctx, _) in contexts {
+            self.render_context(f, source, &ctx, &labels[..])?;
+        }
+
         Ok(())
     }
 
@@ -470,10 +475,16 @@ impl GraphicalReportHandler {
     ) -> fmt::Result {
         let (contents, lines) = self.get_lines(source, context.inner())?;
 
-        let primary_label = labels
-            .iter()
+        // only consider labels from the context as primary label
+        let ctx_labels = labels.iter().filter(|l| {
+            context.inner().offset() <= l.inner().offset()
+                && l.inner().offset() + l.inner().len()
+                    <= context.inner().offset() + context.inner().len()
+        });
+        let primary_label = ctx_labels
+            .clone()
             .find(|label| label.primary())
-            .or_else(|| labels.first());
+            .or_else(|| ctx_labels.clone().next());
 
         // sorting is your friend
         let labels = labels
@@ -833,6 +844,41 @@ impl GraphicalReportHandler {
         // we then write the gutter and as many spaces as we need
         write!(f, "{}{:width$}", gutter, "", width = num_spaces)?;
         Ok(())
+    }
+
+    fn wrap(&self, text: &str, opts: textwrap::Options<'_>) -> String {
+        if self.wrap_lines {
+            textwrap::fill(text, opts)
+        } else {
+            // Format without wrapping, but retain the indentation options
+            // Implementation based on `textwrap::indent`
+            let mut result = String::with_capacity(2 * text.len());
+            let trimmed_indent = opts.subsequent_indent.trim_end();
+            for (idx, line) in text.split_terminator('\n').enumerate() {
+                if idx > 0 {
+                    result.push('\n');
+                }
+                if idx == 0 {
+                    if line.trim().is_empty() {
+                        result.push_str(opts.initial_indent.trim_end());
+                    } else {
+                        result.push_str(opts.initial_indent);
+                    }
+                } else {
+                    if line.trim().is_empty() {
+                        result.push_str(trimmed_indent);
+                    } else {
+                        result.push_str(opts.subsequent_indent);
+                    }
+                }
+                result.push_str(line);
+            }
+            if text.ends_with('\n') {
+                // split_terminator will have eaten the final '\n'.
+                result.push('\n');
+            }
+            result
+        }
     }
 
     fn write_linum(&self, f: &mut impl fmt::Write, width: usize, linum: usize) -> fmt::Result {

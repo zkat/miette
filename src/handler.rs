@@ -58,6 +58,7 @@ pub struct MietteHandlerOpts {
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
     pub(crate) break_words: Option<bool>,
+    pub(crate) wrap_lines: Option<bool>,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
     pub(crate) highlighter: Option<MietteHighlighter>,
@@ -129,6 +130,16 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// If true, long lines can be wrapped.
+    ///
+    /// If false, long lines will not be broken when they exceed the width.
+    ///
+    /// Defaults to true.
+    pub fn wrap_lines(mut self, wrap_lines: bool) -> Self {
+        self.wrap_lines = Some(wrap_lines);
+        self
+    }
+
     /// If true, long words can be broken when wrapping.
     ///
     /// If false, long words will not be broken when they exceed the width.
@@ -138,7 +149,6 @@ impl MietteHandlerOpts {
         self.break_words = Some(break_words);
         self
     }
-
     /// Sets the `textwrap::WordSeparator` to use when determining wrap points.
     pub fn word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
         self.word_separator = Some(word_separator);
@@ -299,7 +309,7 @@ impl MietteHandlerOpts {
                 MietteHighlighter::nocolor()
             };
             let theme = self.theme.unwrap_or(GraphicalTheme { characters, styles });
-            let mut handler = GraphicalReportHandler::new()
+            let mut handler = GraphicalReportHandler::new_themed(theme)
                 .with_width(width)
                 .with_links(linkify)
                 .with_theme(theme);
@@ -322,6 +332,9 @@ impl MietteHandlerOpts {
             }
             if let Some(b) = self.break_words {
                 handler = handler.with_break_words(b)
+            }
+            if let Some(b) = self.wrap_lines {
+                handler = handler.with_wrap_lines(b)
             }
             if let Some(s) = self.word_separator {
                 handler = handler.with_word_separator(s)
