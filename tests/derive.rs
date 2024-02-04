@@ -406,7 +406,7 @@ impl ForwardsTo {
     fn new() -> Self {
         ForwardsTo {
             src: SNIPPET_TEXT.into(),
-            label: SourceSpan::new(11.into(), 6.into()),
+            label: SourceSpan::new(11.into(), 6),
         }
     }
 }

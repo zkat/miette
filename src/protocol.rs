@@ -526,10 +526,10 @@ pub struct SourceSpan {
 
 impl SourceSpan {
     /// Create a new [`SourceSpan`].
-    pub const fn new(start: SourceOffset, length: SourceOffset) -> Self {
+    pub const fn new(start: SourceOffset, length: usize) -> Self {
         Self {
             offset: start,
-            length: length.offset(),
+            length,
         }
     }
 
@@ -559,8 +559,8 @@ impl From<(ByteOffset, usize)> for SourceSpan {
     }
 }
 
-impl From<(SourceOffset, SourceOffset)> for SourceSpan {
-    fn from((start, len): (SourceOffset, SourceOffset)) -> Self {
+impl From<(SourceOffset, usize)> for SourceSpan {
+    fn from((start, len): (SourceOffset, usize)) -> Self {
         Self::new(start, len)
     }
 }
