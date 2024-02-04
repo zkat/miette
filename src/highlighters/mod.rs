@@ -80,7 +80,7 @@ impl MietteHighlighter {
 impl Default for MietteHighlighter {
     #[cfg(feature = "syntect-highlighter")]
     fn default() -> Self {
-        use is_terminal::IsTerminal;
+        use std::io::IsTerminal;
         match std::env::var("NO_COLOR") {
             _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
                 //TODO: should use ANSI styling instead of 24-bit truecolor here
