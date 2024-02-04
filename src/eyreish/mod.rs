@@ -7,8 +7,7 @@
 use core::fmt::Display;
 
 use std::error::Error as StdError;
-
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 
 #[allow(unreachable_pub)]
 pub use into_diagnostic::*;
@@ -62,7 +61,7 @@ unsafe impl Send for Report {}
 pub type ErrorHook =
     Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
 
-static HOOK: OnceCell<ErrorHook> = OnceCell::new();
+static HOOK: OnceLock<ErrorHook> = OnceLock::new();
 
 /// Error indicating that [`set_hook()`] was unable to install the provided
 /// [`ErrorHook`].
