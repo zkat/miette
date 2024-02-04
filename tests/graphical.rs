@@ -269,7 +269,7 @@ fn empty_source() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -348,7 +348,7 @@ fn single_line_highlight_span_full_line() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<&'static str>,
         #[label("This bit here")]
         bad_bit: SourceSpan,
     }
@@ -379,7 +379,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -416,7 +416,7 @@ fn single_line_with_two_tabs() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -455,7 +455,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -494,7 +494,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -566,7 +566,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -602,7 +602,7 @@ fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -638,7 +638,7 @@ fn single_line_highlight_include_end_of_line() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -675,7 +675,7 @@ fn single_line_highlight_include_end_of_line_crlf() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -712,7 +712,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -749,7 +749,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label]
         highlight: SourceSpan,
     }
@@ -785,7 +785,7 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -910,7 +910,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "x"]
         highlight1: SourceSpan,
         #[label = "y"]
@@ -955,7 +955,7 @@ fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "x"]
         highlight1: SourceSpan,
         #[label = "y"]
@@ -1002,7 +1002,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "these two lines"]
         highlight: SourceSpan,
     }
@@ -1075,7 +1075,7 @@ fn multiline_highlight_flyby() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "block 1"]
         highlight1: SourceSpan,
         #[label = "block 2"]
@@ -1126,7 +1126,7 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
         #[source]
         source: Inner,
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "block 1"]
         highlight1: SourceSpan,
         #[label]
@@ -1190,7 +1190,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1236,7 +1236,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1264,7 +1264,7 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1346,7 +1346,7 @@ fn related() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1402,7 +1402,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1462,7 +1462,7 @@ fn related_severity() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1479,7 +1479,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Error {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1492,7 +1492,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Warning {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1505,7 +1505,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Advice {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1588,7 +1588,7 @@ fn zero_length_eol_span() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<&'static str>,
         #[label("This bit here")]
         bad_bit: SourceSpan,
     }

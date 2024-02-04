@@ -20,7 +20,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
@@ -65,7 +65,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
@@ -110,7 +110,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
@@ -155,7 +155,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
@@ -200,7 +200,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label]
             highlight: SourceSpan,
         }
@@ -244,7 +244,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
@@ -289,7 +289,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "x"]
             highlight1: SourceSpan,
             #[label = "y"]
@@ -354,7 +354,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "these two lines"]
             highlight: SourceSpan,
         }
@@ -399,7 +399,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "block 1"]
             highlight1: SourceSpan,
             #[label = "block 2"]
@@ -463,7 +463,7 @@ mod json_report_handler {
             #[source]
             source: Inner,
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "block 1"]
             highlight1: SourceSpan,
             #[label]
@@ -536,7 +536,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -591,7 +591,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -646,7 +646,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -728,7 +728,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[related]
@@ -821,7 +821,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource,
+            src: NamedSource<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[related]
