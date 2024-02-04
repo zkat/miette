@@ -304,7 +304,7 @@ fn multiple_spans_multiline() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<&'static str>,
         #[label("big")]
         big: SourceSpan,
         #[label("small")]
@@ -824,7 +824,7 @@ fn multiline_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here\nand\nthis\ntoo")]
         highlight: SourceSpan,
     }
@@ -864,7 +864,7 @@ fn multiple_multi_line_labels() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "x\ny"]
         highlight1: SourceSpan,
         #[label = "z\nw"]
@@ -1040,7 +1040,7 @@ fn multiline_highlight_multiline_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "these two lines\nare the problem"]
         highlight: SourceSpan,
     }
@@ -1620,7 +1620,7 @@ fn primary_label() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<&'static str>,
         #[label]
         first_label: SourceSpan,
         #[label(primary, "nope")]
@@ -1656,7 +1656,7 @@ fn single_line_with_wide_char_unaligned_span_start() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -1693,7 +1693,7 @@ fn single_line_with_wide_char_unaligned_span_end() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -1730,7 +1730,7 @@ fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -1769,7 +1769,7 @@ fn syntax_highlighter() {
     #[diagnostic()]
     pub struct Test {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this is a label")]
         src_span: SourceSpan,
     }
@@ -1814,7 +1814,7 @@ fn syntax_highlighter_on_real_file() {
     #[diagnostic()]
     pub struct Test {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label("this is a label")]
         src_span: SourceSpan,
     }
@@ -1864,7 +1864,7 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1913,7 +1913,7 @@ fn non_adjacent_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource,
+        src: NamedSource<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
