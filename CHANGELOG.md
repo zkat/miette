@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="7.0.0"></a>
+## 7.0.0 (2024-02-05)
+
+This is a small breaking release on the heels of 6.0 because I neglected to
+bump owo-colors. I figured it's a good time to do it, before 6.0 gets more
+widely used.
+
+### Features
+
+* **fancy:** Add option to change the link display text (#335) ([c7144ee5](https://github.com/zkat/miette/commit/c7144ee513bf8f06c5f7d89c45436802994a51fc))
+* **deps:** bump dependencies ([a4011d17](https://github.com/zkat/miette/commit/a4011d174c40acbba5b0176db7cb71ec5ca0cb49))
+    * **BREAKING CHANGE**: This bumps owo-colors to 4.0, which is a breaking change because we expose its styles as part of the graphical renderer API
+
 <a name="6.0.1"></a>
 ## 6.0.1 (2024-02-04)
 
