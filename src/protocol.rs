@@ -69,7 +69,7 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-macro_rules! box_impls {
+macro_rules! box_error_impls {
     ($($box_type:ty),*) => {
         $(
             impl std::error::Error for $box_type {
@@ -85,8 +85,25 @@ macro_rules! box_impls {
     }
 }
 
-box_impls! {
+box_error_impls! {
     Box<dyn Diagnostic>,
+    Box<dyn Diagnostic + Send>,
+    Box<dyn Diagnostic + Send + Sync>
+}
+
+macro_rules! box_borrow_impls {
+    ($($box_type:ty),*) => {
+        $(
+            impl std::borrow::Borrow<dyn Diagnostic> for $box_type {
+                fn borrow(&self) -> &(dyn Diagnostic + 'static) {
+                    self.as_ref()
+                }
+            }
+        )*
+    }
+}
+
+box_borrow_impls! {
     Box<dyn Diagnostic + Send>,
     Box<dyn Diagnostic + Send + Sync>
 }
