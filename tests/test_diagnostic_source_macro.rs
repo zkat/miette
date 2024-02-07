@@ -43,6 +43,14 @@ struct TestBoxedError(#[diagnostic_source] Box<dyn Diagnostic>);
 
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("TestError")]
+struct TestBoxedSendError(#[diagnostic_source] Box<dyn Diagnostic + Send>);
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("TestError")]
+struct TestBoxedSendSyncError(#[diagnostic_source] Box<dyn Diagnostic + Send + Sync>);
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("TestError")]
 struct TestArcedError(#[diagnostic_source] std::sync::Arc<dyn Diagnostic>);
 
 #[test]
@@ -69,6 +77,12 @@ fn test_diagnostic_source() {
     assert!(error.diagnostic_source().is_some());
 
     let error = TestBoxedError(Box::new(AnErr));
+    assert!(error.diagnostic_source().is_some());
+
+    let error = TestBoxedSendError(Box::new(AnErr));
+    assert!(error.diagnostic_source().is_some());
+
+    let error = TestBoxedSendSyncError(Box::new(AnErr));
     assert!(error.diagnostic_source().is_some());
 
     let error = TestArcedError(std::sync::Arc::new(AnErr));
