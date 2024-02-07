@@ -79,4 +79,4 @@ jobs:
         with:
           toolchain: nightly
       - name: Run minimal version build
-        run: cargo build -Z minimal-versions --features fancy,no-format-args-capture
+        run: cargo build -Z direct-minimal-versions --features fancy,no-format-args-capture
