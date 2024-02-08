@@ -3,6 +3,7 @@ use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
 /// Utility struct for when you have a regular [`SourceCode`] type that doesn't
 /// implement `name`. For example [`String`]. Or if you want to override the
 /// `name` returned by the `SourceCode`.
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct NamedSource<S: SourceCode + 'static> {
     source: S,
     name: String,
