@@ -550,7 +550,7 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
 }
 
 /// Span within a [`SourceCode`]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SourceSpan {
     /// The start of the span.
@@ -652,7 +652,7 @@ pub type ByteOffset = usize;
 /**
 Newtype that represents the [`ByteOffset`] from the beginning of a [`SourceCode`]
 */
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SourceOffset(ByteOffset);
 
