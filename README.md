@@ -49,6 +49,7 @@ libraries and such might not want.
   - [... handler options](#-handler-options)
   - [... dynamic diagnostics](#-dynamic-diagnostics)
   - [... syntax highlighting](#-syntax-highlighting)
+  - [... collection of labels](#-collection-of-labels)
 - [Acknowledgements](#acknowledgements)
 - [License](#license)
 
@@ -670,6 +671,31 @@ implementation of the [`Highlighter`](highlighters::Highlighter)
 trait to [`MietteHandlerOpts`] by calling the
 [`with_syntax_highlighting`](MietteHandlerOpts::with_syntax_highlighting)
 method. See the [`highlighters`] module docs for more details.
+
+#### ... collection of labels
+
+When the number of labels is unknown, you can use a collection of `SourceSpan`
+(or any type convertible into `SourceSpan`). For this, add the `collection`
+parameter to `label` and use any type than can be iterated over for the field.
+
+```rust
+#[derive(Debug, Diagnostic, Error)]
+#[error("oops!")]
+struct MyError {
+    #[label("main issue")]
+    primary_span: SourceSpan,
+
+    #[label(collection, "related to this")]
+    other_spans: Vec<Range<usize>>,
+}
+
+let report: miette::Report = MyError {
+    primary_span: (6, 9).into(),
+    other_spans: vec![19..26, 30..41],
+}.into();
+
+println!("{:?}", report.with_source_code("About something or another or yet another ...".to_string()));
+```
 
 ### MSRV
 
