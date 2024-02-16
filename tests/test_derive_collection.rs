@@ -196,6 +196,76 @@ fn attr_collection_of_range() {
 }
 
 #[test]
+fn attr_collection_of_labeled_span_in_struct() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[label(collection, "then there")]
+        highlight2: Vec<LabeledSpan>,
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 4).into(),
+        highlight2: vec![
+            LabeledSpan::new_with_span(Some("continuing here".to_string()), (1, 2)),
+            LabeledSpan::new_with_span(None, (3, 4)),
+        ],
+    };
+    let mut label_iter = err.labels().unwrap();
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("this bit here".into()), 9usize, 4usize);
+    assert_eq!(err_span, expectation);
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("continuing here".into()), 1usize, 2usize);
+    assert_eq!(err_span, expectation);
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("then there".into()), 3usize, 4usize);
+    assert_eq!(err_span, expectation);
+}
+
+#[test]
+fn attr_collection_of_labeled_span_in_enum() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    enum MyBad {
+        Only {
+            #[source_code]
+            src: NamedSource<String>,
+            #[label("this bit here")]
+            highlight: SourceSpan,
+            #[label(collection, "then there")]
+            highlight2: Vec<LabeledSpan>,
+        },
+    }
+
+    let src = "source\n  text\n    here".to_string();
+    let err = MyBad::Only {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (9, 4).into(),
+        highlight2: vec![
+            LabeledSpan::new_with_span(Some("continuing here".to_string()), (1, 2)),
+            LabeledSpan::new_with_span(None, (3, 4)),
+        ],
+    };
+    let mut label_iter = err.labels().unwrap();
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("this bit here".into()), 9usize, 4usize);
+    assert_eq!(err_span, expectation);
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("continuing here".into()), 1usize, 2usize);
+    assert_eq!(err_span, expectation);
+    let err_span = label_iter.next().unwrap();
+    let expectation = LabeledSpan::new(Some("then there".into()), 3usize, 4usize);
+    assert_eq!(err_span, expectation);
+}
+
+#[test]
 fn attr_collection_multi() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]

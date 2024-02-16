@@ -212,15 +212,17 @@ impl Labels {
             };
             Some(quote! {
                 let display = #display;
-                #labels_gen_var.extend(
-                    self.#span.iter().map(|label| {
-                        miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                            .map(|span| miette::LabeledSpan::new_with_span(
-                                #display,
-                                span.clone(),
-                            ))
-                    })
-                );
+                #labels_gen_var.extend(self.#span.iter().map(|label| {
+                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
+                        .map(|span| {
+                            use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                            let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                            if #display.is_some() && labeled_span.label().is_none() {
+                                labeled_span.set_label(#display)
+                            }
+                            labeled_span
+                        })
+                }));
             })
         });
 
@@ -299,15 +301,17 @@ impl Labels {
                         };
                         Some(quote! {
                             let display = #display;
-                            #labels_gen_var.extend(
-                                #field.iter().map(|label| {
-                                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                                                                .map(|span| miette::LabeledSpan::new_with_span(
-                                                                    #display,
-                                                                    span.clone(),
-                                                                ))
-                                })
-                            );
+                            #labels_gen_var.extend(#field.iter().map(|label| {
+                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
+                                    .map(|span| {
+                                        use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                        if #display.is_some() && labeled_span.label().is_none() {
+                                            labeled_span.set_label(#display)
+                                        }
+                                        labeled_span
+                                    })
+                            }));
                         })
                     });
                     let variant_name = ident.clone();

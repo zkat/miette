@@ -1,3 +1,5 @@
+use crate::protocol::{LabeledSpan, SourceSpan};
+
 // Huge thanks to @jam1gamer for this hack:
 // https://twitter.com/jam1garner/status/1515887996444323840
 
@@ -34,5 +36,26 @@ where
 impl<T> ToOption for &OptionalWrapper<T> {
     fn to_option<U>(self, value: U) -> Option<U> {
         Some(value)
+    }
+}
+
+#[doc(hidden)]
+#[derive(Debug)]
+pub struct ToLabelSpanWrapper {}
+pub trait ToLabeledSpan<T> {
+    #[doc(hidden)]
+    fn to_labeled_span(span: T) -> LabeledSpan;
+}
+impl ToLabeledSpan<LabeledSpan> for ToLabelSpanWrapper {
+    fn to_labeled_span(span: LabeledSpan) -> LabeledSpan {
+        span
+    }
+}
+impl<T> ToLabeledSpan<T> for ToLabelSpanWrapper
+where
+    T: Into<SourceSpan>,
+{
+    fn to_labeled_span(span: T) -> LabeledSpan {
+        LabeledSpan::new_with_span(None, span.into())
     }
 }

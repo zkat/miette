@@ -293,6 +293,11 @@ impl LabeledSpan {
         }
     }
 
+    /// Change the text of the label
+    pub fn set_label(&mut self, label: Option<String>) {
+        self.label = label;
+    }
+
     /// Makes a new label at specified span
     ///
     /// # Examples
