@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="7.1.0"></a>
+## 7.1.0 (2024-02-16)
+
+### Features
+
+* **derive:** enable more boxed types to be #[diagnostic_source] (#338) ([c2f06f6c](https://github.com/zkat/miette/commit/c2f06f6cca15cbdd083dbff3d46b7729056ac6a4))
+* **source:** derive common traits for NamedSource, SourceSpan, and SourceOffset (#340) ([6f09250c](https://github.com/zkat/miette/commit/6f09250cca14561f07fba899a8e6d3c0df14230e))
+* **collection:** add support for collection of labels (#341) ([03060245](https://github.com/zkat/miette/commit/03060245d816a53a33209e6b7e1c3c42948e9962))
+
+### Bug Fixes
+
+* **tests:** revert test-breaking changes of e5c7ae4 (#339) ([6e829f8c](https://github.com/zkat/miette/commit/6e829f8c0ce2fc7bb2fc4041e6a6072f12db1f71))
+
 <a name="7.0.0"></a>
 ## 7.0.0 (2024-02-05)
 
