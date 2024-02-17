@@ -186,7 +186,7 @@ impl Labels {
             };
 
             Some(quote! {
-                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
+                miette::macro_helpers::OptionalWrapper::<#ty>::to_option(&self.#span)
                 .map(|#var| #ctor(
                     #display,
                     #var.clone(),
@@ -273,7 +273,7 @@ impl Labels {
                         };
 
                         Some(quote! {
-                            miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
+                            miette::macro_helpers::OptionalWrapper::<#ty>::to_option(#field)
                             .map(|#var| #ctor(
                                 #display,
                                 #var.clone(),
