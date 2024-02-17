@@ -197,7 +197,7 @@ impl Labels {
             let Label {
                 span,
                 label,
-                ty,
+                ty: _,
                 lbl_ty,
             } = label;
             if *lbl_ty != LabelType::Collection {
@@ -212,16 +212,13 @@ impl Labels {
             Some(quote! {
                 .chain({
                     let display = #display;
-                    self.#span.iter().map(move |label| {
-                        miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                            .map(|span| {
-                                use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                                let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                                if display.is_some() && labeled_span.label().is_none() {
-                                    labeled_span.set_label(display.clone())
-                                }
-                                labeled_span
-                            })
+                    self.#span.iter().map(move |span| {
+                        use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                        if display.is_some() && labeled_span.label().is_none() {
+                            labeled_span.set_label(display.clone())
+                        }
+                        Some(labeled_span)
                     })
                 })
             })
@@ -284,7 +281,7 @@ impl Labels {
                         })
                     });
                     let collections_chain = labels.0.iter().filter_map(|label| {
-                        let Label { span, label, ty, lbl_ty } = label;
+                        let Label { span, label, ty: _, lbl_ty } = label;
                         if *lbl_ty != LabelType::Collection {
                             return None;
                         }
@@ -303,16 +300,13 @@ impl Labels {
                         Some(quote! {
                             .chain({
                                 let display = #display;
-                                #field.iter().map(move |label| {
-                                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                                        .map(|span| {
-                                            use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                                            let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                                            if display.is_some() && labeled_span.label().is_none() {
-                                                labeled_span.set_label(display.clone());
-                                            }
-                                            labeled_span
-                                        })
+                                #field.iter().map(move |span| {
+                                    use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                                    let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                    if display.is_some() && labeled_span.label().is_none() {
+                                        labeled_span.set_label(display.clone());
+                                    }
+                                    Some(labeled_span)
                                 })
                             })
                         })
