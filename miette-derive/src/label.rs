@@ -217,8 +217,8 @@ impl Labels {
                         .map(|span| {
                             use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
                             let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                            if #display.is_some() && labeled_span.label().is_none() {
-                                labeled_span.set_label(#display)
+                            if display.is_some() && labeled_span.label().is_none() {
+                                labeled_span.set_label(display.clone())
                             }
                             labeled_span
                         })
@@ -306,8 +306,8 @@ impl Labels {
                                     .map(|span| {
                                         use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
                                         let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                                        if #display.is_some() && labeled_span.label().is_none() {
-                                            labeled_span.set_label(#display)
+                                        if display.is_some() && labeled_span.label().is_none() {
+                                            labeled_span.set_label(display.clone())
                                         }
                                         labeled_span
                                     })
