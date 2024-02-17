@@ -162,7 +162,6 @@ impl Labels {
 
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
         let (display_pat, display_members) = display_pat_members(fields);
-        let labels_gen_var = quote! { labels };
         let labels = self.0.iter().filter_map(|highlight| {
             let Label {
                 span,
@@ -194,7 +193,7 @@ impl Labels {
                 ))
             })
         });
-        let collections = self.0.iter().filter_map(|label| {
+        let collections_chain = self.0.iter().filter_map(|label| {
             let Label {
                 span,
                 label,
@@ -211,18 +210,20 @@ impl Labels {
                 quote! { std::option::Option::None }
             };
             Some(quote! {
-                let display = #display;
-                #labels_gen_var.extend(self.#span.iter().map(|label| {
-                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                        .map(|span| {
-                            use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                            let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                            if display.is_some() && labeled_span.label().is_none() {
-                                labeled_span.set_label(display.clone())
-                            }
-                            labeled_span
-                        })
-                }));
+                .chain({
+                    let display = #display;
+                    self.#span.iter().map(move |label| {
+                        miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
+                            .map(|span| {
+                                use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                                let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                if display.is_some() && labeled_span.label().is_none() {
+                                    labeled_span.set_label(display.clone())
+                                }
+                                labeled_span
+                            })
+                    })
+                })
             })
         });
 
@@ -232,12 +233,13 @@ impl Labels {
                 use miette::macro_helpers::ToOption;
                 let Self #display_pat = self;
 
-                let mut #labels_gen_var = vec![
+                let labels_iter = vec![
                     #(#labels),*
-                ];
-                #(#collections)*
+                ]
+                .into_iter()
+                #(#collections_chain)*;
 
-                std::option::Option::Some(Box::new(#labels_gen_var.into_iter().filter(Option::is_some).map(Option::unwrap)))
+                std::option::Option::Some(Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
             }
         })
     }
@@ -249,7 +251,6 @@ impl Labels {
             |ident, fields, DiagnosticConcreteArgs { labels, .. }| {
                 let (display_pat, display_members) = display_pat_members(fields);
                 labels.as_ref().and_then(|labels| {
-                    let labels_gen_var = quote! { labels };
                     let variant_labels = labels.0.iter().filter_map(|label| {
                         let Label { span, label, ty, lbl_ty } = label;
                         if *lbl_ty == LabelType::Collection {
@@ -282,7 +283,7 @@ impl Labels {
                             ))
                         })
                     });
-                    let collections = labels.0.iter().filter_map(|label| {
+                    let collections_chain = labels.0.iter().filter_map(|label| {
                         let Label { span, label, ty, lbl_ty } = label;
                         if *lbl_ty != LabelType::Collection {
                             return None;
@@ -300,18 +301,20 @@ impl Labels {
                             quote! { std::option::Option::None }
                         };
                         Some(quote! {
-                            let display = #display;
-                            #labels_gen_var.extend(#field.iter().map(|label| {
-                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
-                                    .map(|span| {
-                                        use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
-                                        if display.is_some() && labeled_span.label().is_none() {
-                                            labeled_span.set_label(display.clone())
-                                        }
-                                        labeled_span
-                                    })
-                            }));
+                            .chain({
+                                let display = #display;
+                                #field.iter().map(move |label| {
+                                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(label)
+                                        .map(|span| {
+                                            use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
+                                            let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                            if display.is_some() && labeled_span.label().is_none() {
+                                                labeled_span.set_label(display.clone());
+                                            }
+                                            labeled_span
+                                        })
+                                })
+                            })
                         })
                     });
                     let variant_name = ident.clone();
@@ -320,11 +323,12 @@ impl Labels {
                         _ => Some(quote! {
                             Self::#variant_name #display_pat => {
                                 use miette::macro_helpers::ToOption;
-                                let mut #labels_gen_var = vec![
+                                let labels_iter = vec![
                                     #(#variant_labels),*
-                                ];
-                                #(#collections)*
-                                std::option::Option::Some(std::boxed::Box::new(#labels_gen_var.into_iter().filter(Option::is_some).map(Option::unwrap)))
+                                ]
+                                .into_iter()
+                                #(#collections_chain)*;
+                                std::option::Option::Some(std::boxed::Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
                             }
                         }),
                     }
