@@ -2,7 +2,6 @@ mod drop;
 
 use self::drop::{DetectDrop, Flag};
 use miette::Report;
-use std::marker::Unpin;
 use std::mem;
 
 #[test]
