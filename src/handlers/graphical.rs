@@ -436,9 +436,25 @@ impl GraphicalReportHandler {
 
         let mut contexts = Vec::with_capacity(labels.len());
         for right in labels.iter().cloned() {
-            let right_conts = source
-                .read_span(right.inner(), self.context_lines, self.context_lines)
-                .map_err(|_| fmt::Error)?;
+            let right_conts =
+                match source.read_span(right.inner(), self.context_lines, self.context_lines) {
+                    Ok(cont) => cont,
+                    Err(err) => {
+                        writeln!(
+                            f,
+                            "  [{} `{}` (offset: {}, length: {}): {:?}]",
+                            "Failed to read contents for label".style(self.theme.styles.error),
+                            right
+                                .label()
+                                .unwrap_or("<none>")
+                                .style(self.theme.styles.link),
+                            right.offset().style(self.theme.styles.link),
+                            right.len().style(self.theme.styles.link),
+                            err.style(self.theme.styles.warning)
+                        )?;
+                        return Ok(());
+                    }
+                };
 
             if contexts.is_empty() {
                 contexts.push((right, right_conts));

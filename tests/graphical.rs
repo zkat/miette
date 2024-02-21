@@ -1970,3 +1970,229 @@ fn non_adjacent_highlight() -> Result<(), MietteError> {
     assert_eq!(expected, &out);
     Ok(())
 }
+
+#[test]
+fn invalid_span_bad_offset() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label = "1st"]
+        highlight1: SourceSpan,
+    }
+
+    let src = "blabla blibli".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (50, 6).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+  [Failed to read contents for label `1st` (offset: 50, length: 6): OutOfBounds]
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn invalid_span_bad_length() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label = "1st"]
+        highlight1: SourceSpan,
+    }
+
+    let src = "blabla blibli".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 50).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+  [Failed to read contents for label `1st` (offset: 0, length: 50): OutOfBounds]
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn invalid_span_no_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label]
+        highlight1: SourceSpan,
+    }
+
+    let src = "blabla blibli".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (50, 6).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+  [Failed to read contents for label `<none>` (offset: 50, length: 6): OutOfBounds]
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn invalid_span_2nd_label() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("1st")]
+        highlight1: SourceSpan,
+        #[label("2nd")]
+        highlight2: SourceSpan,
+    }
+
+    let src = "blabla blibli".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight1: (0, 6).into(),
+        highlight2: (50, 6).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::bad
+
+  × oops!
+  [Failed to read contents for label `2nd` (offset: 50, length: 6): OutOfBounds]
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn invalid_span_inner() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops inside!")]
+    #[diagnostic(code(oops::my::inner), help("help info"))]
+    struct MyInner {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("inner label")]
+        inner_label: SourceSpan,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops outside!")]
+    #[diagnostic(code(oops::my::outer), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("outer label")]
+        outer_label: SourceSpan,
+        #[source]
+        inner: MyInner,
+    }
+
+    let src_outer = "outer source".to_string();
+    let src_inner = "inner source".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src_outer),
+        outer_label: (0, 6).into(),
+        inner: MyInner {
+            src: NamedSource::new("bad_file2.rs", src_inner),
+            inner_label: (60, 6).into(),
+        },
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::outer
+
+  × oops outside!
+  ╰─▶ oops inside!
+   ╭─[bad_file.rs:1:1]
+ 1 │ outer source
+   · ───┬──
+   ·    ╰── outer label
+   ╰────
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
+
+#[test]
+fn invalid_span_related() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops inside!")]
+    #[diagnostic(code(oops::my::inner), help("help info"))]
+    struct MyRelated {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("inner label")]
+        inner_label: SourceSpan,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops outside!")]
+    #[diagnostic(code(oops::my::outer), help("help info"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("outer label")]
+        outer_label: SourceSpan,
+        #[related]
+        inner: Vec<MyRelated>,
+    }
+
+    let src_outer = "outer source".to_string();
+    let src_inner = "related source".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src_outer),
+        outer_label: (0, 6).into(),
+        inner: vec![MyRelated {
+            src: NamedSource::new("bad_file2.rs", src_inner),
+            inner_label: (60, 6).into(),
+        }],
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = "oops::my::outer
+
+  × oops outside!
+   ╭─[bad_file.rs:1:1]
+ 1 │ outer source
+   · ───┬──
+   ·    ╰── outer label
+   ╰────
+  help: help info
+
+Error: oops::my::inner
+
+  × oops inside!
+  [Failed to read contents for label `inner label` (offset: 60, length: 6): OutOfBounds]
+  help: help info
+";
+    assert_eq!(expected, &out);
+    Ok(())
+}
