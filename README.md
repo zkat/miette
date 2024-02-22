@@ -34,24 +34,29 @@ libraries and such might not want.
 
 ### Table of Contents <!-- omit in toc -->
 
-- [About](#about)
-- [Features](#features)
-- [Installing](#installing)
-- [Example](#example)
-- [Using](#using)
-  - [... in libraries](#-in-libraries)
-  - [... in application code](#-in-application-code)
-  - [... in `main()`](#-in-main)
-  - [... diagnostic code URLs](#-diagnostic-code-urls)
-  - [... snippets](#-snippets)
-  - [... multiple related errors](#-multiple-related-errors)
-  - [... delayed source code](#-delayed-source-code)
-  - [... handler options](#-handler-options)
-  - [... dynamic diagnostics](#-dynamic-diagnostics)
-  - [... syntax highlighting](#-syntax-highlighting)
-  - [... collection of labels](#-collection-of-labels)
-- [Acknowledgements](#acknowledgements)
-- [License](#license)
+- [`miette`](#miette)
+    - [About](#about)
+    - [Features](#features)
+    - [Installing](#installing)
+    - [Example](#example)
+    - [Using](#using)
+      - [... in libraries](#-in-libraries)
+      - [... in application code](#-in-application-code)
+      - [... in `main()`](#-in-main)
+      - [... diagnostic code URLs](#-diagnostic-code-urls)
+      - [... snippets](#-snippets)
+      - [... help text](#-help-text)
+      - [... severity level](#-severity-level)
+      - [... multiple related errors](#-multiple-related-errors)
+      - [... delayed source code](#-delayed-source-code)
+      - [... Diagnostic-based error sources.](#-diagnostic-based-error-sources)
+      - [... handler options](#-handler-options)
+      - [... dynamic diagnostics](#-dynamic-diagnostics)
+      - [... syntax highlighting](#-syntax-highlighting)
+      - [... collection of labels](#-collection-of-labels)
+    - [MSRV](#msrv)
+    - [Acknowledgements](#acknowledgements)
+    - [License](#license)
 
 ### Features
 
@@ -425,7 +430,7 @@ pub struct MyErrorType {
 }
 ```
 
-##### ... help text
+#### ... help text
 `miette` provides two facilities for supplying help text for your errors:
 
 The first is the `#[help()]` format attribute that applies to structs or
@@ -459,6 +464,19 @@ struct Foo {
 let err = Foo {
     advice: Some("try doing this instead".to_string()),
 };
+```
+
+#### ... severity level
+`miette` provides a way to set the severity level of a diagnostic.
+
+```rust
+use miette::Diagnostic;
+use thiserror::Error;
+
+#[derive(Debug, Diagnostic, Error)]
+#[error("welp")]
+#[diagnostic(severity("warning"))]
+struct Foo;
 ```
 
 #### ... multiple related errors
