@@ -16,6 +16,7 @@ exclude = ["images/", "tests/", "miette-derive/"]
 thiserror = "1.0.56"
 miette-derive = { path = "miette-derive", version = "=7.1.0", optional = true }
 unicode-width = "0.1.11"
+cfg-if = "1.0.0"
 
 owo-colors = { version = "4.0.0", optional = true }
 textwrap = { version = "0.16.0", optional = true }
@@ -47,6 +48,10 @@ strip-ansi-escapes = "0.2.0"
 default = ["derive"]
 derive = ["miette-derive"]
 no-format-args-capture = []
+fancy-no-syscall = [
+    "owo-colors",
+    "textwrap",
+]
 fancy-no-backtrace = [
     "owo-colors",
     "textwrap",

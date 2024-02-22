@@ -60,7 +60,7 @@ jobs:
           toolchain: stable
           targets: wasm32-unknown-unknown
       - name: Check wasm target
-        run: cargo check --target wasm32-unknown-unknown --features fancy
+        run: cargo check --target wasm32-unknown-unknown --features fancy-no-syscall
 
   miri:
     name: Miri
@@ -76,7 +76,7 @@ jobs:
       - name: Run tests with miri
         env:
           MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-strict-provenance
-        run: cargo miri test --all --verbose --features fancy
+        run: cargo miri test --all --verbose --features fancy-no-syscall
 
   minimal_versions:
     name: Minimal versions check
