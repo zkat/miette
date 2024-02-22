@@ -48,12 +48,16 @@ strip-ansi-escapes = "0.2.0"
 default = ["derive"]
 derive = ["miette-derive"]
 no-format-args-capture = []
+fancy-base = []
 fancy-no-syscall = [
+    "fancy-base",
     "owo-colors",
     "textwrap",
 ]
 fancy-no-backtrace = [
-    "fancy-no-syscall",
+    "fancy-base",
+    "owo-colors",
+    "textwrap",
     "terminal_size",
     "supports-hyperlinks",
     "supports-color",

@@ -760,7 +760,7 @@ pub use miette_derive::*;
 
 pub use error::*;
 pub use eyreish::*;
-#[cfg(feature = "fancy-no-syscall")]
+#[cfg(feature = "fancy-base")]
 pub use handler::*;
 pub use handlers::*;
 pub use miette_diagnostic::*;
@@ -773,10 +773,10 @@ mod chain;
 mod diagnostic_chain;
 mod error;
 mod eyreish;
-#[cfg(feature = "fancy-no-syscall")]
+#[cfg(feature = "fancy-base")]
 mod handler;
 mod handlers;
-#[cfg(feature = "fancy-no-syscall")]
+#[cfg(feature = "fancy-base")]
 pub mod highlighters;
 #[doc(hidden)]
 pub mod macro_helpers;

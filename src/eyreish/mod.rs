@@ -24,10 +24,10 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
-#[cfg(not(feature = "fancy-no-syscall"))]
+#[cfg(not(feature = "fancy-base"))]
 use crate::DebugReportHandler;
 use crate::Diagnostic;
-#[cfg(feature = "fancy-no-syscall")]
+#[cfg(feature = "fancy-base")]
 use crate::MietteHandler;
 
 use error::ErrorImpl;
@@ -102,9 +102,9 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
-    #[cfg(feature = "fancy-no-syscall")]
+    #[cfg(feature = "fancy-base")]
     return Box::new(MietteHandler::new());
-    #[cfg(not(feature = "fancy-no-syscall"))]
+    #[cfg(not(feature = "fancy-base"))]
     return Box::new(DebugReportHandler::new());
 }
 
