@@ -431,7 +431,7 @@ mod syscall {
     #[inline]
     pub(super) fn supports_hyperlinks() -> bool {
         cfg_if! {
-            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+            if #[cfg(feature = "fancy-no-syscall")] {
                 false
             } else {
                 supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
@@ -443,7 +443,7 @@ mod syscall {
     #[inline]
     pub(super) fn supports_color() -> bool {
         cfg_if! {
-            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+            if #[cfg(feature = "fancy-no-syscall")] {
                 false
             } else {
                 supports_color::on(supports_color::Stream::Stderr).is_some()
@@ -454,7 +454,7 @@ mod syscall {
     #[inline]
     pub(super) fn supports_color_has_16m() -> Option<bool> {
         cfg_if! {
-            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+            if #[cfg(feature = "fancy-no-syscall")] {
                 None
             } else {
                 supports_color::on(supports_color::Stream::Stderr).map(|color| color.has_16m)
@@ -465,7 +465,7 @@ mod syscall {
     #[inline]
     pub(super) fn supports_unicode() -> bool {
         cfg_if! {
-            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+            if #[cfg(feature = "fancy-no-syscall")] {
                 false
             } else {
                 supports_unicode::on(supports_unicode::Stream::Stderr)
