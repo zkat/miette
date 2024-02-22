@@ -53,8 +53,7 @@ fancy-no-syscall = [
     "textwrap",
 ]
 fancy-no-backtrace = [
-    "owo-colors",
-    "textwrap",
+    "fancy-no-syscall",
     "terminal_size",
     "supports-hyperlinks",
     "supports-color",
