@@ -49,6 +49,19 @@ jobs:
         if: matrix.rust == '1.70.0'
         run: cargo test --all --verbose --features ${{matrix.features}} no-format-args-capture
 
+  wasm:
+    name: Check Wasm build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Check wasm target
+        run: cargo check --target wasm32-unknown-unknown --features fancy
+
   miri:
     name: Miri
     runs-on: ubuntu-latest
