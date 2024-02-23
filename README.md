@@ -425,7 +425,7 @@ pub struct MyErrorType {
 }
 ```
 
-##### ... help text
+#### ... help text
 `miette` provides two facilities for supplying help text for your errors:
 
 The first is the `#[help()]` format attribute that applies to structs or
@@ -459,6 +459,19 @@ struct Foo {
 let err = Foo {
     advice: Some("try doing this instead".to_string()),
 };
+```
+
+#### ... severity level
+`miette` provides a way to set the severity level of a diagnostic.
+
+```rust
+use miette::Diagnostic;
+use thiserror::Error;
+
+#[derive(Debug, Diagnostic, Error)]
+#[error("welp")]
+#[diagnostic(severity(Warning))]
+struct Foo;
 ```
 
 #### ... multiple related errors
@@ -635,7 +648,7 @@ then you may want to use [`miette!`], [`diagnostic!`] macros or
 
 let source = "2 + 2 * 2 = 8".to_string();
 let report = miette!(
-  labels = vec[
+  labels = vec![
       LabeledSpan::at(12..13, "this should be 6"),
   ],
   help = "'*' has greater precedence than '+'",
