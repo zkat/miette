@@ -265,17 +265,15 @@ impl MietteHandlerOpts {
             let characters = match self.unicode {
                 Some(true) => ThemeCharacters::unicode(),
                 Some(false) => ThemeCharacters::ascii(),
-                None if supports_unicode::on(supports_unicode::Stream::Stderr) => {
-                    ThemeCharacters::unicode()
-                }
+                None if syscall::supports_unicode() => ThemeCharacters::unicode(),
                 None => ThemeCharacters::ascii(),
             };
             let styles = if self.color == Some(false) {
                 ThemeStyles::none()
-            } else if let Some(color) = supports_color::on(supports_color::Stream::Stderr) {
+            } else if let Some(color_has_16m) = syscall::supports_color_has_16m() {
                 match self.rgb_colors {
                     RgbColors::Always => ThemeStyles::rgb(),
-                    RgbColors::Preferred if color.has_16m => ThemeStyles::rgb(),
+                    RgbColors::Preferred if color_has_16m => ThemeStyles::rgb(),
                     _ => ThemeStyles::ansi(),
                 }
             } else if self.color == Some(true) {
@@ -291,9 +289,7 @@ impl MietteHandlerOpts {
             #[cfg(feature = "syntect-highlighter")]
             let highlighter = if self.color == Some(false) {
                 MietteHighlighter::nocolor()
-            } else if self.color == Some(true)
-                || supports_color::on(supports_color::Stream::Stderr).is_some()
-            {
+            } else if self.color == Some(true) || syscall::supports_color() {
                 match self.highlighter {
                     Some(highlighter) => highlighter,
                     None => match self.rgb_colors {
@@ -366,26 +362,13 @@ impl MietteHandlerOpts {
         if let Some(linkify) = self.linkify {
             linkify
         } else {
-            supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
+            syscall::supports_hyperlinks()
         }
     }
 
-    #[cfg(not(miri))]
     pub(crate) fn get_width(&self) -> usize {
-        self.width.unwrap_or_else(|| {
-            terminal_size::terminal_size()
-                .unwrap_or((terminal_size::Width(80), terminal_size::Height(0)))
-                .0
-                 .0 as usize
-        })
-    }
-
-    #[cfg(miri)]
-    // miri doesn't support a syscall (specifically ioctl)
-    // performed by terminal_size, which causes test execution to fail
-    // so when miri is running we'll just fallback to a constant
-    pub(crate) fn get_width(&self) -> usize {
-        self.width.unwrap_or(80)
+        self.width
+            .unwrap_or_else(|| syscall::terminal_width().unwrap_or(80))
     }
 }
 
@@ -428,5 +411,65 @@ impl ReportHandler for MietteHandler {
         }
 
         self.inner.debug(diagnostic, f)
+    }
+}
+
+mod syscall {
+    use cfg_if::cfg_if;
+
+    #[inline]
+    pub(super) fn terminal_width() -> Option<usize> {
+        cfg_if! {
+            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+                None
+            } else {
+                terminal_size::terminal_size().map(|size| size.0 .0 as usize)
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_hyperlinks() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
+            }
+        }
+    }
+
+    #[cfg(feature = "syntect-highlighter")]
+    #[inline]
+    pub(super) fn supports_color() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_color::on(supports_color::Stream::Stderr).is_some()
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_color_has_16m() -> Option<bool> {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                None
+            } else {
+                supports_color::on(supports_color::Stream::Stderr).map(|color| color.has_16m)
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_unicode() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_unicode::on(supports_unicode::Stream::Stderr)
+            }
+        }
     }
 }
