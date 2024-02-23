@@ -34,29 +34,24 @@ libraries and such might not want.
 
 ### Table of Contents <!-- omit in toc -->
 
-- [`miette`](#miette)
-    - [About](#about)
-    - [Features](#features)
-    - [Installing](#installing)
-    - [Example](#example)
-    - [Using](#using)
-      - [... in libraries](#-in-libraries)
-      - [... in application code](#-in-application-code)
-      - [... in `main()`](#-in-main)
-      - [... diagnostic code URLs](#-diagnostic-code-urls)
-      - [... snippets](#-snippets)
-      - [... help text](#-help-text)
-      - [... severity level](#-severity-level)
-      - [... multiple related errors](#-multiple-related-errors)
-      - [... delayed source code](#-delayed-source-code)
-      - [... Diagnostic-based error sources.](#-diagnostic-based-error-sources)
-      - [... handler options](#-handler-options)
-      - [... dynamic diagnostics](#-dynamic-diagnostics)
-      - [... syntax highlighting](#-syntax-highlighting)
-      - [... collection of labels](#-collection-of-labels)
-    - [MSRV](#msrv)
-    - [Acknowledgements](#acknowledgements)
-    - [License](#license)
+- [About](#about)
+- [Features](#features)
+- [Installing](#installing)
+- [Example](#example)
+- [Using](#using)
+  - [... in libraries](#-in-libraries)
+  - [... in application code](#-in-application-code)
+  - [... in `main()`](#-in-main)
+  - [... diagnostic code URLs](#-diagnostic-code-urls)
+  - [... snippets](#-snippets)
+  - [... multiple related errors](#-multiple-related-errors)
+  - [... delayed source code](#-delayed-source-code)
+  - [... handler options](#-handler-options)
+  - [... dynamic diagnostics](#-dynamic-diagnostics)
+  - [... syntax highlighting](#-syntax-highlighting)
+  - [... collection of labels](#-collection-of-labels)
+- [Acknowledgements](#acknowledgements)
+- [License](#license)
 
 ### Features
 
@@ -475,7 +470,7 @@ use thiserror::Error;
 
 #[derive(Debug, Diagnostic, Error)]
 #[error("welp")]
-#[diagnostic(severity("warning"))]
+#[diagnostic(severity(Warning))]
 struct Foo;
 ```
 
