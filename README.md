@@ -44,6 +44,8 @@ libraries and such might not want.
   - [... in `main()`](#-in-main)
   - [... diagnostic code URLs](#-diagnostic-code-urls)
   - [... snippets](#-snippets)
+  - [... help text](#-help-text)
+  - [... severity level](#-severity-level)
   - [... multiple related errors](#-multiple-related-errors)
   - [... delayed source code](#-delayed-source-code)
   - [... handler options](#-handler-options)
