@@ -1257,28 +1257,27 @@ impl Line {
     /// Returns whether `span` should be visible on this line, either in the gutter or under the
     /// text on this line
     fn span_applies(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
-
-        (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-            // Span passes through this line
-            || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
-            // Span ends on this line
-            || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+        // A span applies if its start is strictly before the line's end,
+        // i.e. the span is not after the line, and its end is strictly after
+        // the line's start, i.e. the span is not before the line.
+        //
+        // One corner case: if the span length is 0, then the span also applies
+        // if its end is *at* the line's start, not just strictly after.
+        (span.offset() < self.offset + self.length)
+            && match span.len() == 0 {
+                true => (span.offset() + span.len()) >= self.offset,
+                false => (span.offset() + span.len()) > self.offset,
+            }
     }
 
     /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans
     /// that are only visible on this line and do not span multiple lines)
     fn span_applies_gutter(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
+        // The span must covers this line and at least one of its ends must be
+        // on another line
         self.span_applies(span)
-            && !(
-                // as long as it doesn't start *and* end on this line
-                (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-                    && (span.offset() + spanlen > self.offset
-                        && span.offset() + spanlen <= self.offset + self.length)
-            )
+            && ((span.offset() < self.offset)
+                || ((span.offset() + span.len()) >= (self.offset + self.length)))
     }
 
     // A 'flyby' is a multi-line span that technically covers this line, but
@@ -1301,8 +1300,7 @@ impl Line {
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &FancySpan) -> bool {
-        span.offset() + span.len() >= self.offset
-            && span.offset() + span.len() <= self.offset + self.length
+        span.offset() + span.len() <= self.offset + self.length
     }
 }
 
