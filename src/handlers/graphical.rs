@@ -1189,54 +1189,30 @@ impl GraphicalReportHandler {
             .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
-        let mut line = context_data.line();
-        let mut column = context_data.column();
-        let mut offset = context_data.span().offset();
-        let mut line_offset = offset;
-        let mut iter = context.chars().peekable();
-        let mut line_str = String::new();
-        let mut lines = Vec::new();
-        while let Some(char) = iter.next() {
-            offset += char.len_utf8();
-            let mut at_end_of_file = false;
-            match char {
-                '\r' => {
-                    if iter.next_if_eq(&'\n').is_some() {
-                        offset += 1;
-                        line += 1;
-                        column = 0;
-                    } else {
-                        line_str.push(char);
-                        column += 1;
-                    }
-                    at_end_of_file = iter.peek().is_none();
+        let lines = context
+            .split_inclusive('\n')
+            .enumerate()
+            .map(|(line_number, line)| {
+                let length = line.len();
+                // Strip the newline chars
+                let line = line
+                    .strip_suffix('\n')
+                    .and_then(|line| line.strip_suffix('\r').or(Some(line)))
+                    .unwrap_or(line);
+                // SAFETY:
+                // - it is safe to use `offset_from` on slices of an array per Rus design (max array size)
+                //   (https://doc.rust-lang.org/stable/reference/types/numeric.html#machine-dependent-integer-types)
+                // - since `line` is a slice of `context`, the offset cannot be negative either
+                Line {
+                    line_number: context_data.line() + line_number + 1,
+                    offset: context_data.span().offset()
+                        + unsafe { line.as_ptr().offset_from(context.as_ptr()) } as usize,
+                    length,
+                    text: line.to_string(),
                 }
-                '\n' => {
-                    at_end_of_file = iter.peek().is_none();
-                    line += 1;
-                    column = 0;
-                }
-                _ => {
-                    line_str.push(char);
-                    column += 1;
-                }
-            }
+            })
+            .collect::<Vec<_>>();
 
-            if iter.peek().is_none() && !at_end_of_file {
-                line += 1;
-            }
-
-            if column == 0 || iter.peek().is_none() {
-                lines.push(Line {
-                    line_number: line,
-                    offset: line_offset,
-                    length: offset - line_offset,
-                    text: line_str.clone(),
-                });
-                line_str.clear();
-                line_offset = offset;
-            }
-        }
         Ok((context_data, lines))
     }
 }
