@@ -16,6 +16,12 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt
+      - name: Install cargo-readme
+        run: cargo install cargo-readme
+      - name: Check doc consistency
+        shell: bash
+        run: diff -q README.md <(cargo readme)
+            || { echo "::error::Update lib.rs then use cargo-readme to update README.md"; exit 1; }
       - name: rustfmt
         run: cargo fmt --all -- --check
       - name: docs
