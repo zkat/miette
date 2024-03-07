@@ -1,5 +1,18 @@
 # `miette` Release Changelog
 
+<a name="7.2.0"></a>
+## 7.2.0 (2024-03-07)
+
+### Features
+
+* **wasm:** add feature "fancy-no-syscall" for wasm targets (#349) ([328bf379](https://github.com/zkat/miette/commit/328bf3792213fc0bed94e72a39acb722b65141dd))
+
+### Bug Fixes
+
+* **label-collections:** Label collection fixes and cleanup (#343) ([75fea093](https://github.com/zkat/miette/commit/75fea0935e495d0215518c80d32dd820910982e3))
+* **invalid span:** skip the snippet when read_span fails (#347) ([7d9dfc6e](https://github.com/zkat/miette/commit/7d9dfc6e8e591f9606c3da55bd8465962358b20f))
+* **redundant-import:** fix a warning and CI failure in nightly (#348) ([6ea86a22](https://github.com/zkat/miette/commit/6ea86a2248854acf88df345814b6c97d31b8b4d9))
+
 <a name="7.1.0"></a>
 ## 7.1.0 (2024-02-16)
 
