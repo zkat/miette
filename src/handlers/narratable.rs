@@ -13,7 +13,7 @@ non-graphical environments, such as non-TTY output.
 */
 #[derive(Debug, Clone)]
 pub struct NarratableReportHandler {
-    context_lines: usize,
+    context_lines: Option<usize>,
     with_cause_chain: bool,
     footer: Option<String>,
 }
@@ -24,7 +24,7 @@ impl NarratableReportHandler {
     pub const fn new() -> Self {
         Self {
             footer: None,
-            context_lines: 1,
+            context_lines: Some(1),
             with_cause_chain: true,
         }
     }
@@ -49,7 +49,22 @@ impl NarratableReportHandler {
     }
 
     /// Sets the number of lines of context to show around each error.
-    pub const fn with_context_lines(mut self, lines: usize) -> Self {
+    ///
+    /// If `0`, then only the span content will be shown (equivalent to
+    /// `with_opt_context_lines(None)`).\
+    /// Use `with_opt_context_lines(Some(0))` if you want the whole line
+    /// containing the error without extra context.
+    pub fn with_context_lines(self, lines: usize) -> Self {
+        self.with_opt_context_lines((lines != 0).then_some(lines))
+    }
+
+    /// Sets the number of lines of context to show around each error.
+    ///
+    /// `None` means only the span content (and possibly the content in between
+    /// multiple adjacent labels) will be shown.\
+    /// `Some(0)` will show the whole line containing the label.\
+    /// `Some(n)` will show the whole line plus n line before and after the label.
+    pub fn with_opt_context_lines(mut self, lines: Option<usize>) -> Self {
         self.context_lines = lines;
         self
     }

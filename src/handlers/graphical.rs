@@ -28,7 +28,7 @@ pub struct GraphicalReportHandler {
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
-    pub(crate) context_lines: usize,
+    pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
     pub(crate) wrap_lines: bool,
@@ -55,7 +55,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme: GraphicalTheme::default(),
             footer: None,
-            context_lines: 1,
+            context_lines: Some(1),
             tab_width: 4,
             with_cause_chain: true,
             wrap_lines: true,
@@ -74,7 +74,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme,
             footer: None,
-            context_lines: 1,
+            context_lines: Some(1),
             tab_width: 4,
             wrap_lines: true,
             with_cause_chain: true,
@@ -159,7 +159,7 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Sets the word splitter to usewhen wrapping.
+    /// Sets the word splitter to use when wrapping.
     pub fn with_word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
         self.word_splitter = Some(word_splitter);
         self
@@ -172,7 +172,22 @@ impl GraphicalReportHandler {
     }
 
     /// Sets the number of lines of context to show around each error.
-    pub fn with_context_lines(mut self, lines: usize) -> Self {
+    ///
+    /// If `0`, then only the span content will be shown (equivalent to
+    /// `with_opt_context_lines(None)`).\
+    /// Use `with_opt_context_lines(Some(0))` if you want the whole line
+    /// containing the error without extra context.
+    pub fn with_context_lines(self, lines: usize) -> Self {
+        self.with_opt_context_lines((lines != 0).then_some(lines))
+    }
+
+    /// Sets the number of lines of context to show around each error.
+    ///
+    /// `None` means only the span content (and possibly the content in between
+    /// multiple adjacent labels) will be shown.\
+    /// `Some(0)` will show the whole line containing the label.\
+    /// `Some(n)` will show the whole line plus n line before and after the label.
+    pub fn with_opt_context_lines(mut self, lines: Option<usize>) -> Self {
         self.context_lines = lines;
         self
     }
@@ -559,7 +574,7 @@ impl GraphicalReportHandler {
         // as the reference point for line/column information.
         let primary_contents = match primary_label {
             Some(label) => source
-                .read_span(label.inner(), 0, 0)
+                .read_span(label.inner(), None, None)
                 .map_err(|_| fmt::Error)?,
             None => contents,
         };

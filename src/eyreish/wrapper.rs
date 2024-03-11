@@ -283,7 +283,7 @@ mod tests {
             report
                 .source_code()
                 .unwrap()
-                .read_span(&(0..5).into(), 0, 0)
+                .read_span(&(0..5).into(), None, None)
                 .unwrap()
                 .data()
                 .to_vec(),

@@ -2196,3 +2196,254 @@ Error: oops::my::inner
     assert_eq!(expected, &out);
     Ok(())
 }
+
+#[test]
+fn zero_length_no_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(None)
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multi_adjacent_zero_length_no_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[label("and here")]
+        highlight2: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree\nfour".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+        highlight2: (12, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(None)
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 2 │ oo
+   · ▲
+   · ╰── this bit here
+ 3 │ thr
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multi_separated_zero_length_no_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[label("and here")]
+        highlight2: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree\nfour".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+        highlight2: (17, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(None)
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+   ╰────
+   ╭─[bad_file.rs:4:3]
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn zero_length_zero_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(Some(0))
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 2 │ twoo
+   ·   ▲
+   ·   ╰── this bit here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multi_adjacent_zero_length_zero_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[label("and here")]
+        highlight2: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree\nfour".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+        highlight2: (12, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(Some(0))
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 2 │ twoo
+   ·   ▲
+   ·   ╰── this bit here
+ 3 │ three
+   ·    ▲
+   ·    ╰── and here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn multi_separated_zero_length_zero_context() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+        #[label("and here")]
+        highlight2: SourceSpan,
+    }
+
+    let src = "one\ntwoo\nthree\nfour".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (6, 0).into(),
+        highlight2: (17, 0).into(),
+    };
+
+    let out = fmt_report_with_settings(err.into(), |handler| {
+        handler
+            .with_opt_context_lines(Some(0))
+            .without_syntax_highlighting()
+    });
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:2:3]
+ 2 │ twoo
+   ·   ▲
+   ·   ╰── this bit here
+   ╰────
+   ╭─[bad_file.rs:4:3]
+ 4 │ four
+   ·   ▲
+   ·   ╰── and here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}

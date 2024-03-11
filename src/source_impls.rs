@@ -15,8 +15,8 @@ struct LineInfo {
 fn context_info<'a>(
     input: &'a [u8],
     span: &SourceSpan,
-    context_lines_before: usize,
-    context_lines_after: usize,
+    context_lines_before: Option<usize>,
+    context_lines_after: Option<usize>,
 ) -> Result<MietteSpanContents<'a>, MietteError> {
     let mut iter = input
         .split_inclusive(|b| *b == b'\n')
@@ -56,14 +56,14 @@ fn context_info<'a>(
             Some(info) => info,
         };
 
-        if line_starts.len() > context_lines_before {
+        if line_starts.len() > context_lines_before.unwrap_or(0) {
             line_starts.pop_front();
         }
         line_starts.push_back(line_info);
     }
     let (start_lineno, start_offset, start_column) = {
         let start_info = line_starts.pop_front().unwrap();
-        if context_lines_before > 0 {
+        if context_lines_before.is_some() {
             (start_info.line_no, start_info.start, 0)
         } else {
             (
@@ -83,13 +83,13 @@ fn context_info<'a>(
     }
 
     // Get the "after" lines
-    if let Some(last) = iter.take(context_lines_after).last() {
+    if let Some(last) = iter.take(context_lines_after.unwrap_or(0)).last() {
         line_info = last;
     }
     if span.offset() + span.len() > line_info.end {
         return Err(MietteError::OutOfBounds);
     }
-    let (end_lineno, end_offset) = if context_lines_after > 0 {
+    let (end_lineno, end_offset) = if context_lines_after.is_some() {
         (line_info.line_no, line_info.end)
     } else {
         (line_info.line_no, span.offset() + span.len())
@@ -108,8 +108,8 @@ impl SourceCode for [u8] {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         let contents = context_info(self, span, context_lines_before, context_lines_after)?;
         Ok(Box::new(contents))
@@ -120,8 +120,8 @@ impl<'src> SourceCode for &'src [u8] {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
@@ -131,8 +131,8 @@ impl SourceCode for Vec<u8> {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
@@ -142,8 +142,8 @@ impl SourceCode for str {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(
             self.as_bytes(),
@@ -159,8 +159,8 @@ impl<'s> SourceCode for &'s str {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
@@ -170,8 +170,8 @@ impl SourceCode for String {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
@@ -181,8 +181,8 @@ impl<T: ?Sized + SourceCode> SourceCode for Arc<T> {
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
@@ -201,8 +201,8 @@ where
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
@@ -216,7 +216,7 @@ mod tests {
     #[test]
     fn basic() -> Result<(), MietteError> {
         let src = String::from("foo\n");
-        let contents = src.read_span(&(0, 4).into(), 0, 0)?;
+        let contents = src.read_span(&(0, 4).into(), None, None)?;
         assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((0, 4)), *contents.span());
         assert_eq!(0, contents.line());
@@ -228,7 +228,7 @@ mod tests {
     #[test]
     fn shifted() -> Result<(), MietteError> {
         let src = String::from("foobar");
-        let contents = src.read_span(&(3, 3).into(), 1, 1)?;
+        let contents = src.read_span(&(3, 3).into(), Some(1), Some(1))?;
         assert_eq!("foobar", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((0, 6)), *contents.span());
         assert_eq!(0, contents.line());
@@ -240,7 +240,7 @@ mod tests {
     #[test]
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&(4, 4).into(), 0, 0)?;
+        let contents = src.read_span(&(4, 4).into(), None, None)?;
         assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((4, 4)), *contents.span());
         assert_eq!(1, contents.line());
@@ -252,7 +252,7 @@ mod tests {
     #[test]
     fn middle_of_line() -> Result<(), MietteError> {
         let src = String::from("foo\nbarbar\nbaz\n");
-        let contents = src.read_span(&(7, 4).into(), 0, 0)?;
+        let contents = src.read_span(&(7, 4).into(), None, None)?;
         assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((7, 4)), *contents.span());
         assert_eq!(1, contents.line());
@@ -264,7 +264,7 @@ mod tests {
     #[test]
     fn end_of_line_before_newline() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&(7, 0).into(), 0, 0)?;
+        let contents = src.read_span(&(7, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((7, 0)), *contents.span());
         assert_eq!(1, contents.line());
@@ -276,7 +276,7 @@ mod tests {
     #[test]
     fn end_of_line_after_newline() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&(8, 0).into(), 0, 0)?;
+        let contents = src.read_span(&(8, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((8, 0)), *contents.span());
         assert_eq!(2, contents.line());
@@ -288,7 +288,7 @@ mod tests {
     #[test]
     fn end_of_file_with_newline() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
-        let contents = src.read_span(&(12, 0).into(), 0, 0)?;
+        let contents = src.read_span(&(12, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((12, 0)), *contents.span());
         assert_eq!(2, contents.line());
@@ -300,7 +300,7 @@ mod tests {
     #[test]
     fn end_of_file_without_newline() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz");
-        let contents = src.read_span(&(11, 0).into(), 0, 0)?;
+        let contents = src.read_span(&(11, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((11, 0)), *contents.span());
         assert_eq!(2, contents.line());
@@ -312,7 +312,7 @@ mod tests {
     #[test]
     fn with_crlf() -> Result<(), MietteError> {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
-        let contents = src.read_span(&(5, 5).into(), 0, 0)?;
+        let contents = src.read_span(&(5, 5).into(), None, None)?;
         assert_eq!("bar\r\n", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((5, 5)), *contents.span());
         assert_eq!(1, contents.line());
@@ -324,7 +324,7 @@ mod tests {
     #[test]
     fn with_context() -> Result<(), MietteError> {
         let src = String::from("xxx\nfoo\nbar\nbaz\n\nyyy\n");
-        let contents = src.read_span(&(8, 3).into(), 1, 1)?;
+        let contents = src.read_span(&(8, 3).into(), Some(1), Some(1))?;
         assert_eq!(
             "foo\nbar\nbaz\n",
             std::str::from_utf8(contents.data()).unwrap()
@@ -339,7 +339,7 @@ mod tests {
     #[test]
     fn multiline_with_context() -> Result<(), MietteError> {
         let src = String::from("aaa\nxxx\n\nfoo\nbar\nbaz\n\nyyy\nbbb\n");
-        let contents = src.read_span(&(9, 11).into(), 1, 1)?;
+        let contents = src.read_span(&(9, 11).into(), Some(1), Some(1))?;
         assert_eq!(
             "\nfoo\nbar\nbaz\n\n",
             std::str::from_utf8(contents.data()).unwrap()
@@ -356,7 +356,7 @@ mod tests {
     #[test]
     fn multiline_with_context_line_start() -> Result<(), MietteError> {
         let src = String::from("one\ntwo\n\nthree\nfour\nfive\n\nsix\nseven\n");
-        let contents = src.read_span(&(2, 0).into(), 2, 2)?;
+        let contents = src.read_span(&(2, 0).into(), Some(2), Some(2))?;
         assert_eq!(
             "one\ntwo\n\n",
             std::str::from_utf8(contents.data()).unwrap()
@@ -374,7 +374,7 @@ mod tests {
     fn empty_source() -> Result<(), MietteError> {
         let src = String::from("");
 
-        let contents = src.read_span(&(0, 0).into(), 0, 0)?;
+        let contents = src.read_span(&(0, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((0, 0)), *contents.span());
         assert_eq!(0, contents.line());
@@ -388,22 +388,22 @@ mod tests {
     fn empty_source_out_of_bounds() {
         let src = String::from("");
 
-        let contents = src.read_span(&(0, 1).into(), 0, 0);
+        let contents = src.read_span(&(0, 1).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
 
-        let contents = src.read_span(&(0, 2).into(), 0, 0);
+        let contents = src.read_span(&(0, 2).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
 
-        let contents = src.read_span(&(1, 0).into(), 0, 0);
+        let contents = src.read_span(&(1, 0).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
 
-        let contents = src.read_span(&(1, 1).into(), 0, 0);
+        let contents = src.read_span(&(1, 1).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
 
-        let contents = src.read_span(&(2, 0).into(), 0, 0);
+        let contents = src.read_span(&(2, 0).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
 
-        let contents = src.read_span(&(2, 1).into(), 0, 0);
+        let contents = src.read_span(&(2, 1).into(), None, None);
         assert!(matches!(contents, Err(MietteError::OutOfBounds)));
     }
 }
