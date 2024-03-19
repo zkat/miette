@@ -6,12 +6,14 @@ fn related() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
+    #[allow(dead_code)]
     struct Foo {
         #[related]
         related: Vec<Baz>,
     }
 
     #[derive(Error, Debug, Diagnostic)]
+    #[allow(dead_code)]
     enum Bar {
         #[error("variant1")]
         #[diagnostic(code(foo::bar::baz))]
@@ -29,6 +31,7 @@ fn related() {
 
     #[derive(Error, Debug, Diagnostic)]
     #[error("welp2")]
+    #[allow(dead_code)]
     struct Baz;
 }
 
@@ -37,6 +40,7 @@ fn related_report() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
+    #[allow(dead_code)]
     struct Foo {
         #[related]
         related: Vec<Report>,
@@ -288,6 +292,7 @@ fn test_snippet_named_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
+    #[allow(dead_code)]
     struct Foo<'a> {
         #[source_code]
         src: &'a str,
@@ -310,6 +315,7 @@ fn test_snippet_unnamed_struct() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
+    #[allow(dead_code)]
     struct Foo<'a>(
         #[source_code] &'a str,
         #[label("{0}")] SourceSpan,
