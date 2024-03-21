@@ -288,6 +288,9 @@ fn empty_source() -> Result<(), MietteError> {
 
   × oops!
    ╭─[bad_file.rs:1:1]
+ 1 │ 
+   · ▲
+   · ╰── this bit here
    ╰────
   help: try doing it better next time?
 "#
@@ -624,6 +627,78 @@ fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
    ·       ▲
    ·       ╰── this bit here
  2 │   text
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_highlight_offset_end_of_file_no_newline() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "one\ntwo\nthree".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (13, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:3:6]
+ 2 │ two
+ 3 │ three
+   ·      ▲
+   ·      ╰── this bit here
+   ╰────
+  help: try doing it better next time?
+"#
+    .trim_start()
+    .to_string();
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn single_line_highlight_offset_end_of_file_with_newline() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("oops!")]
+    #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<String>,
+        #[label("this bit here")]
+        highlight: SourceSpan,
+    }
+
+    let src = "one\ntwo\nthree\n".to_string();
+    let err = MyBad {
+        src: NamedSource::new("bad_file.rs", src),
+        highlight: (14, 0).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+    let expected = r#"oops::my::bad
+
+  × oops!
+   ╭─[bad_file.rs:4:1]
+ 3 │ three
+ 4 │ 
+   · ▲
+   · ╰── this bit here
    ╰────
   help: try doing it better next time?
 "#
@@ -1088,9 +1163,8 @@ fn multiline_highlight_flyby() -> Result<(), MietteError> {
 line2
 line3
 line4
-line5
-"#
-    .to_string();
+line5"#
+        .to_string();
     let len = src.len();
     let err = MyBad {
         src: NamedSource::new("bad_file.rs", src),
@@ -1147,9 +1221,8 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
 line2
 line3
 line4
-line5
-"#
-    .to_string();
+line5"#
+        .to_string();
     let len = src.len();
     let err = MyBad {
         source: Inner(InnerInner),
@@ -2267,6 +2340,8 @@ fn multi_adjacent_zero_length_no_context() -> Result<(), MietteError> {
    · ▲
    · ╰── this bit here
  3 │ thr
+   ·    ▲
+   ·    ╰── and here
    ╰────
   help: try doing it better next time?
 "#

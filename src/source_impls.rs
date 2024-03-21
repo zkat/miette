@@ -20,6 +20,16 @@ fn context_info<'a>(
 ) -> Result<MietteSpanContents<'a>, MietteError> {
     let mut iter = input
         .split_inclusive(|b| *b == b'\n')
+        .chain(
+            // `split_inclusive()` does not generate a line if the input is
+            // empty or for the "last line" if it terminates with a new line.
+            // This `chain` fixes that.
+            match input.last() {
+                None => Some(&input[0..0]),
+                Some(b'\n') => Some(&input[input.len()..input.len()]),
+                _ => None,
+            },
+        )
         .enumerate()
         .map(|(line_no, line)| {
             // SAFETY:
@@ -291,8 +301,8 @@ mod tests {
         let contents = src.read_span(&(12, 0).into(), None, None)?;
         assert_eq!("", std::str::from_utf8(contents.data()).unwrap());
         assert_eq!(SourceSpan::from((12, 0)), *contents.span());
-        assert_eq!(2, contents.line());
-        assert_eq!(4, contents.column());
+        assert_eq!(3, contents.line());
+        assert_eq!(0, contents.column());
         assert_eq!(1, contents.line_count());
         Ok(())
     }

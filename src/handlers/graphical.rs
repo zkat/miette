@@ -515,7 +515,19 @@ impl GraphicalReportHandler {
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
-        let (contents, lines) = self.get_lines(source, context.inner())?;
+        let (contents, mut lines) = self.get_lines(source, context.inner())?;
+
+        // If the number of lines doesn't match the content's line_count, it's
+        // because the content is either an empty source or because the last
+        // line finishes with a newline. In this case, add an empty line.
+        if lines.len() != contents.line_count() {
+            lines.push(Line {
+                line_number: contents.line() + contents.line_count(),
+                offset: contents.span().offset() + contents.span().len(),
+                length: 0,
+                text: String::new(),
+            });
+        }
 
         // only consider labels from the context as primary label
         let ctx_labels = labels.iter().filter(|l| {
@@ -570,6 +582,10 @@ impl GraphicalReportHandler {
             self.theme.characters.hbar,
         )?;
 
+        // Save that for later, since `content` might be moved before we need
+        // that info
+        let has_content = !contents.data().is_empty();
+
         // If there is a primary label, then use its span
         // as the reference point for line/column information.
         let primary_contents = match primary_label {
@@ -600,48 +616,53 @@ impl GraphicalReportHandler {
         }
 
         // Now it's time for the fun part--actually rendering everything!
-        for line in &lines {
-            // Line number, appropriately padded.
-            self.write_linum(f, linum_width, line.line_number)?;
+        // (but only if we have content or if we wanted content, to avoid
+        // pointless detailed rendering, e.g. arrows pointing to nothing in the
+        // middle of nothing)
+        if has_content || self.context_lines.is_some() {
+            for (line_no, line) in lines.iter().enumerate() {
+                // Line number, appropriately padded.
+                self.write_linum(f, linum_width, line.line_number)?;
 
-            // Then, we need to print the gutter, along with any fly-bys We
-            // have separate gutters depending on whether we're on the actual
-            // line, or on one of the "highlight lines" below it.
-            self.render_line_gutter(f, max_gutter, line, &labels)?;
+                // Then, we need to print the gutter, along with any fly-bys We
+                // have separate gutters depending on whether we're on the actual
+                // line, or on one of the "highlight lines" below it.
+                self.render_line_gutter(f, max_gutter, line, &labels)?;
 
-            // And _now_ we can print out the line text itself!
-            let styled_text =
-                StyledList::from(highlighter_state.highlight_line(&line.text)).to_string();
-            self.render_line_text(f, &styled_text)?;
+                // And _now_ we can print out the line text itself!
+                let styled_text =
+                    StyledList::from(highlighter_state.highlight_line(&line.text)).to_string();
+                self.render_line_text(f, &styled_text)?;
 
-            // Next, we write all the highlights that apply to this particular line.
-            let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
-                .iter()
-                .filter(|hl| line.span_applies(hl))
-                .partition(|hl| line.span_line_only(hl));
-            if !single_line.is_empty() {
-                // no line number!
-                self.write_no_linum(f, linum_width)?;
-                // gutter _again_
-                self.render_highlight_gutter(
-                    f,
-                    max_gutter,
-                    line,
-                    &labels,
-                    LabelRenderMode::SingleLine,
-                )?;
-                self.render_single_line_highlights(
-                    f,
-                    line,
-                    linum_width,
-                    max_gutter,
-                    &single_line,
-                    &labels,
-                )?;
-            }
-            for hl in multi_line {
-                if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
-                    self.render_multi_line_end(f, &labels, max_gutter, linum_width, line, hl)?;
+                // Next, we write all the highlights that apply to this particular line.
+                let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
+                    .iter()
+                    .filter(|hl| line.span_applies(hl, line_no == (lines.len() - 1)))
+                    .partition(|hl| line.span_line_only(hl));
+                if !single_line.is_empty() {
+                    // no line number!
+                    self.write_no_linum(f, linum_width)?;
+                    // gutter _again_
+                    self.render_highlight_gutter(
+                        f,
+                        max_gutter,
+                        line,
+                        &labels,
+                        LabelRenderMode::SingleLine,
+                    )?;
+                    self.render_single_line_highlights(
+                        f,
+                        line,
+                        linum_width,
+                        max_gutter,
+                        &single_line,
+                        &labels,
+                    )?;
+                }
+                for hl in multi_line {
+                    if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
+                        self.render_multi_line_end(f, &labels, max_gutter, linum_width, line, hl)?;
+                    }
                 }
             }
         }
@@ -1271,18 +1292,30 @@ impl Line {
 
     /// Returns whether `span` should be visible on this line, either in the gutter or under the
     /// text on this line
-    fn span_applies(&self, span: &FancySpan) -> bool {
+    ///
+    /// An empty span at a line boundary will preferable apply to the start of
+    /// a line (i.e. the second/next line) rather than the end of one (i.e. the
+    /// first/previous line). However if there are no "second" line, the span
+    /// can only apply the "first". The `inclusive` parameter is there to
+    /// indicate that `self` is the last line, i.e. that there are no "second"
+    /// line.
+    fn span_applies(&self, span: &FancySpan, inclusive: bool) -> bool {
         // A span applies if its start is strictly before the line's end,
         // i.e. the span is not after the line, and its end is strictly after
         // the line's start, i.e. the span is not before the line.
         //
-        // One corner case: if the span length is 0, then the span also applies
-        // if its end is *at* the line's start, not just strictly after.
-        (span.offset() < self.offset + self.length)
-            && match span.len() == 0 {
-                true => (span.offset() + span.len()) >= self.offset,
-                false => (span.offset() + span.len()) > self.offset,
-            }
+        // Two corner cases:
+        // - if `inclusive` is true, then the span also applies if its start is
+        //   *at* the line's end, not just strictly before.
+        // - if the span length is 0, then the span also applies if its end is
+        //   *at* the line's start, not just strictly after.
+        (match inclusive {
+            true => span.offset() <= self.offset + self.length,
+            false => span.offset() < self.offset + self.length,
+        }) && match span.len() == 0 {
+            true => (span.offset() + span.len()) >= self.offset,
+            false => (span.offset() + span.len()) > self.offset,
+        }
     }
 
     /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans
@@ -1290,7 +1323,7 @@ impl Line {
     fn span_applies_gutter(&self, span: &FancySpan) -> bool {
         // The span must covers this line and at least one of its ends must be
         // on another line
-        self.span_applies(span)
+        self.span_applies(span, false)
             && ((span.offset() < self.offset)
                 || ((span.offset() + span.len()) >= (self.offset + self.length)))
     }
