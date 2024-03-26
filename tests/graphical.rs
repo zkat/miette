@@ -299,14 +299,12 @@ fn wrapping_nested_errors() -> Result<(), MietteError> {
   ╰─▶ baby::error
       
         × Wah wah: I may be small, but I'll
-      cause a
-        │ proper bout of trouble — just try
-      wrapping
-        │ this mess of a line, buddo!
+        │ cause a proper bout of trouble — just
+        │ try wrapping this mess of a line,
+        │ buddo!
         help: it cannot be helped... would
-      youuuu
-              really want to get rid of an error
-              that's so cute?
+              youuuu really want to get rid of
+              an error that's so cute?
       
   help: try doing it better next time? I mean,
         you could have also done better this

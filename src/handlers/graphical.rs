@@ -1,7 +1,7 @@
 use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style, StyledList};
-use unicode_width::UnicodeWidthChar;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
@@ -354,6 +354,8 @@ impl GraphicalReportHandler {
                         inner_renderer.footer = None;
                         // Cause chains are already flattened, so don't double-print the nested error
                         inner_renderer.with_cause_chain = false;
+                        // Since everything from here on is indented, shrink the virtual terminal
+                        inner_renderer.termwidth -= rest_indent.width();
                         inner_renderer.render_report(&mut inner, diag)?;
 
                         writeln!(f, "{}", self.wrap(&inner, opts))?;
