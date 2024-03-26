@@ -265,6 +265,58 @@ fn wrap_option() -> Result<(), MietteError> {
 }
 
 #[test]
+fn wrapping_nested_errors() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("This is the parent error, the error with the children, kiddos, pups, as it were, and so on...")]
+    #[diagnostic(
+        code(mama::error),
+        help(
+            "try doing it better next time? I mean, you could have also done better this time, but no?"
+        )
+    )]
+    struct MamaError {
+        #[diagnostic_source]
+        baby: BabyError,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Wah wah: I may be small, but I'll cause a proper bout of trouble — just try wrapping this mess of a line, buddo!")]
+    #[diagnostic(
+        code(baby::error),
+        help(
+            "it cannot be helped... would youuuu really want to get rid of an error that's so cute?"
+        )
+    )]
+    struct BabyError;
+
+    let err = MamaError { baby: BabyError };
+    let out = fmt_report_with_settings(err.into(), |handler| handler.with_width(50));
+    let expected = r#"mama::error
+
+  × This is the parent error, the error with
+  │ the children, kiddos, pups, as it were, and
+  │ so on...
+  ╰─▶ baby::error
+      
+        × Wah wah: I may be small, but I'll
+      cause a
+        │ proper bout of trouble — just try
+      wrapping
+        │ this mess of a line, buddo!
+        help: it cannot be helped... would
+      youuuu
+              really want to get rid of an error
+              that's so cute?
+      
+  help: try doing it better next time? I mean,
+        you could have also done better this
+        time, but no?
+"#;
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
 fn empty_source() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
