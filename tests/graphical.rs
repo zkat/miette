@@ -1959,7 +1959,8 @@ fn syntax_highlighter() {
     GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
         .render_report(&mut out, &err)
         .unwrap();
-    let expected = r#"  × This is an error
+    let expected = r#"
+  × This is an error
    ╭─[hello_world:2:5]
  1 │ fn main() {
  2 │     println!("Hello, World!");
@@ -2013,7 +2014,8 @@ fn syntax_highlighter_on_real_file() {
         .unwrap();
 
     let expected = format!(
-        r#"  × This is an error
+        r#"
+  × This is an error
       ╭─[{filename}:{l2}:{CO}]
  {l1} │ 
  {l2} │     let (filename, line) = (file!(), line!() as usize);
