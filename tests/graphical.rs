@@ -59,14 +59,15 @@ fn word_wrap_options() -> Result<(), MietteError> {
     let out =
         fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| handler);
 
-    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    let expected = "\n  × abcdefghijklmnopqrstuvwxyz\n".to_string();
     assert_eq!(expected, out);
 
     // A long word can break with a smaller width
     let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
         handler.with_width(10)
     });
-    let expected = r#"  × abcd
+    let expected = r#"
+  × abcd
   │ efgh
   │ ijkl
   │ mnop
@@ -81,7 +82,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
     let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
         handler.with_width(10).with_break_words(false)
     });
-    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    let expected = "\n  × abcdefghijklmnopqrstuvwxyz\n".to_string();
     assert_eq!(expected, out);
 
     // Breaks should start at the boundary of each word if possible
@@ -89,7 +90,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
         Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
         |handler| handler.with_width(10),
     );
-    let expected = r#"  × 12
+    let expected = r#"
+  × 12
   │ 123
   │ 1234
   │ 1234
@@ -110,7 +112,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
         Report::msg("12 123 1234 12345 123456 1234567 1234567890"),
         |handler| handler.with_width(10).with_break_words(false),
     );
-    let expected = r#"  × 12
+    let expected = r#"
+  × 12
   │ 123
   │ 1234
   │ 12345
@@ -126,7 +129,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
         Report::msg("a-b a-b-c a-b-c-d a-b-c-d-e a-b-c-d-e-f a-b-c-d-e-f-g a-b-c-d-e-f-g-h"),
         |handler| handler.with_width(10).with_break_words(false),
     );
-    let expected = r#"  × a-b
+    let expected = r#"
+  × a-b
   │ a-b-
   │ c a-
   │ b-c-
@@ -158,7 +162,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
                 .with_word_splitter(textwrap::WordSplitter::NoHyphenation)
         },
     );
-    let expected = r#"  × a-b
+    let expected = r#"
+  × a-b
   │ a-b-c
   │ a-b-c-d
   │ a-b-c-d-e
@@ -174,7 +179,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
         Report::msg("a/b a/b/c a/b/c/d a/b/c/d/e a/b/c/d/e/f a/b/c/d/e/f/g a/b/c/d/e/f/g/h"),
         |handler| handler.with_width(10).with_break_words(false),
     );
-    let expected = r#"  × a/b
+    let expected = r#"
+  × a/b
   │ a/b/
   │ c a/
   │ b/c/
@@ -206,7 +212,8 @@ fn word_wrap_options() -> Result<(), MietteError> {
                 .with_word_separator(textwrap::WordSeparator::AsciiSpace)
         },
     );
-    let expected = r#"  × a/b
+    let expected = r#"
+  × a/b
   │ a/b/c
   │ a/b/c/d
   │ a/b/c/d/e
@@ -227,7 +234,8 @@ fn wrap_option() -> Result<(), MietteError> {
         Report::msg("abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz"),
         |handler| handler.with_width(15),
     );
-    let expected = r#"  × abc def
+    let expected = r#"
+  × abc def
   │ ghi jkl
   │ mno pqr
   │ stu vwx
@@ -246,7 +254,7 @@ fn wrap_option() -> Result<(), MietteError> {
         |handler| handler.with_width(15).with_wrap_lines(false),
     );
     let expected =
-        "  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
+        "\n  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
     assert_eq!(expected, out);
 
     // Then, user-defined new lines should be preserved wrapping is disabled
@@ -254,13 +262,151 @@ fn wrap_option() -> Result<(), MietteError> {
       Report::msg("abc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz\nabc def ghi jkl mno pqr stu vwx yz"),
       |handler| handler.with_width(15).with_wrap_lines(false),
   );
-    let expected = r#"  × abc def ghi jkl mno pqr stu vwx yz
+    let expected = r#"
+  × abc def ghi jkl mno pqr stu vwx yz
   │ abc def ghi jkl mno pqr stu vwx yz
   │ abc def ghi jkl mno pqr stu vwx yz
 "#
     .to_string();
     assert_eq!(expected, out);
 
+    Ok(())
+}
+
+#[test]
+fn wrapping_nested_errors() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("This is the parent error, the error withhhhh the children, kiddos, pups, as it were, and so on...")]
+    #[diagnostic(
+        code(mama::error),
+        help(
+            "try doing it better next time? I mean, you could have also done better thisssss time, but no?"
+        )
+    )]
+    struct MamaError {
+        #[diagnostic_source]
+        baby: BabyError,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Wah wah: I may be small, but I'll cause a proper bout of trouble — justt try wrapping this mess of a line, buddo!")]
+    #[diagnostic(
+        code(baby::error),
+        help(
+            "it cannot be helped... woulddddddd you really want to get rid of an error that's so cute?"
+        )
+    )]
+    struct BabyError;
+
+    let err = MamaError { baby: BabyError };
+    let out = fmt_report_with_settings(err.into(), |handler| handler.with_width(50));
+    let expected = r#"mama::error
+
+  × This is the parent error, the error withhhhh
+  │ the children, kiddos, pups, as it were, and
+  │ so on...
+  ╰─▶ baby::error
+      
+        × Wah wah: I may be small, but I'll
+        │ cause a proper bout of trouble — justt
+        │ try wrapping this mess of a line,
+        │ buddo!
+        help: it cannot be helped... woulddddddd
+              you really want to get rid of an
+              error that's so cute?
+      
+  help: try doing it better next time? I mean,
+        you could have also done better thisssss
+        time, but no?
+"#;
+    assert_eq!(expected, out);
+    Ok(())
+}
+
+#[test]
+fn wrapping_related_errors() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("This is the parent error, the error withhhhh the children, kiddos, pups, as it were, and so on...")]
+    #[diagnostic(
+        code(mama::error),
+        help(
+            "try doing it better next time? I mean, you could have also done better thisssss time, but no?"
+        )
+    )]
+    struct MamaError {
+        #[diagnostic_source]
+        baby: BrotherError,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Welcome to the brother-error brotherhood — where all of the wee baby errors join into a formidable force")]
+    #[diagnostic(code(brother::error))]
+    struct BrotherError {
+        #[related]
+        brethren: Vec<Box<dyn Diagnostic + Send + Sync>>,
+    }
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Wah wah: I may be small, but I'll cause a proper bout of trouble — justt try wrapping this mess of a line, buddo!")]
+    #[diagnostic(help(
+        "it cannot be helped... woulddddddd you really want to get rid of an error that's so cute?"
+    ))]
+    struct BabyError;
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Wah wah: I may be small, but I'll cause a proper bout of trouble — justt try wrapping this mess of a line, buddo!")]
+    #[diagnostic(severity(Warning))]
+    struct BabyWarning;
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("Wah wah: I may be small, but I'll cause a proper bout of trouble — justt try wrapping this mess of a line, buddo!")]
+    #[diagnostic(severity(Advice))]
+    struct BabyAdvice;
+
+    let err = MamaError {
+        baby: BrotherError {
+            brethren: vec![BabyError.into(), BabyWarning.into(), BabyAdvice.into()],
+        },
+    };
+    let out = fmt_report_with_settings(err.into(), |handler| handler.with_width(50));
+    let expected = r#"mama::error
+
+  × This is the parent error, the error withhhhh
+  │ the children, kiddos, pups, as it were, and
+  │ so on...
+  ╰─▶ brother::error
+      
+        × Welcome to the brother-error
+        │ brotherhood — where all of the wee
+        │ baby errors join into a formidable
+        │ force
+      
+      Error:
+        × Wah wah: I may be small, but I'll
+        │ cause a proper bout of trouble — justt
+        │ try wrapping this mess of a line,
+        │ buddo!
+        help: it cannot be helped... woulddddddd
+              you really want to get rid of an
+              error that's so cute?
+      
+      Warning:
+        ⚠ Wah wah: I may be small, but I'll
+        │ cause a proper bout of trouble — justt
+        │ try wrapping this mess of a line,
+        │ buddo!
+      
+      Advice:
+        ☞ Wah wah: I may be small, but I'll
+        │ cause a proper bout of trouble — justt
+        │ try wrapping this mess of a line,
+        │ buddo!
+      
+  help: try doing it better next time? I mean,
+        you could have also done better thisssss
+        time, but no?
+"#;
+    assert_eq!(expected, out);
     Ok(())
 }
 
@@ -326,7 +472,8 @@ if true {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"  × oops!
+    let expected = r#"
+  × oops!
    ╭─[issue:1:1]
  1 │ ╭─▶ if true {
  2 │ │       a
@@ -361,7 +508,8 @@ fn single_line_highlight_span_full_line() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"  × oops!
+    let expected = r#"
+  × oops!
    ╭─[issue:2:1]
  1 │ source
  2 │ text
@@ -1411,7 +1559,6 @@ Error: oops::my::bad
  2 │   text
    ╰────
   help: try doing it better next time?
-
 "#
     .trim_start()
     .to_string();
@@ -1578,6 +1725,7 @@ Error: oops::my::related::error
  2 │   text
    ╰────
   help: try doing it better next time?
+
 Warning: oops::my::related::warning
 
   ⚠ oops!
@@ -1588,6 +1736,7 @@ Warning: oops::my::related::warning
  2 │   text
    ╰────
   help: try doing it better next time?
+
 Advice: oops::my::related::advice
 
   ☞ oops!
@@ -1623,7 +1772,8 @@ fn zero_length_eol_span() {
     let out = fmt_report(err.into());
     println!("Error: {}", out);
 
-    let expected = r#"  × oops!
+    let expected = r#"
+  × oops!
    ╭─[issue:2:1]
  1 │ this is the first line
  2 │ this is the second line
@@ -1657,7 +1807,8 @@ fn primary_label() {
     println!("Error: {}", out);
 
     // line 2 should be the primary, not line 1
-    let expected = r#"  × oops!
+    let expected = r#"
+  × oops!
    ╭─[issue:2:2]
  1 │ this is the first line
    ·   ────
@@ -1808,7 +1959,8 @@ fn syntax_highlighter() {
     GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
         .render_report(&mut out, &err)
         .unwrap();
-    let expected = r#"  × This is an error
+    let expected = r#"
+  × This is an error
    ╭─[hello_world:2:5]
  1 │ fn main() {
  2 │     println!("Hello, World!");
@@ -1862,7 +2014,8 @@ fn syntax_highlighter_on_real_file() {
         .unwrap();
 
     let expected = format!(
-        r#"  × This is an error
+        r#"
+  × This is an error
       ╭─[{filename}:{l2}:{CO}]
  {l1} │ 
  {l2} │     let (filename, line) = (file!(), line!() as usize);

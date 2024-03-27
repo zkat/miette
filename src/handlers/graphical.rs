@@ -1,7 +1,7 @@
 use std::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style, StyledList};
-use unicode_width::UnicodeWidthChar;
+use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
@@ -225,7 +225,7 @@ impl GraphicalReportHandler {
         self.render_related(f, diagnostic, src)?;
         if let Some(footer) = &self.footer {
             writeln!(f)?;
-            let width = self.termwidth.saturating_sub(4);
+            let width = self.termwidth.saturating_sub(2);
             let mut opts = textwrap::Options::new(width)
                 .initial_indent("  ")
                 .subsequent_indent("  ")
@@ -265,7 +265,6 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
-            writeln!(f)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -273,8 +272,8 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
-            writeln!(f)?;
         }
+        writeln!(f)?;
         Ok(())
     }
 
@@ -354,8 +353,12 @@ impl GraphicalReportHandler {
                         inner_renderer.footer = None;
                         // Cause chains are already flattened, so don't double-print the nested error
                         inner_renderer.with_cause_chain = false;
+                        // Since everything from here on is indented, shrink the virtual terminal
+                        inner_renderer.termwidth -= rest_indent.width();
                         inner_renderer.render_report(&mut inner, diag)?;
 
+                        // If there was no header, remove the leading newline
+                        let inner = inner.trim_start_matches('\n');
                         writeln!(f, "{}", self.wrap(&inner, opts))?;
                     }
                     ErrorKind::StdError(err) => {
@@ -370,7 +373,7 @@ impl GraphicalReportHandler {
 
     fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
-            let width = self.termwidth.saturating_sub(4);
+            let width = self.termwidth.saturating_sub(2);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
             let mut opts = textwrap::Options::new(width)
                 .initial_indent(&initial_indent)
@@ -398,8 +401,8 @@ impl GraphicalReportHandler {
             let mut inner_renderer = self.clone();
             // Re-enable the printing of nested cause chains for related errors
             inner_renderer.with_cause_chain = true;
-            writeln!(f)?;
             for rel in related {
+                writeln!(f)?;
                 match rel.severity() {
                     Some(Severity::Error) | None => write!(f, "Error: ")?,
                     Some(Severity::Warning) => write!(f, "Warning: ")?,
