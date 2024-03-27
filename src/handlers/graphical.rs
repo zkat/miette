@@ -225,7 +225,7 @@ impl GraphicalReportHandler {
         self.render_related(f, diagnostic, src)?;
         if let Some(footer) = &self.footer {
             writeln!(f)?;
-            let width = self.termwidth.saturating_sub(4);
+            let width = self.termwidth.saturating_sub(2);
             let mut opts = textwrap::Options::new(width)
                 .initial_indent("  ")
                 .subsequent_indent("  ")
@@ -372,7 +372,7 @@ impl GraphicalReportHandler {
 
     fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
-            let width = self.termwidth.saturating_sub(4);
+            let width = self.termwidth.saturating_sub(2);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
             let mut opts = textwrap::Options::new(width)
                 .initial_indent(&initial_indent)
