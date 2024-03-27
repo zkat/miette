@@ -265,7 +265,6 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
-            writeln!(f)?;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -273,8 +272,8 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
-            writeln!(f)?;
         }
+        writeln!(f)?;
         Ok(())
     }
 
@@ -358,6 +357,8 @@ impl GraphicalReportHandler {
                         inner_renderer.termwidth -= rest_indent.width();
                         inner_renderer.render_report(&mut inner, diag)?;
 
+                        // If there was no header, remove the leading newline
+                        let inner = inner.trim_start_matches('\n');
                         writeln!(f, "{}", self.wrap(&inner, opts))?;
                     }
                     ErrorKind::StdError(err) => {

@@ -104,7 +104,8 @@ fn test_diagnostic_source_pass_extra_info() {
         .render_report(&mut out, &diag)
         .unwrap();
     println!("Error: {}", out);
-    let expected = r#"  × TestError
+    let expected = r#"
+  × TestError
   ╰─▶   × A complex error happened
          ╭─[1:2]
        1 │ Hello
@@ -138,7 +139,8 @@ fn test_diagnostic_source_is_output() {
         .unwrap();
     println!("{}", out);
 
-    let expected = r#"  × TestError
+    let expected = r#"
+  × TestError
   ╰─▶   × A complex error happened
          ╭────
        1 │ right here
@@ -186,7 +188,8 @@ fn test_nested_diagnostic_source_is_output() {
         .unwrap();
     println!("{}", out);
 
-    let expected = r#"  × A nested error happened
+    let expected = r#"
+  × A nested error happened
   ├─▶   × TestError
   │   
   ╰─▶   × A complex error happened
@@ -252,10 +255,12 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
         .unwrap();
     println!("{}", out);
 
-    let expected = r#"  × A nested error happened
+    let expected = r#"
+  × A nested error happened
   ╰─▶   × A multi-error happened
       
-      Error:   × A nested error happened
+      Error:
+        × A nested error happened
         ├─▶   × TestError
         │
         ╰─▶   × A complex error happened
@@ -271,7 +276,8 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
          ·       ──┬─
          ·         ╰── here
          ╰────
-      Error:   × A complex error happened
+      Error:
+        × A complex error happened
          ╭────
        1 │ You're actually a mess
          ·    ──┬─
