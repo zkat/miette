@@ -247,11 +247,16 @@ gigabytes or larger in size.
 pub trait SourceCode: Send + Sync {
     /// Read the bytes for a specific span from this `SourceCode`, keeping a
     /// certain number of lines before and after the span as context.
+    /// When the `context_lines_before` (resp. `context_lines_after`) is  set to
+    /// `None`, the span content must start (resp. stop) at the **span** boundary.
+    /// When set to `Some(0)`, the content should start (resp. stop) at the
+    /// **line** boundary. When set to `Some(n)`, the content should include the
+    /// _n_ lines before (resp. after) the span.
     fn read_span<'a>(
         &'a self,
         span: &SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
 }
 

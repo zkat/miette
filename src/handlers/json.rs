@@ -159,7 +159,7 @@ impl JSONReportHandler {
     ) -> fmt::Result {
         if let Some(mut labels) = diagnostic.labels() {
             if let Some(label) = labels.next() {
-                if let Ok(span_content) = source.read_span(label.inner(), 0, 0) {
+                if let Ok(span_content) = source.read_span(label.inner(), None, None) {
                     let filename = span_content.name().unwrap_or_default();
                     return write!(f, r#""filename": "{}","#, escape(filename));
                 }

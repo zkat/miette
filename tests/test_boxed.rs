@@ -188,7 +188,7 @@ fn test_boxed_custom_diagnostic() {
         let span = SourceSpan::from(0..CustomDiagnostic::SOURCE_CODE.len());
         assert_eq!(
             report.source_code().map(|source_code| source_code
-                .read_span(&span, 0, 0)
+                .read_span(&span, None, None)
                 .expect("read data from source code successfully")
                 .data()
                 .to_owned()),

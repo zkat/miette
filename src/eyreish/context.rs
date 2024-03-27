@@ -213,5 +213,4 @@ pub(crate) mod private {
     pub trait Sealed {}
 
     impl<T, E> Sealed for Result<T, E> where E: ext::Diag {}
-    impl<T> Sealed for Option<T> {}
 }
