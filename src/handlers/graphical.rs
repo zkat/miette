@@ -401,8 +401,8 @@ impl GraphicalReportHandler {
             let mut inner_renderer = self.clone();
             // Re-enable the printing of nested cause chains for related errors
             inner_renderer.with_cause_chain = true;
-            writeln!(f)?;
             for rel in related {
+                writeln!(f)?;
                 match rel.severity() {
                     Some(Severity::Error) | None => write!(f, "Error: ")?,
                     Some(Severity::Warning) => write!(f, "Warning: ")?,

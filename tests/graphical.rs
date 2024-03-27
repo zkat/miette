@@ -389,11 +389,13 @@ fn wrapping_related_errors() -> Result<(), MietteError> {
         help: it cannot be helped... woulddddddd
               you really want to get rid of an
               error that's so cute?
+      
       Warning:
         ⚠ Wah wah: I may be small, but I'll
         │ cause a proper bout of trouble — justt
         │ try wrapping this mess of a line,
         │ buddo!
+      
       Advice:
         ☞ Wah wah: I may be small, but I'll
         │ cause a proper bout of trouble — justt
@@ -1557,7 +1559,6 @@ Error: oops::my::bad
  2 │   text
    ╰────
   help: try doing it better next time?
-
 "#
     .trim_start()
     .to_string();
@@ -1724,6 +1725,7 @@ Error: oops::my::related::error
  2 │   text
    ╰────
   help: try doing it better next time?
+
 Warning: oops::my::related::warning
 
   ⚠ oops!
@@ -1734,6 +1736,7 @@ Warning: oops::my::related::warning
  2 │   text
    ╰────
   help: try doing it better next time?
+
 Advice: oops::my::related::advice
 
   ☞ oops!

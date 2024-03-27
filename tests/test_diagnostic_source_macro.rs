@@ -276,6 +276,7 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
          ·       ──┬─
          ·         ╰── here
          ╰────
+      
       Error:
         × A complex error happened
          ╭────
