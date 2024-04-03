@@ -10,6 +10,7 @@ use crate::{
 
 pub struct SourceCode {
     source_code: syn::Member,
+    is_option: bool,
 }
 
 impl SourceCode {
@@ -27,6 +28,19 @@ impl SourceCode {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("source_code") {
+                    let is_option = if let syn::Type::Path(syn::TypePath {
+                        path: syn::Path { segments, .. },
+                        ..
+                    }) = &field.ty
+                    {
+                        segments
+                            .last()
+                            .map(|seg| seg.ident == "Option")
+                            .unwrap_or(false)
+                    } else {
+                        false
+                    };
+
                     let source_code = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
                     } else {
@@ -35,7 +49,10 @@ impl SourceCode {
                             span: field.span(),
                         })
                     };
-                    return Ok(Some(SourceCode { source_code }));
+                    return Ok(Some(SourceCode {
+                        source_code,
+                        is_option,
+                    }));
                 }
             }
         }
@@ -45,11 +62,21 @@ impl SourceCode {
     pub(crate) fn gen_struct(&self, fields: &syn::Fields) -> Option<TokenStream> {
         let (display_pat, _display_members) = display_pat_members(fields);
         let src = &self.source_code;
+        let ret = if self.is_option {
+            quote! {
+                self.#src.as_ref().map(|s| s as _)
+            }
+        } else {
+            quote! {
+                Some(&self.#src)
+            }
+        };
+
         Some(quote! {
             #[allow(unused_variables)]
             fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode> {
                 let Self #display_pat = self;
-                Some(&self.#src)
+                #ret
             }
         })
     }
@@ -68,10 +95,19 @@ impl SourceCode {
                         }
                     };
                     let variant_name = ident.clone();
+                    let ret = if source_code.is_option {
+                        quote! {
+                            #field.as_ref().map(|s| s as _)
+                        }
+                    } else {
+                        quote! {
+                            std::option::Option::Some(#field)
+                        }
+                    };
                     match &fields {
                         syn::Fields::Unit => None,
                         _ => Some(quote! {
-                            Self::#variant_name #display_pat => std::option::Option::Some(#field),
+                            Self::#variant_name #display_pat => #ret,
                         }),
                     }
                 })

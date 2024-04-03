@@ -7,8 +7,7 @@
 use core::fmt::Display;
 
 use std::error::Error as StdError;
-
-use once_cell::sync::OnceCell;
+use std::sync::OnceLock;
 
 #[allow(unreachable_pub)]
 pub use into_diagnostic::*;
@@ -25,10 +24,10 @@ pub use ReportHandler as EyreContext;
 #[allow(unreachable_pub)]
 pub use WrapErr as Context;
 
-#[cfg(not(feature = "fancy-no-backtrace"))]
+#[cfg(not(feature = "fancy-base"))]
 use crate::DebugReportHandler;
 use crate::Diagnostic;
-#[cfg(feature = "fancy-no-backtrace")]
+#[cfg(feature = "fancy-base")]
 use crate::MietteHandler;
 
 use error::ErrorImpl;
@@ -62,7 +61,7 @@ unsafe impl Send for Report {}
 pub type ErrorHook =
     Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
 
-static HOOK: OnceCell<ErrorHook> = OnceCell::new();
+static HOOK: OnceLock<ErrorHook> = OnceLock::new();
 
 /// Error indicating that [`set_hook()`] was unable to install the provided
 /// [`ErrorHook`].
@@ -103,9 +102,9 @@ fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler>
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
-    #[cfg(feature = "fancy-no-backtrace")]
+    #[cfg(feature = "fancy-base")]
     return Box::new(MietteHandler::new());
-    #[cfg(not(feature = "fancy-no-backtrace"))]
+    #[cfg(not(feature = "fancy-base"))]
     return Box::new(DebugReportHandler::new());
 }
 

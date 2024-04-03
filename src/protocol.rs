@@ -69,14 +69,43 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
-impl std::error::Error for Box<dyn Diagnostic> {
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        (**self).source()
-    }
+macro_rules! box_error_impls {
+    ($($box_type:ty),*) => {
+        $(
+            impl std::error::Error for $box_type {
+                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+                    (**self).source()
+                }
 
-    fn cause(&self) -> Option<&dyn std::error::Error> {
-        self.source()
+                fn cause(&self) -> Option<&dyn std::error::Error> {
+                    self.source()
+                }
+            }
+        )*
     }
+}
+
+box_error_impls! {
+    Box<dyn Diagnostic>,
+    Box<dyn Diagnostic + Send>,
+    Box<dyn Diagnostic + Send + Sync>
+}
+
+macro_rules! box_borrow_impls {
+    ($($box_type:ty),*) => {
+        $(
+            impl std::borrow::Borrow<dyn Diagnostic> for $box_type {
+                fn borrow(&self) -> &(dyn Diagnostic + 'static) {
+                    self.as_ref()
+                }
+            }
+        )*
+    }
+}
+
+box_borrow_impls! {
+    Box<dyn Diagnostic + Send>,
+    Box<dyn Diagnostic + Send + Sync>
 }
 
 impl<T: Diagnostic + Send + Sync + 'static> From<T>
@@ -167,6 +196,7 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
 */
 #[derive(Copy, Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
+#[derive(Default)]
 pub enum Severity {
     /// Just some help. Here's how you could be doing it better.
     Advice,
@@ -174,13 +204,8 @@ pub enum Severity {
     Warning,
     /// Critical failure. The program cannot continue.
     /// This is the default severity, if you don't specify another one.
+    #[default]
     Error,
-}
-
-impl Default for Severity {
-    fn default() -> Self {
-        Severity::Error
-    }
 }
 
 #[cfg(feature = "serde")]
@@ -220,7 +245,7 @@ whole thing--meaning you should be able to support `SourceCode`s which are
 gigabytes or larger in size.
 */
 pub trait SourceCode: Send + Sync {
-    /// Read the bytes for a specific span from this SourceCode, keeping a
+    /// Read the bytes for a specific span from this `SourceCode`, keeping a
     /// certain number of lines before and after the span as context.
     fn read_span<'a>(
         &'a self,
@@ -237,6 +262,7 @@ pub struct LabeledSpan {
     #[cfg_attr(feature = "serde", serde(skip_serializing_if = "Option::is_none"))]
     label: Option<String>,
     span: SourceSpan,
+    primary: bool,
 }
 
 impl LabeledSpan {
@@ -244,7 +270,8 @@ impl LabeledSpan {
     pub const fn new(label: Option<String>, offset: ByteOffset, len: usize) -> Self {
         Self {
             label,
-            span: SourceSpan::new(SourceOffset(offset), SourceOffset(len)),
+            span: SourceSpan::new(SourceOffset(offset), len),
+            primary: false,
         }
     }
 
@@ -253,7 +280,22 @@ impl LabeledSpan {
         Self {
             label,
             span: span.into(),
+            primary: false,
         }
+    }
+
+    /// Makes a new labeled primary span using an existing span.
+    pub fn new_primary_with_span(label: Option<String>, span: impl Into<SourceSpan>) -> Self {
+        Self {
+            label,
+            span: span.into(),
+            primary: true,
+        }
+    }
+
+    /// Change the text of the label
+    pub fn set_label(&mut self, label: Option<String>) {
+        self.label = label;
     }
 
     /// Makes a new label at specified span
@@ -328,6 +370,11 @@ impl LabeledSpan {
     pub const fn is_empty(&self) -> bool {
         self.span.is_empty()
     }
+
+    /// True if this `LabeledSpan` is a primary span.
+    pub const fn primary(&self) -> bool {
+        self.primary
+    }
 }
 
 #[cfg(feature = "serde")]
@@ -338,7 +385,8 @@ fn test_serialize_labeled_span() {
     assert_eq!(
         json!(LabeledSpan::new(None, 0, 0)),
         json!({
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
     );
 
@@ -346,9 +394,10 @@ fn test_serialize_labeled_span() {
         json!(LabeledSpan::new(Some("label".to_string()), 0, 0)),
         json!({
             "label": "label",
-            "span": { "offset": 0, "length": 0 }
+            "span": { "offset": 0, "length": 0, },
+            "primary": false,
         })
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -358,23 +407,26 @@ fn test_deserialize_labeled_span() {
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": null,
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false,
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
     assert_eq!(span, LabeledSpan::new(None, 0, 0));
 
     let span: LabeledSpan = serde_json::from_value(json!({
         "label": "label",
-        "span": { "offset": 0, "length": 0 }
+        "span": { "offset": 0, "length": 0, },
+        "primary": false
     }))
     .unwrap();
-    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0))
+    assert_eq!(span, LabeledSpan::new(Some("label".to_string()), 0, 0));
 }
 
 /**
@@ -399,6 +451,15 @@ pub trait SpanContents<'a> {
     fn column(&self) -> usize;
     /// Total number of lines covered by this `SpanContents`.
     fn line_count(&self) -> usize;
+
+    /// Optional method. The language name for this source code, if any.
+    /// This is used to drive syntax highlighting.
+    ///
+    /// Examples: Rust, TOML, C
+    ///
+    fn language(&self) -> Option<&str> {
+        None
+    }
 }
 
 /**
@@ -418,6 +479,8 @@ pub struct MietteSpanContents<'a> {
     line_count: usize,
     // Optional filename
     name: Option<String>,
+    // Optional language
+    language: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
@@ -436,6 +499,7 @@ impl<'a> MietteSpanContents<'a> {
             column,
             line_count,
             name: None,
+            language: None,
         }
     }
 
@@ -455,7 +519,14 @@ impl<'a> MietteSpanContents<'a> {
             column,
             line_count,
             name: Some(name),
+            language: None,
         }
+    }
+
+    /// Sets the [`language`](SourceCode::language) for syntax highlighting.
+    pub fn with_language(mut self, language: impl Into<String>) -> Self {
+        self.language = Some(language.into());
+        self
     }
 }
 
@@ -478,10 +549,13 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     fn name(&self) -> Option<&str> {
         self.name.as_deref()
     }
+    fn language(&self) -> Option<&str> {
+        self.language.as_deref()
+    }
 }
 
 /// Span within a [`SourceCode`]
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SourceSpan {
     /// The start of the span.
@@ -492,10 +566,10 @@ pub struct SourceSpan {
 
 impl SourceSpan {
     /// Create a new [`SourceSpan`].
-    pub const fn new(start: SourceOffset, length: SourceOffset) -> Self {
+    pub const fn new(start: SourceOffset, length: usize) -> Self {
         Self {
             offset: start,
-            length: length.offset(),
+            length,
         }
     }
 
@@ -525,8 +599,8 @@ impl From<(ByteOffset, usize)> for SourceSpan {
     }
 }
 
-impl From<(SourceOffset, SourceOffset)> for SourceSpan {
-    fn from((start, len): (SourceOffset, SourceOffset)) -> Self {
+impl From<(SourceOffset, usize)> for SourceSpan {
+    fn from((start, len): (SourceOffset, usize)) -> Self {
         Self::new(start, len)
     }
 }
@@ -563,7 +637,7 @@ fn test_serialize_source_span() {
     assert_eq!(
         json!(SourceSpan::from(0)),
         json!({ "offset": 0, "length": 0})
-    )
+    );
 }
 
 #[cfg(feature = "serde")]
@@ -572,7 +646,7 @@ fn test_deserialize_source_span() {
     use serde_json::json;
 
     let span: SourceSpan = serde_json::from_value(json!({ "offset": 0, "length": 0})).unwrap();
-    assert_eq!(span, SourceSpan::from(0))
+    assert_eq!(span, SourceSpan::from(0));
 }
 
 /**
@@ -583,7 +657,7 @@ pub type ByteOffset = usize;
 /**
 Newtype that represents the [`ByteOffset`] from the beginning of a [`SourceCode`]
 */
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SourceOffset(ByteOffset);
 
@@ -674,12 +748,12 @@ fn test_source_offset_from_location() {
 fn test_serialize_source_offset() {
     use serde_json::json;
 
-    assert_eq!(json!(SourceOffset::from(0)), 0)
+    assert_eq!(json!(SourceOffset::from(0)), 0);
 }
 
 #[cfg(feature = "serde")]
 #[test]
 fn test_deserialize_source_offset() {
     let offset: SourceOffset = serde_json::from_str("0").unwrap();
-    assert_eq!(offset, SourceOffset::from(0))
+    assert_eq!(offset, SourceOffset::from(0));
 }

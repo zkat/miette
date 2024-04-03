@@ -1,4 +1,5 @@
-use is_terminal::IsTerminal;
+use std::io::IsTerminal;
+
 use owo_colors::Style;
 
 /**
@@ -55,9 +56,9 @@ impl GraphicalTheme {
 
     /// A "basic" graphical theme that skips colors and unicode characters and
     /// just does monochrome ascii art. If you want a completely non-graphical
-    /// rendering of your `Diagnostic`s, check out
-    /// [crate::NarratableReportHandler], or write your own
-    /// [crate::ReportHandler]!
+    /// rendering of your [`Diagnostic`](crate::Diagnostic)s, check out
+    /// [`NarratableReportHandler`](crate::NarratableReportHandler), or write
+    /// your own [`ReportHandler`](crate::ReportHandler)
     pub fn none() -> Self {
         Self {
             characters: ThemeCharacters::ascii(),
@@ -79,7 +80,8 @@ impl Default for GraphicalTheme {
 }
 
 /**
-Styles for various parts of graphical rendering for the [crate::GraphicalReportHandler].
+Styles for various parts of graphical rendering for the
+[`GraphicalReportHandler`](crate::GraphicalReportHandler).
 */
 #[derive(Debug, Clone)]
 pub struct ThemeStyles {
@@ -159,7 +161,7 @@ impl ThemeStyles {
 // https://github.com/zesterer/ariadne/blob/e3cb394cb56ecda116a0a1caecd385a49e7f6662/src/draw.rs
 
 /// Characters to be used when drawing when using
-/// [crate::GraphicalReportHandler].
+/// [`GraphicalReportHandler`](crate::GraphicalReportHandler).
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct ThemeCharacters {

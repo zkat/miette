@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::highlighters::Highlighter;
+use crate::highlighters::MietteHighlighter;
 use crate::protocol::Diagnostic;
 use crate::GraphicalReportHandler;
 use crate::GraphicalTheme;
@@ -55,6 +57,11 @@ pub struct MietteHandlerOpts {
     pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: Option<usize>,
     pub(crate) with_cause_chain: Option<bool>,
+    pub(crate) break_words: Option<bool>,
+    pub(crate) wrap_lines: Option<bool>,
+    pub(crate) word_separator: Option<textwrap::WordSeparator>,
+    pub(crate) word_splitter: Option<textwrap::WordSplitter>,
+    pub(crate) highlighter: Option<MietteHighlighter>,
 }
 
 impl MietteHandlerOpts {
@@ -80,12 +87,79 @@ impl MietteHandlerOpts {
         self
     }
 
+    /// Set a syntax highlighter when rendering in graphical mode.
+    /// Use [`force_graphical()`](MietteHandlerOpts::force_graphical()) to
+    /// force graphical mode.
+    ///
+    /// Syntax highlighting is disabled by default unless the
+    /// `syntect-highlighter` feature is enabled. Call this method
+    /// to override the default and use a custom highlighter
+    /// implmentation instead.
+    ///
+    /// Use
+    /// [`without_syntax_highlighting()`](MietteHandlerOpts::without_syntax_highlighting())
+    /// To disable highlighting completely.
+    ///
+    /// Setting this option will not force color output. In all cases, the
+    /// current color configuration via
+    /// [`color()`](MietteHandlerOpts::color()) takes precedence over
+    /// highlighter configuration.
+    pub fn with_syntax_highlighting(
+        mut self,
+        highlighter: impl Highlighter + Send + Sync + 'static,
+    ) -> Self {
+        self.highlighter = Some(MietteHighlighter::from(highlighter));
+        self
+    }
+
+    /// Disables syntax highlighting when rendering in graphical mode.
+    /// Use [`force_graphical()`](MietteHandlerOpts::force_graphical()) to
+    /// force graphical mode.
+    ///
+    /// Syntax highlighting is disabled by default unless the
+    /// `syntect-highlighter` feature is enabled. Call this method if you want
+    /// to disable highlighting when building with this feature.
+    pub fn without_syntax_highlighting(mut self) -> Self {
+        self.highlighter = Some(MietteHighlighter::nocolor());
+        self
+    }
+
     /// Sets the width to wrap the report at. Defaults to 80.
     pub fn width(mut self, width: usize) -> Self {
         self.width = Some(width);
         self
     }
 
+    /// If true, long lines can be wrapped.
+    ///
+    /// If false, long lines will not be broken when they exceed the width.
+    ///
+    /// Defaults to true.
+    pub fn wrap_lines(mut self, wrap_lines: bool) -> Self {
+        self.wrap_lines = Some(wrap_lines);
+        self
+    }
+
+    /// If true, long words can be broken when wrapping.
+    ///
+    /// If false, long words will not be broken when they exceed the width.
+    ///
+    /// Defaults to true.
+    pub fn break_words(mut self, break_words: bool) -> Self {
+        self.break_words = Some(break_words);
+        self
+    }
+    /// Sets the `textwrap::WordSeparator` to use when determining wrap points.
+    pub fn word_separator(mut self, word_separator: textwrap::WordSeparator) -> Self {
+        self.word_separator = Some(word_separator);
+        self
+    }
+
+    /// Sets the `textwrap::WordSplitter` to use when determining wrap points.
+    pub fn word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
+        self.word_splitter = Some(word_splitter);
+        self
+    }
     /// Include the cause chain of the top-level error in the report.
     pub fn with_cause_chain(mut self) -> Self {
         self.with_cause_chain = Some(true);
@@ -191,17 +265,15 @@ impl MietteHandlerOpts {
             let characters = match self.unicode {
                 Some(true) => ThemeCharacters::unicode(),
                 Some(false) => ThemeCharacters::ascii(),
-                None if supports_unicode::on(supports_unicode::Stream::Stderr) => {
-                    ThemeCharacters::unicode()
-                }
+                None if syscall::supports_unicode() => ThemeCharacters::unicode(),
                 None => ThemeCharacters::ascii(),
             };
             let styles = if self.color == Some(false) {
                 ThemeStyles::none()
-            } else if let Some(color) = supports_color::on(supports_color::Stream::Stderr) {
+            } else if let Some(color_has_16m) = syscall::supports_color_has_16m() {
                 match self.rgb_colors {
                     RgbColors::Always => ThemeStyles::rgb(),
-                    RgbColors::Preferred if color.has_16m => ThemeStyles::rgb(),
+                    RgbColors::Preferred if color_has_16m => ThemeStyles::rgb(),
                     _ => ThemeStyles::ansi(),
                 }
             } else if self.color == Some(true) {
@@ -212,11 +284,31 @@ impl MietteHandlerOpts {
             } else {
                 ThemeStyles::none()
             };
+            #[cfg(not(feature = "syntect-highlighter"))]
+            let highlighter = self.highlighter.unwrap_or_else(MietteHighlighter::nocolor);
+            #[cfg(feature = "syntect-highlighter")]
+            let highlighter = if self.color == Some(false) {
+                MietteHighlighter::nocolor()
+            } else if self.color == Some(true) || syscall::supports_color() {
+                match self.highlighter {
+                    Some(highlighter) => highlighter,
+                    None => match self.rgb_colors {
+                        // Because the syntect highlighter currently only supports 24-bit truecolor,
+                        // respect RgbColor::Never by disabling the highlighter.
+                        // TODO: In the future, find a way to convert the RGB syntect theme
+                        // into an ANSI color theme.
+                        RgbColors::Never => MietteHighlighter::nocolor(),
+                        _ => MietteHighlighter::syntect_truecolor(),
+                    },
+                }
+            } else {
+                MietteHighlighter::nocolor()
+            };
             let theme = self.theme.unwrap_or(GraphicalTheme { characters, styles });
-            let mut handler = GraphicalReportHandler::new()
+            let mut handler = GraphicalReportHandler::new_themed(theme)
                 .with_width(width)
-                .with_links(linkify)
-                .with_theme(theme);
+                .with_links(linkify);
+            handler.highlighter = highlighter;
             if let Some(with_cause_chain) = self.with_cause_chain {
                 if with_cause_chain {
                     handler = handler.with_cause_chain();
@@ -233,6 +325,19 @@ impl MietteHandlerOpts {
             if let Some(w) = self.tab_width {
                 handler = handler.tab_width(w);
             }
+            if let Some(b) = self.break_words {
+                handler = handler.with_break_words(b)
+            }
+            if let Some(b) = self.wrap_lines {
+                handler = handler.with_wrap_lines(b)
+            }
+            if let Some(s) = self.word_separator {
+                handler = handler.with_word_separator(s)
+            }
+            if let Some(s) = self.word_splitter {
+                handler = handler.with_word_splitter(s)
+            }
+
             MietteHandler {
                 inner: Box::new(handler),
             }
@@ -257,26 +362,13 @@ impl MietteHandlerOpts {
         if let Some(linkify) = self.linkify {
             linkify
         } else {
-            supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
+            syscall::supports_hyperlinks()
         }
     }
 
-    #[cfg(not(miri))]
     pub(crate) fn get_width(&self) -> usize {
-        self.width.unwrap_or_else(|| {
-            terminal_size::terminal_size()
-                .unwrap_or((terminal_size::Width(80), terminal_size::Height(0)))
-                .0
-                 .0 as usize
-        })
-    }
-
-    #[cfg(miri)]
-    // miri doesn't support a syscall (specifically ioctl)
-    // performed by terminal_size, which causes test execution to fail
-    // so when miri is running we'll just fallback to a constant
-    pub(crate) fn get_width(&self) -> usize {
-        self.width.unwrap_or(80)
+        self.width
+            .unwrap_or_else(|| syscall::terminal_width().unwrap_or(80))
     }
 }
 
@@ -319,5 +411,65 @@ impl ReportHandler for MietteHandler {
         }
 
         self.inner.debug(diagnostic, f)
+    }
+}
+
+mod syscall {
+    use cfg_if::cfg_if;
+
+    #[inline]
+    pub(super) fn terminal_width() -> Option<usize> {
+        cfg_if! {
+            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
+                None
+            } else {
+                terminal_size::terminal_size().map(|size| size.0 .0 as usize)
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_hyperlinks() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
+            }
+        }
+    }
+
+    #[cfg(feature = "syntect-highlighter")]
+    #[inline]
+    pub(super) fn supports_color() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_color::on(supports_color::Stream::Stderr).is_some()
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_color_has_16m() -> Option<bool> {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                None
+            } else {
+                supports_color::on(supports_color::Stream::Stderr).map(|color| color.has_16m)
+            }
+        }
+    }
+
+    #[inline]
+    pub(super) fn supports_unicode() -> bool {
+        cfg_if! {
+            if #[cfg(feature = "fancy-no-syscall")] {
+                false
+            } else {
+                supports_unicode::on(supports_unicode::Stream::Stderr)
+            }
+        }
     }
 }

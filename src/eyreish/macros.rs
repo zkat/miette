@@ -222,6 +222,9 @@ macro_rules! ensure {
 /// ## `anyhow`/`eyre` Users
 ///
 /// You can just replace `use`s of the `anyhow!`/`eyre!` macros with `miette!`.
+///
+/// [`diagnostic!`]: crate::diagnostic!
+/// [`Report`]: crate::Report
 #[macro_export]
 macro_rules! miette {
     ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
@@ -282,6 +285,8 @@ macro_rules! miette {
 )]
 /// assert_eq!(diag.message, "1 + 2 = 3");
 /// ```
+///
+/// [`MietteDiagnostic`]: crate::MietteDiagnostic
 #[macro_export]
 macro_rules! diagnostic {
     ($fmt:literal $($arg:tt)*) => {{

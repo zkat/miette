@@ -1,6 +1,6 @@
 [package]
 name = "miette"
-version = "5.9.0"
+version = "7.2.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 description = "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers."
 categories = ["rust-patterns"]
@@ -9,53 +9,61 @@ documentation = "https://docs.rs/miette"
 license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
-rust-version = "1.56.0"
+rust-version = "1.70.0"
 exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
-thiserror = "1.0.40"
-miette-derive = { path = "miette-derive", version = "=5.9.0" }
-once_cell = "1.8.0"
-unicode-width = "0.1.9"
+thiserror = "1.0.56"
+miette-derive = { path = "miette-derive", version = "=7.2.0", optional = true }
+unicode-width = "0.1.11"
+cfg-if = "1.0.0"
 
-owo-colors = { version = "3.0.0", optional = true }
-is-terminal = { version = "0.4.0", optional = true }
-textwrap = { version = "0.15.0", optional = true }
-supports-hyperlinks = { version = "2.0.0", optional = true }
-supports-color = { version = "2.0.0", optional = true }
-supports-unicode = { version = "2.0.0", optional = true }
-backtrace = { version = "0.3.61", optional = true }
-terminal_size = { version = "0.1.17", optional = true }
+owo-colors = { version = "4.0.0", optional = true }
+textwrap = { version = "0.16.0", optional = true }
+supports-hyperlinks = { version = "3.0.0", optional = true }
+supports-color = { version = "3.0.0", optional = true }
+supports-unicode = { version = "3.0.0", optional = true }
+backtrace = { version = "0.3.69", optional = true }
+terminal_size = { version = "0.3.0", optional = true }
 backtrace-ext = { version = "0.2.1", optional = true }
-serde = { version = "1.0.162", features = ["derive"], optional = true }
+serde = { version = "1.0.196", features = ["derive"], optional = true }
+syntect = { version = "5.1.0", optional = true }
 
 [dev-dependencies]
-semver = "1.0.4"
+semver = "1.0.21"
 
 # Eyre devdeps
 futures = { version = "0.3", default-features = false }
-indenter = "0.3.0"
+indenter = "0.3.3"
 rustversion = "1.0"
-trybuild = { version = "1.0.19", features = ["diff"] }
-syn = { version = "2.0", features = ["full"] }
-regex = "1.5"
+trybuild = { version = "1.0.89", features = ["diff"] }
+syn = { version = "2.0.48", features = ["full"] }
+regex = "1.10"
 lazy_static = "1.4"
 
-serde_json = "1.0.64"
+serde_json = "1.0.113"
+strip-ansi-escapes = "0.2.0"
 
 [features]
-default = []
+default = ["derive"]
+derive = ["miette-derive"]
 no-format-args-capture = []
-fancy-no-backtrace = [
+fancy-base = [
     "owo-colors",
-    "is-terminal",
     "textwrap",
+]
+fancy-no-syscall = [
+    "fancy-base",
+]
+fancy-no-backtrace = [
+    "fancy-base",
     "terminal_size",
     "supports-hyperlinks",
     "supports-color",
     "supports-unicode",
 ]
 fancy = ["fancy-no-backtrace", "backtrace", "backtrace-ext"]
+syntect-highlighter = ["fancy-no-backtrace", "syntect"]
 
 [workspace]
 members = ["miette-derive"]

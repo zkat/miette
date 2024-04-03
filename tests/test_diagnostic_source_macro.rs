@@ -43,6 +43,14 @@ struct TestBoxedError(#[diagnostic_source] Box<dyn Diagnostic>);
 
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("TestError")]
+struct TestBoxedSendError(#[diagnostic_source] Box<dyn Diagnostic + Send>);
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("TestError")]
+struct TestBoxedSendSyncError(#[diagnostic_source] Box<dyn Diagnostic + Send + Sync>);
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("TestError")]
 struct TestArcedError(#[diagnostic_source] std::sync::Arc<dyn Diagnostic>);
 
 #[test]
@@ -71,15 +79,22 @@ fn test_diagnostic_source() {
     let error = TestBoxedError(Box::new(AnErr));
     assert!(error.diagnostic_source().is_some());
 
+    let error = TestBoxedSendError(Box::new(AnErr));
+    assert!(error.diagnostic_source().is_some());
+
+    let error = TestBoxedSendSyncError(Box::new(AnErr));
+    assert!(error.diagnostic_source().is_some());
+
     let error = TestArcedError(std::sync::Arc::new(AnErr));
     assert!(error.diagnostic_source().is_some());
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_diagnostic_source_pass_extra_info() {
     let diag = TestBoxedError(Box::new(SourceError {
         code: String::from("Hello\nWorld!"),
-        help: format!("Have you tried turning it on and off again?"),
+        help: String::from("Have you tried turning it on and off again?"),
         label: (1, 4),
     }));
     let mut out = String::new();
@@ -89,9 +104,10 @@ fn test_diagnostic_source_pass_extra_info() {
         .render_report(&mut out, &diag)
         .unwrap();
     println!("Error: {}", out);
-    let expected = r#"  × TestError
+    let expected = r#"
+  × TestError
   ╰─▶   × A complex error happened
-         ╭─[1:1]
+         ╭─[1:2]
        1 │ Hello
          ·  ──┬─
          ·    ╰── here
@@ -106,6 +122,7 @@ fn test_diagnostic_source_pass_extra_info() {
     assert_eq!(expected, out);
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_diagnostic_source_is_output() {
     let diag = TestStructError {
@@ -122,7 +139,8 @@ fn test_diagnostic_source_is_output() {
         .unwrap();
     println!("{}", out);
 
-    let expected = r#"  × TestError
+    let expected = r#"
+  × TestError
   ╰─▶   × A complex error happened
          ╭────
        1 │ right here
@@ -147,6 +165,7 @@ struct NestedError {
     the_other_err: Box<dyn Diagnostic>,
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[test]
 fn test_nested_diagnostic_source_is_output() {
     let inner_error = TestStructError {
@@ -169,7 +188,8 @@ fn test_nested_diagnostic_source_is_output() {
         .unwrap();
     println!("{}", out);
 
-    let expected = r#"  × A nested error happened
+    let expected = r#"
+  × A nested error happened
   ├─▶   × TestError
   │   
   ╰─▶   × A complex error happened
@@ -182,6 +202,92 @@ fn test_nested_diagnostic_source_is_output() {
       
    ╭────
  1 │ right here
+   ·       ──┬─
+   ·         ╰── here
+   ╰────
+
+  Yooo, a footer
+"#;
+
+    assert_eq!(expected, out);
+}
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("A multi-error happened")]
+struct MultiError {
+    #[related]
+    related_errs: Vec<Box<dyn Diagnostic>>,
+}
+
+#[cfg(feature = "fancy-no-backtrace")]
+#[test]
+fn test_nested_cause_chains_for_related_errors_are_output() {
+    let inner_error = TestStructError {
+        asdf_inner_foo: SourceError {
+            code: String::from("This is another error"),
+            help: String::from("You should fix this"),
+            label: (3, 4),
+        },
+    };
+    let first_error = NestedError {
+        code: String::from("right here"),
+        label: (6, 4),
+        the_other_err: Box::new(inner_error),
+    };
+    let second_error = SourceError {
+        code: String::from("You're actually a mess"),
+        help: String::from("Get a grip..."),
+        label: (3, 4),
+    };
+    let multi_error = MultiError {
+        related_errs: vec![Box::new(first_error), Box::new(second_error)],
+    };
+    let diag = NestedError {
+        code: String::from("the outside world"),
+        label: (6, 4),
+        the_other_err: Box::new(multi_error),
+    };
+    let mut out = String::new();
+    miette::GraphicalReportHandler::new_themed(miette::GraphicalTheme::unicode_nocolor())
+        .with_width(80)
+        .with_footer("Yooo, a footer".to_string())
+        .render_report(&mut out, &diag)
+        .unwrap();
+    println!("{}", out);
+
+    let expected = r#"
+  × A nested error happened
+  ╰─▶   × A multi-error happened
+      
+      Error:
+        × A nested error happened
+        ├─▶   × TestError
+        │
+        ╰─▶   × A complex error happened
+               ╭────
+             1 │ This is another error
+               ·    ──┬─
+               ·      ╰── here
+               ╰────
+              help: You should fix this
+      
+         ╭────
+       1 │ right here
+         ·       ──┬─
+         ·         ╰── here
+         ╰────
+      
+      Error:
+        × A complex error happened
+         ╭────
+       1 │ You're actually a mess
+         ·    ──┬─
+         ·      ╰── here
+         ╰────
+        help: Get a grip...
+      
+   ╭────
+ 1 │ the outside world
    ·       ──┬─
    ·         ╰── here
    ╰────

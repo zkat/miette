@@ -1,5 +1,109 @@
 # `miette` Release Changelog
 
+<a name="7.2.0"></a>
+## 7.2.0 (2024-03-07)
+
+### Features
+
+* **wasm:** add feature "fancy-no-syscall" for wasm targets (#349) ([328bf379](https://github.com/zkat/miette/commit/328bf3792213fc0bed94e72a39acb722b65141dd))
+
+### Bug Fixes
+
+* **label-collections:** Label collection fixes and cleanup (#343) ([75fea093](https://github.com/zkat/miette/commit/75fea0935e495d0215518c80d32dd820910982e3))
+* **invalid span:** skip the snippet when read_span fails (#347) ([7d9dfc6e](https://github.com/zkat/miette/commit/7d9dfc6e8e591f9606c3da55bd8465962358b20f))
+* **redundant-import:** fix a warning and CI failure in nightly (#348) ([6ea86a22](https://github.com/zkat/miette/commit/6ea86a2248854acf88df345814b6c97d31b8b4d9))
+
+<a name="7.1.0"></a>
+## 7.1.0 (2024-02-16)
+
+### Features
+
+* **derive:** enable more boxed types to be #[diagnostic_source] (#338) ([c2f06f6c](https://github.com/zkat/miette/commit/c2f06f6cca15cbdd083dbff3d46b7729056ac6a4))
+* **source:** derive common traits for NamedSource, SourceSpan, and SourceOffset (#340) ([6f09250c](https://github.com/zkat/miette/commit/6f09250cca14561f07fba899a8e6d3c0df14230e))
+* **collection:** add support for collection of labels (#341) ([03060245](https://github.com/zkat/miette/commit/03060245d816a53a33209e6b7e1c3c42948e9962))
+
+### Bug Fixes
+
+* **tests:** revert test-breaking changes of e5c7ae4 (#339) ([6e829f8c](https://github.com/zkat/miette/commit/6e829f8c0ce2fc7bb2fc4041e6a6072f12db1f71))
+
+<a name="7.0.0"></a>
+## 7.0.0 (2024-02-05)
+
+This is a small breaking release on the heels of 6.0 because I neglected to
+bump owo-colors. I figured it's a good time to do it, before 6.0 gets more
+widely used.
+
+### Features
+
+* **fancy:** Add option to change the link display text (#335) ([c7144ee5](https://github.com/zkat/miette/commit/c7144ee513bf8f06c5f7d89c45436802994a51fc))
+* **deps:** bump dependencies ([a4011d17](https://github.com/zkat/miette/commit/a4011d174c40acbba5b0176db7cb71ec5ca0cb49))
+    * **BREAKING CHANGE**: This bumps owo-colors to 4.0, which is a breaking change because we expose its styles as part of the graphical renderer API
+
+<a name="6.0.1"></a>
+## 6.0.1 (2024-02-04)
+
+### Bug Fixes
+
+* **graphical:** oops. Fix theme issue ([8b46679c](https://github.com/zkat/miette/commit/8b46679c3647e1455d91b4c68743c619fb3f3eb3))
+* **fmt:** remove nightly-only fmt flags ([1fa7f524](https://github.com/zkat/miette/commit/1fa7f5241fb91d2e5bad9b0e26bcc7cd5f9011f1))
+* **highlighter:** ugh, missed another spot ([ab7c066e](https://github.com/zkat/miette/commit/ab7c066e7675d8c7ecb956000d278fc31f3bc6a1))
+
+<a name="6.0.0"></a>
+## 6.0.0 (2024-02-04)
+
+The long-awaited 6.0 release of `miette` is here, with TONS of goodies, not
+least of which is syntax highlighting support!
+
+It also comes with a few breaking changes so make sure to check below and
+update your code as needed!
+
+### Features
+
+* **labels:** Add support for primary label in specifying line/col information (#291) ([db0b7e40](https://github.com/zkat/miette/commit/db0b7e403a5ae52ae360991b6508490d8c579886))
+* **derive:** Allow optional sources in derive (#301) ([88d00e0e](https://github.com/zkat/miette/commit/88d00e0e20bf95e03b8f81dcd5adf38c917e190e))
+* **derive:** Make `miette-derive` be able to be turned off (#304) ([c7ba5b7e](https://github.com/zkat/miette/commit/c7ba5b7e52e05991cecd3ca925c710bbe49850b9))
+* **graphical:** Expose additional `textwrap` options (#321) ([fd77257c](https://github.com/zkat/miette/commit/fd77257cee0f5d03aa7dccb4ba8cbaa40c1a88c6))
+* **graphical:** support rendering labels that contain newlines (#318) ([865d67c8](https://github.com/zkat/miette/commit/865d67c8dda119ddd03ac43be22f4fa272a9f433))
+* **graphical:** Add `wrap_lines: bool` option allowing wrapping be disabled entirely (#328) ([b0744462](https://github.com/zkat/miette/commit/b0744462adbbfbb6d845f382db36be883c7f3c45))
+* **graphical:** render disjoint snippets separately for cleaner output (#324) ([19c22143](https://github.com/zkat/miette/commit/19c22143cb544616046784e35c5e78cc5b881289))
+* **deps:** Bump terminal-size to v0.3.0 (#308) ([c0a298e5](https://github.com/zkat/miette/commit/c0a298e5a8d699acf9fcd61b5d5fa4f6279a47ab))
+    * **BREAKING CHANGE**: This requires an MSRV bump to 1.70.0.
+* **source-code:** Don't override provided source code (#300) ([0d5c2ce7](https://github.com/zkat/miette/commit/0d5c2ce7536b0ea205346595d8a00d00bfb6cbd2))
+    * **BREAKING CHANGE**: Source code is no longer overridden if it was provided by the diagnostic's own `source_code()` impl.
+* **source:** use `usize` for length (#265) ([fad0e76a](https://github.com/zkat/miette/commit/fad0e76ad2e19d5cac13cf8324338aca0d623d93))
+    * **BREAKING CHANGE**: This changes `SourceSpan`'s length type to `usize`.
+* **source:** Allow inner source type of a NamedSource to be borrowed (#254) ([1df3b1a5](https://github.com/zkat/miette/commit/1df3b1a537f2e54cd40ec45f5cd851337a22e95a))
+    * **BREAKING CHANGE**: This makes the `NamedSource` type generic over its `Source` type, instead of boxing it.
+* **highlighting:** add syntax highlighting support with syntect crate (#313) ([e65d0a78](https://github.com/zkat/miette/commit/e65d0a78cc639653f061a45d8ce35b1a3551ade7))
+* **deps:** remove is-terminal dep in favor of `std::io::IsTerminal` ([e5c7ae46](https://github.com/zkat/miette/commit/e5c7ae469e40a8bc102e1fca3b8fd4b2ec137696))
+* **deps:** remove once_cell dep in favor of `std::sync::OnceLock` ([4c48584f](https://github.com/zkat/miette/commit/4c48584f304414c6924bede3308b455cfef60749))
+    * **BREAKING CHANGE**: This requires an MSRV bump to 1.70.0.
+* **deps:** bump some semver-breaking deps to newer versions ([29d000f2](https://github.com/zkat/miette/commit/29d000f201b259a056867a2876384f97653a6e9e))
+* **MSRV:** Actually bump the MSRV to 1.70.0 ([ab59a7bc](https://github.com/zkat/miette/commit/ab59a7bc9bceace5761a862ee2ebff3e5943b12f))
+
+### Bug Fixes
+
+* **misc:** Improve ci and fix clippy (#290) ([cc81382a](https://github.com/zkat/miette/commit/cc81382a6070dd226a20e4a39518d88e957ac0e1))
+* **tests:** Fix `cargo test` with default features. (#294) ([1f448e47](https://github.com/zkat/miette/commit/1f448e47751d0f914134b0e9138fdb1a5a95d55c))
+* **clippy:** Add missing semicolons where nothing is returned. (#293) ([06b34823](https://github.com/zkat/miette/commit/06b348230aaf153b8b050322f05e5d185351d2d1))
+* **graphical:** Extend error text span to whole code points (#312) ([a8b4ae01](https://github.com/zkat/miette/commit/a8b4ae012aa0cf03b53a18f013c2b3f76c5040e7))
+* **formatting:** Fix formatting bug when an empty span is not aligned to a char boundary (#314) ([3d6f903d](https://github.com/zkat/miette/commit/3d6f903df0e7c9d0eb9a1fdbbf0028bab5496429))
+* **docs:** add example to README and docs fixing #96 (#319) ([251d6d59](https://github.com/zkat/miette/commit/251d6d59292397458328ef57fb7957faedafd019))
+* **graphical:** rendering bug on small spans in large spans (#316) ([7ff4f874](https://github.com/zkat/miette/commit/7ff4f874d693a665af4df40f4e94505013e3e262))
+* **graphical:** render cause chains for inner errors (#330) ([cb2ae2e1](https://github.com/zkat/miette/commit/cb2ae2e18b446a5e90885faf8a30b5672c307df8))
+* **handler:** remove the two extra `is_terminal` sys call from `MietteHandlerOpts::build` (#325) ([f1dc89c0](https://github.com/zkat/miette/commit/f1dc89c07640445d224b61ef96c6b25fcdf62dee))
+
+### Documentation
+
+* **README:** Move import of `NamedResult` to where it is used (#309) ([d37ada87](https://github.com/zkat/miette/commit/d37ada876a5831d3f47622274e334c9a24aa5d2b))
+
+<a name="5.10.0"></a>
+## 5.10.0 (2023-07-16)
+
+### Features
+
+* **protocol:** add StdError impl for Box<dyn Diagnostic + Send + Sync> (#273) ([2e3e5c9d](https://github.com/zkat/miette/commit/2e3e5c9d15e234495369e9b47d032644dd5664ad))
+
 <a name="5.9.0"></a>
 ## 5.9.0 (2023-05-18)
 

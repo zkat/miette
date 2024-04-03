@@ -43,10 +43,14 @@
 //!   - [... in `main()`](#-in-main)
 //!   - [... diagnostic code URLs](#-diagnostic-code-urls)
 //!   - [... snippets](#-snippets)
+//!   - [... help text](#-help-text)
+//!   - [... severity level](#-severity-level)
 //!   - [... multiple related errors](#-multiple-related-errors)
 //!   - [... delayed source code](#-delayed-source-code)
 //!   - [... handler options](#-handler-options)
 //!   - [... dynamic diagnostics](#-dynamic-diagnostics)
+//!   - [... syntax highlighting](#-syntax-highlighting)
+//!   - [... collection of labels](#-collection-of-labels)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
 //!
@@ -109,7 +113,7 @@
 //!     // The Source that we're gonna be printing snippets out of.
 //!     // This can be a String if you don't have or care about file names.
 //!     #[source_code]
-//!     src: NamedSource,
+//!     src: NamedSource<String>,
 //!     // Snippets and highlights can be included in the diagnostic!
 //!     #[label("This bit here")]
 //!     bad_bit: SourceSpan,
@@ -186,7 +190,7 @@
 //!
 //! ```rust
 //! // lib/error.rs
-//! use miette::Diagnostic;
+//! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
 //!
 //! #[derive(Error, Diagnostic, Debug)]
@@ -198,6 +202,18 @@
 //!     #[error("Oops it blew up")]
 //!     #[diagnostic(code(my_lib::bad_code))]
 //!     BadThingHappened,
+//!
+//!     #[error(transparent)]
+//!     // Use `#[diagnostic(transparent)]` to wrap another [`Diagnostic`]. You won't see labels otherwise
+//!     #[diagnostic(transparent)]
+//!     AnotherError(#[from] AnotherError),
+//! }
+//!
+//! #[derive(Error, Diagnostic, Debug)]
+//! #[error("another error")]
+//! pub struct AnotherError {
+//!    #[label("here")]
+//!    pub at: SourceSpan
 //! }
 //! ```
 //!
@@ -290,6 +306,23 @@
 //!
 //! ```toml
 //! miette = { version = "X.Y.Z", features = ["fancy"] }
+//! ```
+//!
+//! Another way to display a diagnostic is by printing them using the debug formatter.
+//! This is, in fact, what returning diagnostics from main ends up doing.
+//! To do it yourself, you can write the following:
+//!
+//! ```rust
+//! use miette::{IntoDiagnostic, Result};
+//! use semver::Version;
+//!
+//! fn just_a_random_function() {
+//!     let version_result: Result<Version> = "1.2.x".parse().into_diagnostic();
+//!     match version_result {
+//!         Err(e) => println!("{:?}", e),
+//!         Ok(version) => println!("{}", version),
+//!     }
+//! }
 //! ```
 //!
 //! ### ... diagnostic code URLs
@@ -393,7 +426,7 @@
 //! }
 //! ```
 //!
-//! #### ... help text
+//! ### ... help text
 //! `miette` provides two facilities for supplying help text for your errors:
 //!
 //! The first is the `#[help()]` format attribute that applies to structs or
@@ -427,6 +460,19 @@
 //! let err = Foo {
 //!     advice: Some("try doing this instead".to_string()),
 //! };
+//! ```
+//!
+//! ### ... severity level
+//! `miette` provides a way to set the severity level of a diagnostic.
+//!
+//! ```rust
+//! use miette::Diagnostic;
+//! use thiserror::Error;
+//!
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("welp")]
+//! #[diagnostic(severity(Warning))]
+//! struct Foo;
 //! ```
 //!
 //! ### ... multiple related errors
@@ -581,6 +627,7 @@
 //!             .unicode(false)
 //!             .context_lines(3)
 //!             .tab_width(4)
+//!             .break_words(true)
 //!             .build(),
 //!     )
 //! }))
@@ -604,7 +651,7 @@
 //!
 //! let source = "2 + 2 * 2 = 8".to_string();
 //! let report = miette!(
-//!   labels = vec[
+//!   labels = vec![
 //!       LabeledSpan::at(12..13, "this should be 6"),
 //!   ],
 //!   help = "'*' has greater precedence than '+'",
@@ -612,6 +659,89 @@
 //! ).with_source_code(source);
 //! println!("{:?}", report)
 //! ```
+//!
+//! ### ... syntax highlighting
+//!
+//! `miette` can be configured to highlight syntax in source code snippets.
+//!
+//! <!-- TODO: screenshot goes here once default Theme is decided -->
+//!
+//! To use the built-in highlighting functionality, you must enable the
+//! `syntect-highlighter` crate feature. When this feature is enabled, `miette` will
+//! automatically use the [`syntect`] crate to highlight the `#[source_code]`
+//! field of your [`Diagnostic`].
+//!
+//! Syntax detection with [`syntect`] is handled by checking 2 methods on the [`SpanContents`] trait, in order:
+//! * [language()](SpanContents::language) - Provides the name of the language
+//!   as a string. For example `"Rust"` will indicate Rust syntax highlighting.
+//!   You can set the language of the [`SpanContents`] produced by a
+//!   [`NamedSource`] via the [`with_language`](NamedSource::with_language)
+//!   method.
+//! * [name()](SpanContents::name) - In the absence of an explicitly set
+//!   language, the name is assumed to contain a file name or file path.
+//!   The highlighter will check for a file extension at the end of the name and
+//!   try to guess the syntax from that.
+//!
+//! If you want to use a custom highlighter, you can provide a custom
+//! implementation of the [`Highlighter`](highlighters::Highlighter)
+//! trait to [`MietteHandlerOpts`] by calling the
+//! [`with_syntax_highlighting`](MietteHandlerOpts::with_syntax_highlighting)
+//! method. See the [`highlighters`] module docs for more details.
+//!
+//! ### ... collection of labels
+//!
+//! When the number of labels is unknown, you can use a collection of `SourceSpan`
+//! (or any type convertible into `SourceSpan`). For this, add the `collection`
+//! parameter to `label` and use any type than can be iterated over for the field.
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("oops!")]
+//! struct MyError {
+//!     #[label("main issue")]
+//!     primary_span: SourceSpan,
+//!
+//!     #[label(collection, "related to this")]
+//!     other_spans: Vec<Range<usize>>,
+//! }
+//!
+//! let report: miette::Report = MyError {
+//!     primary_span: (6, 9).into(),
+//!     other_spans: vec![19..26, 30..41],
+//! }.into();
+//!
+//! println!("{:?}", report.with_source_code("About something or another or yet another ...".to_string()));
+//! ```
+//!
+//! A collection can also be of `LabeledSpan` if you want to have different text
+//! for different labels. Labels with no text will use the one from the `label`
+//! attribute
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("oops!")]
+//! struct MyError {
+//!     #[label("main issue")]
+//!     primary_span: SourceSpan,
+//!
+//!     #[label(collection, "related to this")]
+//!     other_spans: Vec<LabeledSpan>, // LabeledSpan
+//! }
+//!
+//! let report: miette::Report = MyError {
+//!     primary_span: (6, 9).into(),
+//!     other_spans: vec![
+//!         LabeledSpan::new(None, 19, 7), // Use default text `related to this`
+//!         LabeledSpan::new(Some("and also this".to_string()), 30, 11), // Use specific text
+//!     ],
+//! }.into();
+//!
+//! println!("{:?}", report.with_source_code("About something or another or yet another ...".to_string()));
+//! ```
+//!
+//! ## MSRV
+//!
+//! This crate requires rustc 1.70.0 or later.
 //!
 //! ## Acknowledgements
 //!
@@ -640,11 +770,12 @@
 //! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also
 //! under the Apache License. Some code is taken from
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
+#[cfg(feature = "derive")]
 pub use miette_derive::*;
 
 pub use error::*;
 pub use eyreish::*;
-#[cfg(feature = "fancy-no-backtrace")]
+#[cfg(feature = "fancy-base")]
 pub use handler::*;
 pub use handlers::*;
 pub use miette_diagnostic::*;
@@ -657,9 +788,11 @@ mod chain;
 mod diagnostic_chain;
 mod error;
 mod eyreish;
-#[cfg(feature = "fancy-no-backtrace")]
+#[cfg(feature = "fancy-base")]
 mod handler;
 mod handlers;
+#[cfg(feature = "fancy-base")]
+pub mod highlighters;
 #[doc(hidden)]
 pub mod macro_helpers;
 mod miette_diagnostic;

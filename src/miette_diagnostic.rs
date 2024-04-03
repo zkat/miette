@@ -252,7 +252,7 @@ impl MietteDiagnostic {
     /// ```
     pub fn and_labels(mut self, labels: impl IntoIterator<Item = LabeledSpan>) -> Self {
         let mut all_labels = self.labels.unwrap_or_default();
-        all_labels.extend(labels.into_iter());
+        all_labels.extend(labels);
         self.labels = Some(all_labels);
         self
     }
@@ -292,14 +292,16 @@ fn test_serialize_miette_diagnostic() {
                     "offset": 0,
                     "length": 0
                 },
-                "label": "label1"
+                "label": "label1",
+                "primary": false
             },
             {
                 "span": {
                     "offset": 1,
                     "length": 2
                 },
-                "label": "label2"
+                "label": "label2",
+                "primary": false
             }
         ]
     });
@@ -350,14 +352,16 @@ fn test_deserialize_miette_diagnostic() {
                     "offset": 0,
                     "length": 0
                 },
-                "label": "label1"
+                "label": "label1",
+                "primary": false
             },
             {
                 "span": {
                     "offset": 1,
                     "length": 2
                 },
-                "label": "label2"
+                "label": "label2",
+                "primary": false
             }
         ]
     });
