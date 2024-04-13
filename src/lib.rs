@@ -131,7 +131,6 @@
 //!     // You can use plain strings as a `Source`, or anything that implements
 //!     // the one-method `Source` trait.
 //!     let src = "source\n  text\n    here".to_string();
-//!     let len = src.len();
 //!
 //!     Err(MyBad {
 //!         src: NamedSource::new("bad_file.rs", src),
@@ -246,7 +245,7 @@
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
-//!     Ok("1.2.x".parse().into_diagnostic()?)
+//!     "1.2.x".parse().into_diagnostic()
 //! }
 //! ```
 //!
@@ -261,24 +260,24 @@
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
-//!     Ok("1.2.x"
+//!     "1.2.x"
 //!         .parse()
 //!         .into_diagnostic()
-//!         .wrap_err("Parsing this tool's semver version failed.")?)
+//!         .wrap_err("Parsing this tool's semver version failed.")
 //! }
 //! ```
 //!
 //! To construct your own simple adhoc error use the [miette!] macro:
 //! ```rust
 //! // my_app/lib/my_internal_file.rs
-//! use miette::{miette, IntoDiagnostic, Result, WrapErr};
+//! use miette::{miette, Result};
 //! use semver::Version;
 //!
 //! pub fn some_tool() -> Result<Version> {
 //!     let version = "1.2.x";
-//!     Ok(version
+//!     version
 //!         .parse()
-//!         .map_err(|_| miette!("Invalid version {}", version))?)
+//!         .map_err(|_| miette!("Invalid version {}", version))
 //! }
 //! ```
 //! There are also similar [bail!] and [ensure!] macros.
@@ -637,7 +636,6 @@
 //!     )
 //! }))
 //!
-//! # .unwrap()
 //! ```
 //!
 //! See the docs for [`MietteHandlerOpts`] for more details on what you can
