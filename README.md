@@ -158,25 +158,16 @@ fn pretend_this_is_main() -> Result<()> {
 
 And this is the output you'll get if you run this program:
 
-<img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="
-Narratable printout:
+<img src="https://raw.githubusercontent.com/zkat/miette/main/images/single-line-example.png" alt="Narratable printout:
+diagnostic error code: oops::my::bad (link) Error: oops!
 \
-diagnostic error code: oops::my::bad (link)
-Error: oops!
-
-\
-Begin snippet for bad_file.rs starting
-at line 2, column 3
-\
+Begin snippet for bad_file.rs starting at line 2, column 3
 snippet line 1: source
-
 \
-snippet line 2:  text
-    highlight starting at line 1, column 3: This bit here
-\
+snippet line 2: text highlight starting at line 1, column 3: This bit here
 snippet line 3: here
-\
-diagnostic help: try doing it better next time?">
+diagnostic help: try doing it better next time?"
+/>
 
 ### Using
 
