@@ -637,7 +637,6 @@
 //!     )
 //! }))
 //!
-//! # .unwrap()
 //! ```
 //!
 //! See the docs for [`MietteHandlerOpts`] for more details on what you can
