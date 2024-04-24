@@ -1,14 +1,14 @@
 mod json_report_handler {
-    use miette::{Diagnostic, MietteError, NamedSource, Report, SourceSpan};
+    use miette::{Diagnostic, MietteError, NamedSource, SourceSpan};
 
     use miette::JSONReportHandler;
 
     use thiserror::Error;
 
-    fn fmt_report(diag: Report) -> String {
+    fn fmt_report(diag: impl Diagnostic) -> String {
         let mut out = String::new();
         JSONReportHandler::new()
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
         out
     }
@@ -30,7 +30,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 6).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -75,7 +75,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 4).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -120,7 +120,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (0, 0).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -165,7 +165,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 0).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -210,7 +210,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 4).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -254,7 +254,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (7, 4).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -305,7 +305,7 @@ mod json_report_handler {
             highlight2: (14, 4).into(),
             highlight3: (24, 4).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -364,7 +364,7 @@ mod json_report_handler {
             src: NamedSource::new("bad_file.rs", src),
             highlight: (9, 11).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -419,7 +419,7 @@ mod json_report_handler {
             highlight1: (0, len).into(),
             highlight2: (10, 9).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -492,7 +492,7 @@ mod json_report_handler {
             highlight1: (0, len).into(),
             highlight2: (10, 9).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -549,7 +549,7 @@ mod json_report_handler {
             highlight1: (0, 10).into(),
             highlight2: (20, 6).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -604,7 +604,7 @@ mod json_report_handler {
             highlight1: (0, 8).into(),
             highlight2: (9, 10).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -659,7 +659,7 @@ mod json_report_handler {
             highlight1: (0, 8).into(),
             highlight2: (10, 10).into(),
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -702,7 +702,7 @@ mod json_report_handler {
         struct MyBad;
 
         let err = MyBad;
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -752,7 +752,7 @@ mod json_report_handler {
                 },
             ],
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {
@@ -849,7 +849,7 @@ mod json_report_handler {
                 },
             ],
         };
-        let out = fmt_report(err.into());
+        let out = fmt_report(err);
         println!("Error: {}", out);
         let expected: String = r#"
         {

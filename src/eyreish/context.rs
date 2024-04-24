@@ -1,4 +1,4 @@
-use super::error::{ContextError, ErrorImpl};
+use super::error::ContextError;
 use super::{Report, WrapErr};
 use core::fmt::{self, Debug, Display, Write};
 
@@ -25,15 +25,6 @@ mod ext {
             D: Display + Send + Sync + 'static,
         {
             Report::from_msg(msg, self)
-        }
-    }
-
-    impl Diag for Report {
-        fn ext_report<D>(self, msg: D) -> Report
-        where
-            D: Display + Send + Sync + 'static,
-        {
-            self.wrap_err(msg)
         }
     }
 }
@@ -111,15 +102,6 @@ where
     }
 }
 
-impl<D> StdError for ContextError<D, Report>
-where
-    D: Display,
-{
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        unsafe { Some(ErrorImpl::error(self.error.inner.by_ref())) }
-    }
-}
-
 impl<D, E> Diagnostic for ContextError<D, E>
 where
     D: Display,
@@ -143,39 +125,6 @@ where
 
     fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
         self.error.labels()
-    }
-
-    fn source_code(&self) -> Option<&dyn crate::SourceCode> {
-        self.error.source_code()
-    }
-
-    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
-        self.error.related()
-    }
-}
-
-impl<D> Diagnostic for ContextError<D, Report>
-where
-    D: Display,
-{
-    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).code() }
-    }
-
-    fn severity(&self) -> Option<crate::Severity> {
-        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).severity() }
-    }
-
-    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).help() }
-    }
-
-    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).url() }
-    }
-
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
-        unsafe { ErrorImpl::diagnostic(self.error.inner.by_ref()).labels() }
     }
 
     fn source_code(&self) -> Option<&dyn crate::SourceCode> {

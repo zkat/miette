@@ -2,6 +2,7 @@ use core::any::TypeId;
 use core::fmt::{self, Debug, Display};
 use core::mem::ManuallyDrop;
 use core::ptr::{self, NonNull};
+use std::any::type_name;
 use std::error::Error as StdError;
 
 use super::ptr::{Mut, Own, Ref};
@@ -9,7 +10,7 @@ use super::Report;
 use super::ReportHandler;
 use crate::chain::Chain;
 use crate::eyreish::wrapper::WithSourceCode;
-use crate::{Diagnostic, SourceCode};
+use crate::{Diagnostic, LabeledSpan, Severity, SourceCode};
 use core::ops::{Deref, DerefMut};
 
 impl Report {
@@ -25,7 +26,8 @@ impl Report {
     where
         E: Diagnostic + Send + Sync + 'static,
     {
-        Report::from_std(error)
+        dbg!("HEEEEEEEEEEEEEEEEEELLLLLLLLLLLLLLLOOOOOOOOOOOOOOOOOOOOOO>?");
+        dbg!(Report::from_std(error))
     }
 
     /// Create a new error object from a printable error message.
@@ -94,8 +96,6 @@ impl Report {
             object_drop: object_drop::<E>,
             object_ref: object_ref::<E>,
             object_ref_stderr: object_ref_stderr::<E>,
-            object_boxed: object_boxed::<E>,
-            object_boxed_stderr: object_boxed_stderr::<E>,
             object_downcast: object_downcast::<E>,
             object_drop_rest: object_drop_front::<E>,
         };
@@ -117,8 +117,6 @@ impl Report {
             object_drop: object_drop::<MessageError<M>>,
             object_ref: object_ref::<MessageError<M>>,
             object_ref_stderr: object_ref_stderr::<MessageError<M>>,
-            object_boxed: object_boxed::<MessageError<M>>,
-            object_boxed_stderr: object_boxed_stderr::<MessageError<M>>,
             object_downcast: object_downcast::<M>,
             object_drop_rest: object_drop_front::<M>,
         };
@@ -142,8 +140,6 @@ impl Report {
             object_drop: object_drop::<ContextError<D, E>>,
             object_ref: object_ref::<ContextError<D, E>>,
             object_ref_stderr: object_ref_stderr::<ContextError<D, E>>,
-            object_boxed: object_boxed::<ContextError<D, E>>,
-            object_boxed_stderr: object_boxed_stderr::<ContextError<D, E>>,
             object_downcast: context_downcast::<D, E>,
             object_drop_rest: context_drop_rest::<D, E>,
         };
@@ -164,8 +160,6 @@ impl Report {
             object_drop: object_drop::<BoxedError>,
             object_ref: object_ref::<BoxedError>,
             object_ref_stderr: object_ref_stderr::<BoxedError>,
-            object_boxed: object_boxed::<BoxedError>,
-            object_boxed_stderr: object_boxed_stderr::<BoxedError>,
             object_downcast: object_downcast::<Box<dyn Diagnostic + Send + Sync>>,
             object_drop_rest: object_drop_front::<Box<dyn Diagnostic + Send + Sync>>,
         };
@@ -223,8 +217,6 @@ impl Report {
             object_drop: object_drop::<ContextError<D, Report>>,
             object_ref: object_ref::<ContextError<D, Report>>,
             object_ref_stderr: object_ref_stderr::<ContextError<D, Report>>,
-            object_boxed: object_boxed::<ContextError<D, Report>>,
-            object_boxed_stderr: object_boxed_stderr::<ContextError<D, Report>>,
             object_downcast: context_chain_downcast::<D>,
             object_drop_rest: context_chain_drop_rest::<D>,
         };
@@ -363,7 +355,11 @@ impl Report {
         unsafe {
             // Use vtable to find NonNull<()> which points to a value of type E
             // somewhere inside the data structure.
-            let addr = (vtable(self.inner.ptr).object_downcast)(self.inner.by_ref(), target)?;
+            dbg!(type_name::<E>());
+            let addr = dbg!((vtable(self.inner.ptr).object_downcast)(
+                self.inner.by_ref(),
+                target
+            ))?;
             Some(addr.cast::<E>().deref())
         }
     }
@@ -411,21 +407,10 @@ impl Report {
 
     /// Provide source code for this error
     pub fn with_source_code(self, source_code: impl SourceCode + Send + Sync + 'static) -> Report {
-        WithSourceCode {
+        Self::new(WithSourceCode {
             source_code,
             error: self,
-        }
-        .into()
-    }
-}
-
-impl<E> From<E> for Report
-where
-    E: Diagnostic + Send + Sync + 'static,
-{
-    #[cfg_attr(track_caller, track_caller)]
-    fn from(error: E) -> Self {
-        Report::from_std(error)
+        })
     }
 }
 
@@ -464,17 +449,52 @@ impl Drop for Report {
     }
 }
 
+impl StdError for Report {
+    fn source(&self) -> Option<&(dyn StdError + 'static)> {
+        (**self).source()
+    }
+}
+
+impl Diagnostic for Report {
+    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        (**self).code()
+    }
+
+    fn severity(&self) -> Option<Severity> {
+        (**self).severity()
+    }
+
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        (**self).help()
+    }
+
+    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        (**self).url()
+    }
+
+    fn source_code(&self) -> Option<&dyn SourceCode> {
+        (**self).source_code()
+    }
+
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+        (**self).labels()
+    }
+
+    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+        (**self).related()
+    }
+
+    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+        (**self).diagnostic_source()
+    }
+}
+
 struct ErrorVTable {
     object_drop: unsafe fn(Own<ErasedErrorImpl>),
     object_ref:
         unsafe fn(Ref<'_, ErasedErrorImpl>) -> Ref<'_, dyn Diagnostic + Send + Sync + 'static>,
     object_ref_stderr:
         unsafe fn(Ref<'_, ErasedErrorImpl>) -> Ref<'_, dyn StdError + Send + Sync + 'static>,
-    #[allow(clippy::type_complexity)]
-    object_boxed: unsafe fn(Own<ErasedErrorImpl>) -> Box<dyn Diagnostic + Send + Sync + 'static>,
-    #[allow(clippy::type_complexity)]
-    object_boxed_stderr:
-        unsafe fn(Own<ErasedErrorImpl>) -> Box<dyn StdError + Send + Sync + 'static>,
     object_downcast: unsafe fn(Ref<'_, ErasedErrorImpl>, TypeId) -> Option<Ref<'_, ()>>,
     object_drop_rest: unsafe fn(Own<ErasedErrorImpl>, TypeId),
 }
@@ -528,30 +548,14 @@ where
 }
 
 // Safety: requires layout of *e to match ErrorImpl<E>.
-unsafe fn object_boxed<E>(e: Own<ErasedErrorImpl>) -> Box<dyn Diagnostic + Send + Sync + 'static>
-where
-    E: Diagnostic + Send + Sync + 'static,
-{
-    // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
-    e.cast::<ErrorImpl<E>>().boxed()
-}
-
-// Safety: requires layout of *e to match ErrorImpl<E>.
-unsafe fn object_boxed_stderr<E>(
-    e: Own<ErasedErrorImpl>,
-) -> Box<dyn StdError + Send + Sync + 'static>
-where
-    E: StdError + Send + Sync + 'static,
-{
-    // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
-    e.cast::<ErrorImpl<E>>().boxed()
-}
-
-// Safety: requires layout of *e to match ErrorImpl<E>.
 unsafe fn object_downcast<E>(e: Ref<'_, ErasedErrorImpl>, target: TypeId) -> Option<Ref<'_, ()>>
 where
     E: 'static,
 {
+    dbg!(
+        "object_downcast????????????????????????????????????????????????????????????????",
+        type_name::<E>()
+    );
     if TypeId::of::<E>() == target {
         // Caller is looking for an E pointer and e is ErrorImpl<E>, take a
         // pointer to its E field.
@@ -742,40 +746,6 @@ where
 {
     fn fmt(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
         unsafe { Display::fmt(ErrorImpl::diagnostic(self.erase()), formatter) }
-    }
-}
-
-impl From<Report> for Box<dyn Diagnostic + Send + Sync + 'static> {
-    fn from(error: Report) -> Self {
-        let outer = ManuallyDrop::new(error);
-        unsafe {
-            // Use vtable to attach ErrorImpl<E>'s native StdError vtable for
-            // the right original type E.
-            (vtable(outer.inner.ptr).object_boxed)(outer.inner)
-        }
-    }
-}
-
-impl From<Report> for Box<dyn StdError + Send + Sync + 'static> {
-    fn from(error: Report) -> Self {
-        let outer = ManuallyDrop::new(error);
-        unsafe {
-            // Use vtable to attach ErrorImpl<E>'s native StdError vtable for
-            // the right original type E.
-            (vtable(outer.inner.ptr).object_boxed_stderr)(outer.inner)
-        }
-    }
-}
-
-impl From<Report> for Box<dyn Diagnostic + 'static> {
-    fn from(error: Report) -> Self {
-        Box::<dyn Diagnostic + Send + Sync>::from(error)
-    }
-}
-
-impl From<Report> for Box<dyn StdError + 'static> {
-    fn from(error: Report) -> Self {
-        Box::<dyn StdError + Send + Sync>::from(error)
     }
 }
 

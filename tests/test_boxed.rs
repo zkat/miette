@@ -43,7 +43,9 @@ fn test_boxed_thiserror() {
     let error = MyError {
         source: io::Error::new(io::ErrorKind::Other, "oh no!"),
     };
+    dbg!(&error, error.source());
     let report: Report = miette!(error);
+    dbg!(&report, report.source());
     assert_eq!("oh no!", report.source().unwrap().to_string());
 
     let error = MyError {
@@ -218,7 +220,6 @@ fn test_boxed_custom_diagnostic() {
 }
 
 #[test]
-#[ignore = "I don't know why this isn't working but it needs fixing."]
 fn test_boxed_sources() {
     let error = MyError {
         source: io::Error::new(io::ErrorKind::Other, "oh no!"),
