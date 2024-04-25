@@ -1,6 +1,7 @@
 use miette::{miette, Diagnostic, LabeledSpan, Report, SourceSpan};
 use std::error::Error as StdError;
 use std::io;
+use std::ops::Deref;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -159,7 +160,7 @@ impl Diagnostic for CustomDiagnostic {
 
 #[test]
 fn test_boxed_custom_diagnostic() {
-    fn assert_report(report: &Report) {
+    fn assert_report<T: ?Sized + Diagnostic>(report: &impl Deref<Target = T>) {
         assert_eq!(
             report.source().map(|source| source.to_string()),
             Some("oh no!".to_owned()),
@@ -215,6 +216,13 @@ fn test_boxed_custom_diagnostic() {
     let main_diagnostic = Box::new(main_diagnostic) as Box<dyn Diagnostic + Send + Sync + 'static>;
     let report = miette!(main_diagnostic);
     assert_report(&report);
+
+    // Now make sure that conversion to a trait-object is lossless!
+    let report_ref: &dyn Diagnostic = report.as_ref();
+    assert_report(&report_ref);
+
+    let report_box: Box<dyn Diagnostic> = report.into();
+    assert_report(&report_box);
 }
 
 #[test]
