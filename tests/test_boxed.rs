@@ -218,7 +218,6 @@ fn test_boxed_custom_diagnostic() {
 }
 
 #[test]
-#[ignore = "I don't know why this isn't working but it needs fixing."]
 fn test_boxed_sources() {
     let error = MyError {
         source: io::Error::new(io::ErrorKind::Other, "oh no!"),
