@@ -533,7 +533,8 @@ where
     E: Diagnostic + Send + Sync + 'static,
 {
     // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
-    e.cast::<ErrorImpl<E>>().boxed()
+    let unerased = e.cast::<ErrorImpl<E>>().boxed();
+    Box::new(unerased._object)
 }
 
 // Safety: requires layout of *e to match ErrorImpl<E>.
@@ -544,7 +545,8 @@ where
     E: StdError + Send + Sync + 'static,
 {
     // Attach ErrorImpl<E>'s native StdError vtable. The StdError impl is below.
-    e.cast::<ErrorImpl<E>>().boxed()
+    let unerased = e.cast::<ErrorImpl<E>>().boxed();
+    Box::new(unerased._object)
 }
 
 // Safety: requires layout of *e to match ErrorImpl<E>.
@@ -715,17 +717,6 @@ impl ErasedErrorImpl {
         Chain::new(Self::error(this))
     }
 }
-
-impl<E> StdError for ErrorImpl<E>
-where
-    E: StdError,
-{
-    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
-        unsafe { ErrorImpl::diagnostic(self.erase()).source() }
-    }
-}
-
-impl<E> Diagnostic for ErrorImpl<E> where E: Diagnostic {}
 
 impl<E> Debug for ErrorImpl<E>
 where
