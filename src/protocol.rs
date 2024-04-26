@@ -12,7 +12,7 @@ use std::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::MietteError;
+use crate::{MietteError, Report};
 
 /// Adds rich metadata to your Error that can be used by
 /// [`Report`](crate::Report) to print really nice and human-friendly error
@@ -228,6 +228,44 @@ impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Sen
         impl Diagnostic for BoxedDiagnostic {}
 
         Box::new(BoxedDiagnostic(s))
+    }
+}
+
+/// WOOF
+pub trait AsDiagnostic {
+    /// BARK
+    fn as_dyn(&self) -> &dyn Diagnostic;
+}
+
+impl AsDiagnostic for &dyn Diagnostic {
+    fn as_dyn(&self) -> &dyn Diagnostic {
+        *self
+    }
+}
+
+impl AsDiagnostic for Report {
+    fn as_dyn(&self) -> &dyn Diagnostic {
+        self.as_ref()
+    }
+}
+
+macro_rules! blanket_ref_impls {
+    ($($ref_type:ty),+ $(,)?) => {
+        $(
+            impl AsDiagnostic for $ref_type {
+                fn as_dyn(&self) -> &dyn Diagnostic {
+                    (**self).as_dyn()
+                }
+            }
+        )+
+    };
+}
+
+blanket_ref_impls!(&Report, &mut Report, Box<Report>);
+
+impl<T: Diagnostic> AsDiagnostic for T {
+    fn as_dyn(&self) -> &dyn Diagnostic {
+        self
     }
 }
 
