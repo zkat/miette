@@ -163,11 +163,13 @@ Narratable printout:
 \
 diagnostic error code: oops::my::bad (link)
 Error: oops!
+
 \
 Begin snippet for bad_file.rs starting
 at line 2, column 3
 \
 snippet line 1: source
+
 \
 snippet line 2:  text
     highlight starting at line 1, column 3: This bit here
