@@ -475,6 +475,7 @@ pub mod private {
     }
 
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn new_adhoc<M>(message: M) -> Report
     where
         M: Display + Debug + Send + Sync + 'static,

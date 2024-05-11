@@ -21,6 +21,7 @@ impl Report {
     /// If the error type does not provide a backtrace, a backtrace will be
     /// created here to ensure that a backtrace exists.
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn new<E>(error: E) -> Self
     where
         E: Diagnostic + Send + Sync + 'static,
@@ -66,6 +67,7 @@ impl Report {
     /// }
     /// ```
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn msg<M>(message: M) -> Self
     where
         M: Display + Debug + Send + Sync + 'static,
@@ -86,6 +88,7 @@ impl Report {
     }
 
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub(crate) fn from_std<E>(error: E) -> Self
     where
         E: Diagnostic + Send + Sync + 'static,
@@ -107,6 +110,7 @@ impl Report {
     }
 
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub(crate) fn from_adhoc<M>(message: M) -> Self
     where
         M: Display + Debug + Send + Sync + 'static,
@@ -131,6 +135,7 @@ impl Report {
     }
 
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub(crate) fn from_msg<D, E>(msg: D, error: E) -> Self
     where
         D: Display + Send + Sync + 'static,
@@ -155,6 +160,7 @@ impl Report {
     }
 
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub(crate) fn from_boxed(error: Box<dyn Diagnostic + Send + Sync>) -> Self {
         use super::wrapper::BoxedError;
         let error = BoxedError(error);
@@ -180,6 +186,7 @@ impl Report {
     //
     // Unsafe because the given vtable must have sensible behavior on the error
     // value of type E.
+    #[cold]
     unsafe fn construct<E>(
         error: E,
         vtable: &'static ErrorVTable,
@@ -262,6 +269,7 @@ impl Report {
     ///     None
     /// }
     /// ```
+    #[cold]
     pub fn chain(&self) -> Chain<'_> {
         unsafe { ErrorImpl::chain(self.inner.by_ref()) }
     }
@@ -424,6 +432,7 @@ where
     E: Diagnostic + Send + Sync + 'static,
 {
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     fn from(error: E) -> Self {
         Report::from_std(error)
     }
@@ -711,6 +720,7 @@ impl ErasedErrorImpl {
             .deref_mut()
     }
 
+    #[cold]
     pub(crate) unsafe fn chain(this: Ref<'_, Self>) -> Chain<'_> {
         Chain::new(Self::error(this))
     }
@@ -746,6 +756,7 @@ where
 }
 
 impl From<Report> for Box<dyn Diagnostic + Send + Sync + 'static> {
+    #[cold]
     fn from(error: Report) -> Self {
         let outer = ManuallyDrop::new(error);
         unsafe {
@@ -757,6 +768,7 @@ impl From<Report> for Box<dyn Diagnostic + Send + Sync + 'static> {
 }
 
 impl From<Report> for Box<dyn StdError + Send + Sync + 'static> {
+    #[cold]
     fn from(error: Report) -> Self {
         let outer = ManuallyDrop::new(error);
         unsafe {
@@ -768,12 +780,14 @@ impl From<Report> for Box<dyn StdError + Send + Sync + 'static> {
 }
 
 impl From<Report> for Box<dyn Diagnostic + 'static> {
+    #[cold]
     fn from(error: Report) -> Self {
         Box::<dyn Diagnostic + Send + Sync>::from(error)
     }
 }
 
 impl From<Report> for Box<dyn StdError + 'static> {
+    #[cold]
     fn from(error: Report) -> Self {
         Box::<dyn StdError + Send + Sync>::from(error)
     }
