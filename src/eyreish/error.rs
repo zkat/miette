@@ -418,7 +418,7 @@ impl Report {
     }
 
     /// Provide source code for this error
-    pub fn with_source_code(self, source_code: impl SourceCode + Send + Sync + 'static) -> Report {
+    pub fn with_source_code(self, source_code: impl SourceCode + 'static) -> Report {
         WithSourceCode {
             source_code,
             error: self,
