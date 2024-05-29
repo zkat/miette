@@ -159,7 +159,7 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Sets the word splitter to usewhen wrapping.
+    /// Sets the word splitter to use when wrapping.
     pub fn with_word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
         self.word_splitter = Some(word_splitter);
         self

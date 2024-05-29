@@ -19,7 +19,7 @@ unicode-width = "0.1.11"
 cfg-if = "1.0.0"
 
 owo-colors = { version = "4.0.0", optional = true }
-textwrap = { version = "0.16.0", optional = true }
+textwrap = { version = "0.16.0", default-features = false, features = ["unicode-linebreak", "unicode-width"], optional = true }
 supports-hyperlinks = { version = "3.0.0", optional = true }
 supports-color = { version = "3.0.0", optional = true }
 supports-unicode = { version = "3.0.0", optional = true }
