@@ -57,7 +57,7 @@ pub struct Report {
 unsafe impl Sync for Report {}
 unsafe impl Send for Report {}
 
-///
+#[allow(missing_docs)]
 pub type ErrorHook =
     Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
 
@@ -109,7 +109,7 @@ fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandl
 }
 
 impl dyn ReportHandler {
-    ///
+    #[allow(missing_docs)]
     pub fn is<T: ReportHandler>(&self) -> bool {
         // Get `TypeId` of the type this function is instantiated with.
         let t = core::any::TypeId::of::<T>();
@@ -121,7 +121,7 @@ impl dyn ReportHandler {
         t == concrete
     }
 
-    ///
+    #[allow(missing_docs)]
     pub fn downcast_ref<T: ReportHandler>(&self) -> Option<&T> {
         if self.is::<T>() {
             unsafe { Some(&*(self as *const dyn ReportHandler as *const T)) }
@@ -130,7 +130,7 @@ impl dyn ReportHandler {
         }
     }
 
-    ///
+    #[allow(missing_docs)]
     pub fn downcast_mut<T: ReportHandler>(&mut self) -> Option<&mut T> {
         if self.is::<T>() {
             unsafe { Some(&mut *(self as *mut dyn ReportHandler as *mut T)) }
