@@ -28,7 +28,7 @@ pub struct GraphicalReportHandler {
     pub(crate) termwidth: usize,
     pub(crate) theme: GraphicalTheme,
     pub(crate) footer: Option<String>,
-    pub(crate) context_lines: usize,
+    pub(crate) context_lines: Option<usize>,
     pub(crate) tab_width: usize,
     pub(crate) with_cause_chain: bool,
     pub(crate) wrap_lines: bool,
@@ -55,7 +55,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme: GraphicalTheme::default(),
             footer: None,
-            context_lines: 1,
+            context_lines: Some(1),
             tab_width: 4,
             with_cause_chain: true,
             wrap_lines: true,
@@ -74,7 +74,7 @@ impl GraphicalReportHandler {
             termwidth: 200,
             theme,
             footer: None,
-            context_lines: 1,
+            context_lines: Some(1),
             tab_width: 4,
             wrap_lines: true,
             with_cause_chain: true,
@@ -159,7 +159,7 @@ impl GraphicalReportHandler {
         self
     }
 
-    /// Sets the word splitter to usewhen wrapping.
+    /// Sets the word splitter to use when wrapping.
     pub fn with_word_splitter(mut self, word_splitter: textwrap::WordSplitter) -> Self {
         self.word_splitter = Some(word_splitter);
         self
@@ -172,7 +172,22 @@ impl GraphicalReportHandler {
     }
 
     /// Sets the number of lines of context to show around each error.
-    pub fn with_context_lines(mut self, lines: usize) -> Self {
+    ///
+    /// If `0`, then only the span content will be shown (equivalent to
+    /// `with_opt_context_lines(None)`).\
+    /// Use `with_opt_context_lines(Some(0))` if you want the whole line
+    /// containing the error without extra context.
+    pub fn with_context_lines(self, lines: usize) -> Self {
+        self.with_opt_context_lines((lines != 0).then_some(lines))
+    }
+
+    /// Sets the number of lines of context to show around each error.
+    ///
+    /// `None` means only the span content (and possibly the content in between
+    /// multiple adjacent labels) will be shown.\
+    /// `Some(0)` will show the whole line containing the label.\
+    /// `Some(n)` will show the whole line plus n line before and after the label.
+    pub fn with_opt_context_lines(mut self, lines: Option<usize>) -> Self {
         self.context_lines = lines;
         self
     }
@@ -503,7 +518,19 @@ impl GraphicalReportHandler {
         context: &LabeledSpan,
         labels: &[LabeledSpan],
     ) -> fmt::Result {
-        let (contents, lines) = self.get_lines(source, context.inner())?;
+        let (contents, mut lines) = self.get_lines(source, context.inner())?;
+
+        // If the number of lines doesn't match the content's line_count, it's
+        // because the content is either an empty source or because the last
+        // line finishes with a newline. In this case, add an empty line.
+        if lines.len() != contents.line_count() {
+            lines.push(Line {
+                line_number: contents.line() + contents.line_count(),
+                offset: contents.span().offset() + contents.span().len(),
+                length: 0,
+                text: String::new(),
+            });
+        }
 
         // only consider labels from the context as primary label
         let ctx_labels = labels.iter().filter(|l| {
@@ -558,11 +585,15 @@ impl GraphicalReportHandler {
             self.theme.characters.hbar,
         )?;
 
+        // Save that for later, since `content` might be moved before we need
+        // that info
+        let has_content = !contents.data().is_empty();
+
         // If there is a primary label, then use its span
         // as the reference point for line/column information.
         let primary_contents = match primary_label {
             Some(label) => source
-                .read_span(label.inner(), 0, 0)
+                .read_span(label.inner(), None, None)
                 .map_err(|_| fmt::Error)?,
             None => contents,
         };
@@ -588,48 +619,53 @@ impl GraphicalReportHandler {
         }
 
         // Now it's time for the fun part--actually rendering everything!
-        for line in &lines {
-            // Line number, appropriately padded.
-            self.write_linum(f, linum_width, line.line_number)?;
+        // (but only if we have content or if we wanted content, to avoid
+        // pointless detailed rendering, e.g. arrows pointing to nothing in the
+        // middle of nothing)
+        if has_content || self.context_lines.is_some() {
+            for (line_no, line) in lines.iter().enumerate() {
+                // Line number, appropriately padded.
+                self.write_linum(f, linum_width, line.line_number)?;
 
-            // Then, we need to print the gutter, along with any fly-bys We
-            // have separate gutters depending on whether we're on the actual
-            // line, or on one of the "highlight lines" below it.
-            self.render_line_gutter(f, max_gutter, line, &labels)?;
+                // Then, we need to print the gutter, along with any fly-bys We
+                // have separate gutters depending on whether we're on the actual
+                // line, or on one of the "highlight lines" below it.
+                self.render_line_gutter(f, max_gutter, line, &labels)?;
 
-            // And _now_ we can print out the line text itself!
-            let styled_text =
-                StyledList::from(highlighter_state.highlight_line(&line.text)).to_string();
-            self.render_line_text(f, &styled_text)?;
+                // And _now_ we can print out the line text itself!
+                let styled_text =
+                    StyledList::from(highlighter_state.highlight_line(&line.text)).to_string();
+                self.render_line_text(f, &styled_text)?;
 
-            // Next, we write all the highlights that apply to this particular line.
-            let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
-                .iter()
-                .filter(|hl| line.span_applies(hl))
-                .partition(|hl| line.span_line_only(hl));
-            if !single_line.is_empty() {
-                // no line number!
-                self.write_no_linum(f, linum_width)?;
-                // gutter _again_
-                self.render_highlight_gutter(
-                    f,
-                    max_gutter,
-                    line,
-                    &labels,
-                    LabelRenderMode::SingleLine,
-                )?;
-                self.render_single_line_highlights(
-                    f,
-                    line,
-                    linum_width,
-                    max_gutter,
-                    &single_line,
-                    &labels,
-                )?;
-            }
-            for hl in multi_line {
-                if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
-                    self.render_multi_line_end(f, &labels, max_gutter, linum_width, line, hl)?;
+                // Next, we write all the highlights that apply to this particular line.
+                let (single_line, multi_line): (Vec<_>, Vec<_>) = labels
+                    .iter()
+                    .filter(|hl| line.span_applies(hl, line_no == (lines.len() - 1)))
+                    .partition(|hl| line.span_line_only(hl));
+                if !single_line.is_empty() {
+                    // no line number!
+                    self.write_no_linum(f, linum_width)?;
+                    // gutter _again_
+                    self.render_highlight_gutter(
+                        f,
+                        max_gutter,
+                        line,
+                        &labels,
+                        LabelRenderMode::SingleLine,
+                    )?;
+                    self.render_single_line_highlights(
+                        f,
+                        line,
+                        linum_width,
+                        max_gutter,
+                        &single_line,
+                        &labels,
+                    )?;
+                }
+                for hl in multi_line {
+                    if hl.label().is_some() && line.span_ends(hl) && !line.span_starts(hl) {
+                        self.render_multi_line_end(f, &labels, max_gutter, linum_width, line, hl)?;
+                    }
                 }
             }
         }
@@ -1192,54 +1228,30 @@ impl GraphicalReportHandler {
             .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
-        let mut line = context_data.line();
-        let mut column = context_data.column();
-        let mut offset = context_data.span().offset();
-        let mut line_offset = offset;
-        let mut iter = context.chars().peekable();
-        let mut line_str = String::new();
-        let mut lines = Vec::new();
-        while let Some(char) = iter.next() {
-            offset += char.len_utf8();
-            let mut at_end_of_file = false;
-            match char {
-                '\r' => {
-                    if iter.next_if_eq(&'\n').is_some() {
-                        offset += 1;
-                        line += 1;
-                        column = 0;
-                    } else {
-                        line_str.push(char);
-                        column += 1;
-                    }
-                    at_end_of_file = iter.peek().is_none();
+        let lines = context
+            .split_inclusive('\n')
+            .enumerate()
+            .map(|(line_number, line)| {
+                let length = line.len();
+                // Strip the newline chars
+                let line = line
+                    .strip_suffix('\n')
+                    .and_then(|line| line.strip_suffix('\r').or(Some(line)))
+                    .unwrap_or(line);
+                // SAFETY:
+                // - it is safe to use `offset_from` on slices of an array per Rus design (max array size)
+                //   (https://doc.rust-lang.org/stable/reference/types/numeric.html#machine-dependent-integer-types)
+                // - since `line` is a slice of `context`, the offset cannot be negative either
+                Line {
+                    line_number: context_data.line() + line_number + 1,
+                    offset: context_data.span().offset()
+                        + unsafe { line.as_ptr().offset_from(context.as_ptr()) } as usize,
+                    length,
+                    text: line.to_string(),
                 }
-                '\n' => {
-                    at_end_of_file = iter.peek().is_none();
-                    line += 1;
-                    column = 0;
-                }
-                _ => {
-                    line_str.push(char);
-                    column += 1;
-                }
-            }
+            })
+            .collect::<Vec<_>>();
 
-            if iter.peek().is_none() && !at_end_of_file {
-                line += 1;
-            }
-
-            if column == 0 || iter.peek().is_none() {
-                lines.push(Line {
-                    line_number: line,
-                    offset: line_offset,
-                    length: offset - line_offset,
-                    text: line_str.clone(),
-                });
-                line_str.clear();
-                line_offset = offset;
-            }
-        }
         Ok((context_data, lines))
     }
 }
@@ -1283,29 +1295,40 @@ impl Line {
 
     /// Returns whether `span` should be visible on this line, either in the gutter or under the
     /// text on this line
-    fn span_applies(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
-
-        (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-            // Span passes through this line
-            || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
-            // Span ends on this line
-            || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+    ///
+    /// An empty span at a line boundary will preferable apply to the start of
+    /// a line (i.e. the second/next line) rather than the end of one (i.e. the
+    /// first/previous line). However if there are no "second" line, the span
+    /// can only apply the "first". The `inclusive` parameter is there to
+    /// indicate that `self` is the last line, i.e. that there are no "second"
+    /// line.
+    fn span_applies(&self, span: &FancySpan, inclusive: bool) -> bool {
+        // A span applies if its start is strictly before the line's end,
+        // i.e. the span is not after the line, and its end is strictly after
+        // the line's start, i.e. the span is not before the line.
+        //
+        // Two corner cases:
+        // - if `inclusive` is true, then the span also applies if its start is
+        //   *at* the line's end, not just strictly before.
+        // - if the span length is 0, then the span also applies if its end is
+        //   *at* the line's start, not just strictly after.
+        (match inclusive {
+            true => span.offset() <= self.offset + self.length,
+            false => span.offset() < self.offset + self.length,
+        }) && match span.len() == 0 {
+            true => (span.offset() + span.len()) >= self.offset,
+            false => (span.offset() + span.len()) > self.offset,
+        }
     }
 
     /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans
     /// that are only visible on this line and do not span multiple lines)
     fn span_applies_gutter(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
-        self.span_applies(span)
-            && !(
-                // as long as it doesn't start *and* end on this line
-                (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-                    && (span.offset() + spanlen > self.offset
-                        && span.offset() + spanlen <= self.offset + self.length)
-            )
+        // The span must covers this line and at least one of its ends must be
+        // on another line
+        self.span_applies(span, false)
+            && ((span.offset() < self.offset)
+                || ((span.offset() + span.len()) >= (self.offset + self.length)))
     }
 
     // A 'flyby' is a multi-line span that technically covers this line, but
@@ -1328,8 +1351,7 @@ impl Line {
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &FancySpan) -> bool {
-        span.offset() + span.len() >= self.offset
-            && span.offset() + span.len() <= self.offset + self.length
+        span.offset() + span.len() <= self.offset + self.length
     }
 }
 

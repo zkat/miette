@@ -56,8 +56,8 @@ impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
     fn read_span<'a>(
         &'a self,
         span: &crate::SourceSpan,
-        context_lines_before: usize,
-        context_lines_after: usize,
+        context_lines_before: Option<usize>,
+        context_lines_after: Option<usize>,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
         let inner_contents =
             self.inner()
