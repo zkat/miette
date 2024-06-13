@@ -58,6 +58,8 @@ where
     }
 }
 
+// FIXME: Delete this derive!
+#[derive(Debug)]
 #[allow(explicit_outlives_requirements)]
 #[repr(transparent)]
 /// A raw pointer that represents a shared borrow of its pointee

@@ -228,7 +228,7 @@ macro_rules! ensure {
 #[macro_export]
 macro_rules! miette {
     ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
-        $crate::Report::from(
+        $crate::Report::new(
             $crate::diagnostic!($($key = $value,)* $fmt $($arg)*)
         )
     };

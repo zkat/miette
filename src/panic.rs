@@ -1,7 +1,7 @@
 use backtrace::Backtrace;
 use thiserror::Error;
 
-use crate::{self as miette, Context, Diagnostic, Result};
+use crate::{self as miette, Context, Diagnostic, Report, Result};
 
 /// Tells miette to render panics using its rendering engine.
 pub fn set_panic_hook() {
@@ -14,7 +14,7 @@ pub fn set_panic_hook() {
         if let Some(msg) = payload.downcast_ref::<String>() {
             message = msg.clone();
         }
-        let mut report: Result<()> = Err(Panic(message).into());
+        let mut report: Result<()> = Err(Report::new(Panic(message)));
         if let Some(loc) = info.location() {
             report = report
                 .with_context(|| format!("at {}:{}:{}", loc.file(), loc.line(), loc.column()));

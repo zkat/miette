@@ -2,7 +2,7 @@ use core::fmt::{self, Debug, Display};
 
 use std::error::Error as StdError;
 
-use crate::{Diagnostic, LabeledSpan, Report, SourceCode};
+use crate::{Diagnostic, LabeledSpan, SourceCode};
 
 use crate as miette;
 
@@ -134,40 +134,6 @@ impl<E: Diagnostic, C: SourceCode> Diagnostic for WithSourceCode<E, C> {
     }
 }
 
-impl<C: SourceCode> Diagnostic for WithSourceCode<Report, C> {
-    fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.code()
-    }
-
-    fn severity(&self) -> Option<miette::Severity> {
-        self.error.severity()
-    }
-
-    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.help()
-    }
-
-    fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
-        self.error.url()
-    }
-
-    fn labels<'a>(&'a self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + 'a>> {
-        self.error.labels()
-    }
-
-    fn source_code(&self) -> Option<&dyn miette::SourceCode> {
-        self.error.source_code().or(Some(&self.source_code))
-    }
-
-    fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
-        self.error.related()
-    }
-
-    fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
-        self.error.diagnostic_source()
-    }
-}
-
 impl<E: Debug, C> Debug for WithSourceCode<E, C> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         Debug::fmt(&self.error, f)
@@ -181,12 +147,6 @@ impl<E: Display, C> Display for WithSourceCode<E, C> {
 }
 
 impl<E: StdError, C> StdError for WithSourceCode<E, C> {
-    fn source(&self) -> Option<&(dyn StdError + 'static)> {
-        self.error.source()
-    }
-}
-
-impl<C> StdError for WithSourceCode<Report, C> {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.error.source()
     }
@@ -232,7 +192,7 @@ mod tests {
         let inner_source = "hello world";
         let outer_source = "abc";
 
-        let report = Report::from(Inner {
+        let report = Report::new(Inner {
             at: (0..5).into(),
             source_code: Some(inner_source.to_string()),
         })
@@ -257,7 +217,7 @@ mod tests {
         let inner_source = "hello world";
         let outer_source = "abc";
 
-        let report = Report::from(Outer {
+        let report = Report::new(Outer {
             errors: vec![
                 Inner {
                     at: (0..5).into(),

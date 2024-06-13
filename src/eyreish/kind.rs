@@ -80,15 +80,15 @@ pub trait TraitKind: Sized {
     }
 }
 
-impl<E> TraitKind for E where E: Into<Report> {}
+impl<E> TraitKind for E where E: Diagnostic + Send + Sync + 'static {}
 
 impl Trait {
     #[cfg_attr(track_caller, track_caller)]
     pub fn new<E>(self, error: E) -> Report
     where
-        E: Into<Report>,
+        E: Diagnostic + Send + Sync + 'static,
     {
-        error.into()
+        Report::new(error)
     }
 }
 

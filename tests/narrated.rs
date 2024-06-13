@@ -1,22 +1,22 @@
 #![cfg(feature = "fancy-no-backtrace")]
 
-use miette::{Diagnostic, MietteError, NamedSource, NarratableReportHandler, Report, SourceSpan};
+use miette::{Diagnostic, MietteError, NamedSource, NarratableReportHandler, SourceSpan};
 
 use miette::{GraphicalReportHandler, GraphicalTheme};
 
 use thiserror::Error;
 
-fn fmt_report(diag: Report) -> String {
+fn fmt_report(diag: impl Diagnostic) -> String {
     let mut out = String::new();
     // Mostly for dev purposes.
     if cfg!(feature = "fancy-no-backtrace") && std::env::var("STYLE").is_ok() {
         #[cfg(feature = "fancy-no-backtrace")]
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
     } else {
         NarratableReportHandler::new()
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
     };
     out
@@ -39,7 +39,7 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (9, 6).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -75,7 +75,7 @@ fn single_line_highlight() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (9, 4).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -111,7 +111,7 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (0, 0).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -146,7 +146,7 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (9, 0).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -182,7 +182,7 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (9, 4).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -218,7 +218,7 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (7, 4).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -260,7 +260,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
         highlight2: (14, 4).into(),
         highlight3: (24, 4).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -298,7 +298,7 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
         src: NamedSource::new("bad_file.rs", src),
         highlight: (9, 11).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -345,7 +345,7 @@ line5
         highlight1: (0, len).into(),
         highlight2: (10, 9).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -407,7 +407,7 @@ line5
         highlight1: (0, len).into(),
         highlight2: (10, 9).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = "wtf?!
 it broke :(
@@ -457,7 +457,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
         highlight1: (0, 10).into(),
         highlight2: (20, 6).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = "oops!
     Diagnostic severity: error
@@ -505,7 +505,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
         highlight1: (0, 8).into(),
         highlight2: (9, 10).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
@@ -533,7 +533,7 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
         highlight1: (0, 8).into(),
         highlight2: (10, 10).into(),
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     assert_eq!("Error [oops::my::bad]: oops!\n\n[bad_file.rs] This is the part that broke:\n\n 1 │ source\n 2 │   text\n   ·   ──┬─\n   ·     ╰── this bit here\n 3 │     here\n\n﹦ try doing it better next time?\n".to_string(), out);
     Ok(())
@@ -546,7 +546,7 @@ fn url() -> Result<(), MietteError> {
     #[diagnostic(help("try doing it better next time?"), url("https://example.com"))]
     struct MyBad;
     let err = MyBad;
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     assert!(out.contains("https://example.com"));
     Ok(())
@@ -576,7 +576,7 @@ fn related() -> Result<(), MietteError> {
             related: vec![],
         }],
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error
@@ -637,7 +637,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
             highlight: (0, 6).into(),
         }],
     };
-    let out = fmt_report(err.into());
+    let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops!
     Diagnostic severity: error

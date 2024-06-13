@@ -28,6 +28,6 @@ pub trait IntoDiagnostic<T, E> {
 
 impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for Result<T, E> {
     fn into_diagnostic(self) -> Result<T, Report> {
-        self.map_err(|e| DiagnosticError(Box::new(e)).into())
+        self.map_err(|e| Report::new(DiagnosticError(Box::new(e))))
     }
 }
