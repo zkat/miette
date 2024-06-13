@@ -1192,54 +1192,30 @@ impl GraphicalReportHandler {
             .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
         let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
-        let mut line = context_data.line();
-        let mut column = context_data.column();
-        let mut offset = context_data.span().offset();
-        let mut line_offset = offset;
-        let mut iter = context.chars().peekable();
-        let mut line_str = String::new();
-        let mut lines = Vec::new();
-        while let Some(char) = iter.next() {
-            offset += char.len_utf8();
-            let mut at_end_of_file = false;
-            match char {
-                '\r' => {
-                    if iter.next_if_eq(&'\n').is_some() {
-                        offset += 1;
-                        line += 1;
-                        column = 0;
-                    } else {
-                        line_str.push(char);
-                        column += 1;
-                    }
-                    at_end_of_file = iter.peek().is_none();
+        let lines = context
+            .split_inclusive('\n')
+            .enumerate()
+            .map(|(line_number, line)| {
+                let length = line.len();
+                // Strip the newline chars
+                let line = line
+                    .strip_suffix('\n')
+                    .and_then(|line| line.strip_suffix('\r').or(Some(line)))
+                    .unwrap_or(line);
+                // SAFETY:
+                // - it is safe to use `offset_from` on slices of an array per Rus design (max array size)
+                //   (https://doc.rust-lang.org/stable/reference/types/numeric.html#machine-dependent-integer-types)
+                // - since `line` is a slice of `context`, the offset cannot be negative either
+                Line {
+                    line_number: context_data.line() + line_number + 1,
+                    offset: context_data.span().offset()
+                        + unsafe { line.as_ptr().offset_from(context.as_ptr()) } as usize,
+                    length,
+                    text: line.to_string(),
                 }
-                '\n' => {
-                    at_end_of_file = iter.peek().is_none();
-                    line += 1;
-                    column = 0;
-                }
-                _ => {
-                    line_str.push(char);
-                    column += 1;
-                }
-            }
+            })
+            .collect::<Vec<_>>();
 
-            if iter.peek().is_none() && !at_end_of_file {
-                line += 1;
-            }
-
-            if column == 0 || iter.peek().is_none() {
-                lines.push(Line {
-                    line_number: line,
-                    offset: line_offset,
-                    length: offset - line_offset,
-                    text: line_str.clone(),
-                });
-                line_str.clear();
-                line_offset = offset;
-            }
-        }
         Ok((context_data, lines))
     }
 }
@@ -1284,28 +1260,27 @@ impl Line {
     /// Returns whether `span` should be visible on this line, either in the gutter or under the
     /// text on this line
     fn span_applies(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
-
-        (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-            // Span passes through this line
-            || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
-            // Span ends on this line
-            || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+        // A span applies if its start is strictly before the line's end,
+        // i.e. the span is not after the line, and its end is strictly after
+        // the line's start, i.e. the span is not before the line.
+        //
+        // One corner case: if the span length is 0, then the span also applies
+        // if its end is *at* the line's start, not just strictly after.
+        (span.offset() < self.offset + self.length)
+            && match span.len() == 0 {
+                true => (span.offset() + span.len()) >= self.offset,
+                false => (span.offset() + span.len()) > self.offset,
+            }
     }
 
     /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans
     /// that are only visible on this line and do not span multiple lines)
     fn span_applies_gutter(&self, span: &FancySpan) -> bool {
-        let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
+        // The span must covers this line and at least one of its ends must be
+        // on another line
         self.span_applies(span)
-            && !(
-                // as long as it doesn't start *and* end on this line
-                (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-                    && (span.offset() + spanlen > self.offset
-                        && span.offset() + spanlen <= self.offset + self.length)
-            )
+            && ((span.offset() < self.offset)
+                || ((span.offset() + span.len()) >= (self.offset + self.length)))
     }
 
     // A 'flyby' is a multi-line span that technically covers this line, but
@@ -1328,8 +1303,7 @@ impl Line {
     // Does this line contain the *end* of this multiline span?
     // This assumes self.span_applies() is true already.
     fn span_ends(&self, span: &FancySpan) -> bool {
-        span.offset() + span.len() >= self.offset
-            && span.offset() + span.len() <= self.offset + self.length
+        span.offset() + span.len() <= self.offset + self.length
     }
 }
 
