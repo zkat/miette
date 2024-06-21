@@ -1,6 +1,7 @@
 use std::path::Path;
 
 // all syntect imports are explicitly qualified, but their paths are shortened for convenience
+#[allow(clippy::module_inception)]
 mod syntect {
     pub(super) use syntect::{
         highlighting::{
@@ -96,7 +97,7 @@ impl SyntectHighlighter {
         }
         // finally, attempt to guess syntax based on first line
         return self.syntax_set.find_syntax_by_first_line(
-            &std::str::from_utf8(contents.data())
+            std::str::from_utf8(contents.data())
                 .ok()?
                 .split('\n')
                 .next()?,
@@ -116,13 +117,13 @@ pub(crate) struct SyntectHighlighterState<'h> {
 
 impl<'h> HighlighterState for SyntectHighlighterState<'h> {
     fn highlight_line<'s>(&mut self, line: &'s str) -> Vec<Styled<&'s str>> {
-        if let Ok(ops) = self.parse_state.parse_line(line, &self.syntax_set) {
+        if let Ok(ops) = self.parse_state.parse_line(line, self.syntax_set) {
             let use_bg_color = self.use_bg_color;
             syntect::HighlightIterator::new(
                 &mut self.highlight_state,
                 &ops,
                 line,
-                &mut self.highlighter,
+                &self.highlighter,
             )
             .map(|(style, str)| (convert_style(style, use_bg_color).style(str)))
             .collect()

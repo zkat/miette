@@ -12,7 +12,7 @@ pub fn set_panic_hook() {
             message = msg.to_string();
         }
         if let Some(msg) = payload.downcast_ref::<String>() {
-            message = msg.clone();
+            message.clone_from(msg);
         }
         let mut report: Result<()> = Err(Panic(message).into());
         if let Some(loc) = info.location() {
