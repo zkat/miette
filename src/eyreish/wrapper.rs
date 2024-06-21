@@ -215,18 +215,6 @@ mod tests {
         }
     }
 
-    #[derive(Error, Debug)]
-    #[error("outer")]
-    struct Outer {
-        pub(crate) errors: Vec<Inner>,
-    }
-
-    impl Diagnostic for Outer {
-        fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
-            Some(Box::new(self.errors.iter().map(|e| e as _)))
-        }
-    }
-
     #[test]
     fn no_override() {
         let inner_source = "hello world";
@@ -254,6 +242,18 @@ mod tests {
     #[test]
     #[cfg(feature = "fancy")]
     fn two_source_codes() {
+        #[derive(Error, Debug)]
+        #[error("outer")]
+        struct Outer {
+            pub(crate) errors: Vec<Inner>,
+        }
+
+        impl Diagnostic for Outer {
+            fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+                Some(Box::new(self.errors.iter().map(|e| e as _)))
+            }
+        }
+
         let inner_source = "hello world";
         let outer_source = "abc";
 
