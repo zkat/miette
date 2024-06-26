@@ -63,6 +63,7 @@ impl<T> AdhocKind for &T where T: ?Sized + Display + Debug + Send + Sync + 'stat
 
 impl Adhoc {
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn new<M>(self, message: M) -> Report
     where
         M: Display + Debug + Send + Sync + 'static,
@@ -84,6 +85,7 @@ impl<E> TraitKind for E where E: Into<Report> {}
 
 impl Trait {
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn new<E>(self, error: E) -> Report
     where
         E: Into<Report>,
@@ -105,6 +107,7 @@ impl BoxedKind for Box<dyn Diagnostic + Send + Sync> {}
 
 impl Boxed {
     #[cfg_attr(track_caller, track_caller)]
+    #[cold]
     pub fn new(self, error: Box<dyn Diagnostic + Send + Sync>) -> Report {
         Report::from_boxed(error)
     }
