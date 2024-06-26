@@ -614,6 +614,28 @@ impl From<std::ops::Range<ByteOffset>> for SourceSpan {
     }
 }
 
+impl From<std::ops::RangeInclusive<ByteOffset>> for SourceSpan {
+    /// # Panics
+    ///
+    /// Panics if the total length of the inclusive range would overflow a
+    /// `usize`. This will only occur with the range `0..=usize::MAX`.
+    fn from(range: std::ops::RangeInclusive<ByteOffset>) -> Self {
+        let (start, end) = range.clone().into_inner();
+        Self {
+            offset: start.into(),
+            length: if range.is_empty() {
+                0
+            } else {
+                // will not overflow because `is_empty() == false` guarantees
+                // that `start <= end`
+                (end - start)
+                    .checked_add(1)
+                    .expect("length of inclusive range should fit in a usize")
+            },
+        }
+    }
+}
+
 impl From<SourceOffset> for SourceSpan {
     fn from(offset: SourceOffset) -> Self {
         Self { offset, length: 0 }
