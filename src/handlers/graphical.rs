@@ -359,7 +359,7 @@ impl GraphicalReportHandler {
 
                         // If there was no header, remove the leading newline
                         let inner = inner.trim_start_matches('\n');
-                        writeln!(f, "{}", self.wrap(&inner, opts))?;
+                        writeln!(f, "{}", self.wrap(inner, opts))?;
                     }
                     ErrorKind::StdError(err) => {
                         writeln!(f, "{}", self.wrap(&err.to_string(), opts))?;
@@ -667,7 +667,7 @@ impl GraphicalReportHandler {
                     f,
                     max_gutter,
                     line,
-                    &labels,
+                    labels,
                     LabelRenderMode::SingleLine,
                 )?;
 
@@ -683,7 +683,7 @@ impl GraphicalReportHandler {
                     f,
                     max_gutter,
                     line,
-                    &labels,
+                    labels,
                     LabelRenderMode::MultiLineFirst,
                 )?;
 
@@ -701,7 +701,7 @@ impl GraphicalReportHandler {
                         f,
                         max_gutter,
                         line,
-                        &labels,
+                        labels,
                         LabelRenderMode::MultiLineRest,
                     )?;
                     self.render_multi_line_end_single(
@@ -714,13 +714,7 @@ impl GraphicalReportHandler {
             }
         } else {
             // gutter _again_
-            self.render_highlight_gutter(
-                f,
-                max_gutter,
-                line,
-                &labels,
-                LabelRenderMode::SingleLine,
-            )?;
+            self.render_highlight_gutter(f, max_gutter, line, labels, LabelRenderMode::SingleLine)?;
             // has no label
             writeln!(f, "{}", self.theme.characters.hbar.style(label.style))?;
         }
@@ -894,12 +888,10 @@ impl GraphicalReportHandler {
                     } else {
                         result.push_str(opts.initial_indent);
                     }
+                } else if line.trim().is_empty() {
+                    result.push_str(trimmed_indent);
                 } else {
-                    if line.trim().is_empty() {
-                        result.push_str(trimmed_indent);
-                    } else {
-                        result.push_str(opts.subsequent_indent);
-                    }
+                    result.push_str(opts.subsequent_indent);
                 }
                 result.push_str(line);
             }
