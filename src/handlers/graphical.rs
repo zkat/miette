@@ -568,13 +568,16 @@ impl GraphicalReportHandler {
         };
 
         if let Some(source_name) = primary_contents.name() {
-            let source_name = source_name.style(self.theme.styles.link);
             writeln!(
                 f,
-                "[{}:{}:{}]",
-                source_name,
-                primary_contents.line() + 1,
-                primary_contents.column() + 1
+                "[{}]",
+                format_args!(
+                    "{}:{}:{}",
+                    source_name,
+                    primary_contents.line() + 1,
+                    primary_contents.column() + 1
+                )
+                .style(self.theme.styles.link)
             )?;
         } else if lines.len() <= 1 {
             writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
