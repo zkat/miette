@@ -7,7 +7,7 @@ use crate::diagnostic_chain::{DiagnosticChain, ErrorKind};
 use crate::handlers::theme::*;
 use crate::highlighters::{Highlighter, MietteHighlighter};
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{AsDiagnostic, LabeledSpan, ReportHandler, SourceCode, SourceSpan, SpanContents};
 
 /**
 A [`ReportHandler`] that displays a given [`Report`](crate::Report) in a
@@ -215,8 +215,9 @@ impl GraphicalReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: impl AsDiagnostic,
     ) -> fmt::Result {
+        let diagnostic = diagnostic.as_dyn();
         self.render_header(f, diagnostic)?;
         self.render_causes(f, diagnostic)?;
         let src = diagnostic.source_code();

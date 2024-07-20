@@ -8,7 +8,7 @@ mod json_report_handler {
     fn fmt_report(diag: Report) -> String {
         let mut out = String::new();
         JSONReportHandler::new()
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, diag)
             .unwrap();
         out
     }

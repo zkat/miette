@@ -1,7 +1,8 @@
 use std::fmt::{self, Write};
 
 use crate::{
-    diagnostic_chain::DiagnosticChain, protocol::Diagnostic, ReportHandler, Severity, SourceCode,
+    diagnostic_chain::DiagnosticChain, protocol::Diagnostic, AsDiagnostic, ReportHandler, Severity,
+    SourceCode,
 };
 
 /**
@@ -60,8 +61,9 @@ impl JSONReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: impl AsDiagnostic,
     ) -> fmt::Result {
+        let diagnostic = diagnostic.as_dyn();
         self._render_report(f, diagnostic, None)
     }
 
