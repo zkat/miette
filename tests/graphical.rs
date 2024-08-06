@@ -2004,7 +2004,7 @@ fn syntax_highlighter_on_real_file() {
     let offset = miette::SourceOffset::from_location(&file_src, line, CO);
     let err = Test {
         src: NamedSource::new(filename, file_src.clone()),
-        src_span: SourceSpan::new(offset, LEN.into()),
+        src_span: SourceSpan::new(offset, LEN),
     };
 
     let mut out = String::new();
