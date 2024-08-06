@@ -2000,11 +2000,11 @@ fn syntax_highlighter_on_real_file() {
     // SourceSpan constants for column and length
     const CO: usize = 28;
     const LEN: usize = 27;
-    let file_src = std::fs::read_to_string(&filename).unwrap();
+    let file_src = std::fs::read_to_string(filename).unwrap();
     let offset = miette::SourceOffset::from_location(&file_src, line, CO);
     let err = Test {
-        src: NamedSource::new(&filename, file_src.clone()),
-        src_span: SourceSpan::new(offset, LEN.into()),
+        src: NamedSource::new(filename, file_src.clone()),
+        src_span: SourceSpan::new(offset, LEN),
     };
 
     let mut out = String::new();

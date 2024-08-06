@@ -80,7 +80,6 @@ fn test_altdisplay() {
 
 #[test]
 #[ignore = "not really gonna work with the current printers"]
-#[cfg_attr(track_caller, ignore)]
 fn test_debug() {
     assert_eq!(EXPECTED_DEBUG_F, format!("{:?}", f().unwrap_err()));
     assert_eq!(EXPECTED_DEBUG_G, format!("{:?}", g().unwrap_err()));
