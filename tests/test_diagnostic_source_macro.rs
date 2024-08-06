@@ -154,6 +154,7 @@ fn test_diagnostic_source_is_output() {
     assert_eq!(expected, out);
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("A nested error happened")]
 struct NestedError {
@@ -212,6 +213,7 @@ fn test_nested_diagnostic_source_is_output() {
     assert_eq!(expected, out);
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("A multi-error happened")]
 struct MultiError {
