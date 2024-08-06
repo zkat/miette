@@ -100,7 +100,7 @@
 //!
 //! `thiserror` is a great way to define them, and plays nicely with `miette`!
 //! */
-//! use miette::{Diagnostic, SourceSpan};
+//! use miette::{Diagnostic, NamedSource, SourceSpan};
 //! use thiserror::Error;
 //!
 //! #[derive(Error, Debug, Diagnostic)]
@@ -127,7 +127,7 @@
 //! throughout your app (but NOT your libraries! Those should always return
 //! concrete types!).
 //! */
-//! use miette::{NamedSource, Result};
+//! use miette::Result;
 //! fn this_fails() -> Result<()> {
 //!     // You can use plain strings as a `Source`, or anything that implements
 //!     // the one-method `Source` trait.
