@@ -28,9 +28,9 @@ diagnostic error code: ruget::api::bad_json
 " />
 
 > **NOTE: You must enable the `"fancy"` crate feature to get fancy report
-output like in the screenshots above.** You should only do this in your
-toplevel crate, as the fancy feature pulls in a number of dependencies that
-libraries and such might not want.
+> output like in the screenshots above.** You should only do this in your
+> toplevel crate, as the fancy feature pulls in a number of dependencies that
+> libraries and such might not want.
 
 ### Table of Contents <!-- omit in toc -->
 
@@ -288,9 +288,9 @@ There are also similar [bail!] and [ensure!] macros.
 automatically.
 
 > **NOTE:** You must enable the `"fancy"` crate feature to get fancy report
-output like in the screenshots here.** You should only do this in your
-toplevel crate, as the fancy feature pulls in a number of dependencies that
-libraries and such might not want.
+> output like in the screenshots here.** You should only do this in your
+> toplevel crate, as the fancy feature pulls in a number of dependencies that
+> libraries and such might not want.
 
 ```rust
 use miette::{IntoDiagnostic, Result};
@@ -645,8 +645,8 @@ customize!
 If you...
 - ...don't know all the possible errors upfront
 - ...need to serialize/deserialize errors
-then you may want to use [`miette!`], [`diagnostic!`] macros or
-[`MietteDiagnostic`] directly to create diagnostic on the fly.
+  then you may want to use [`miette!`], [`diagnostic!`] macros or
+  [`MietteDiagnostic`] directly to create diagnostic on the fly.
 
 ```rust
 
