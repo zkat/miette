@@ -673,12 +673,12 @@ automatically use the [`syntect`] crate to highlight the `#[source_code]`
 field of your [`Diagnostic`].
 
 Syntax detection with [`syntect`] is handled by checking 2 methods on the [`SpanContents`] trait, in order:
-* [language()](SpanContents::language) - Provides the name of the language
+* [`language()`](SpanContents::language) - Provides the name of the language
   as a string. For example `"Rust"` will indicate Rust syntax highlighting.
   You can set the language of the [`SpanContents`] produced by a
   [`NamedSource`] via the [`with_language`](NamedSource::with_language)
   method.
-* [name()](SpanContents::name) - In the absence of an explicitly set
+* [`name()`](SpanContents::name) - In the absence of an explicitly set
   language, the name is assumed to contain a file name or file path.
   The highlighter will check for a file extension at the end of the name and
   try to guess the syntax from that.

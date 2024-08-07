@@ -20,7 +20,7 @@ use crate::{
 
 use super::BlankHighlighterState;
 
-/// Highlights miette [SourceCode] with the [syntect](https://docs.rs/syntect/latest/syntect/) highlighting crate.
+/// Highlights miette [`SpanContents`] with the [syntect](https://docs.rs/syntect/latest/syntect/) highlighting crate.
 ///
 /// Currently only 24-bit truecolor output is supported due to syntect themes
 /// representing color as RGBA.
@@ -81,7 +81,7 @@ impl SyntectHighlighter {
         )
     }
 
-    /// Determine syntect SyntaxReference to use for given SourceCode
+    /// Determine syntect [`SyntaxReference`] to use for given [`SpanContents`].
     fn detect_syntax(&self, contents: &dyn SpanContents<'_>) -> Option<&syntect::SyntaxReference> {
         // use language if given
         if let Some(language) = contents.language() {
@@ -105,7 +105,7 @@ impl SyntectHighlighter {
     }
 }
 
-/// Stateful highlighting iterator for [SyntectHighlighter]
+/// Stateful highlighting iterator for [`SyntectHighlighter`].
 #[derive(Debug)]
 pub(crate) struct SyntectHighlighterState<'h> {
     syntax_set: &'h syntect::SyntaxSet,
@@ -133,7 +133,7 @@ impl<'h> HighlighterState for SyntectHighlighterState<'h> {
     }
 }
 
-/// Convert syntect [syntect::Style] into owo_colors [Style] */
+/// Convert syntect [`syntect::Style`] into `owo_colors` [`Style`]
 #[inline]
 fn convert_style(syntect_style: syntect::Style, use_bg_color: bool) -> Style {
     if use_bg_color {
