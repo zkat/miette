@@ -2349,3 +2349,164 @@ Error: oops::my::inner
     assert_eq!(expected, &out);
     Ok(())
 }
+
+#[test]
+fn after_unicode_width() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("pointing")]
+    #[diagnostic(code(pointing_at))]
+    struct E {
+        #[label("something of interest")]
+        src: SourceSpan,
+    }
+
+    let unicode_source = "höööt!";
+
+    // make err pointing at the t
+    let (t_index, _) = unicode_source
+        .bytes()
+        .enumerate()
+        .find(|&(_, x)| x == b't')
+        .unwrap();
+
+    let err = E {
+        src: SourceSpan::from((t_index, 1)),
+    };
+
+    let result = fmt_report(Report::new(err).with_source_code(String::from(unicode_source)));
+
+    let expected = "pointing_at
+
+  × pointing
+   ╭────
+ 1 │ höööt!
+   ·     ┬
+   ·     ╰── something of interest
+   ╰────
+";
+
+    assert_eq!(expected, result);
+
+    Ok(())
+}
+
+#[test]
+fn at_unicode_width() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("pointing")]
+    #[diagnostic(code(pointing_at))]
+    struct E {
+        #[label("something of interest")]
+        src: SourceSpan,
+    }
+
+    let unicode_source = "höööt!";
+
+    // make err pointing at an ö
+    let err = E {
+        src: SourceSpan::from((1, "ö".len())),
+    };
+
+    // we want to make sure the pointer is one char wide, not 2
+    assert!(err.src.len() == 2);
+
+    let result = fmt_report(Report::new(err).with_source_code(String::from(unicode_source)));
+
+    let expected = "pointing_at
+
+  × pointing
+   ╭────
+ 1 │ höööt!
+   ·  ┬
+   ·  ╰── something of interest
+   ╰────
+";
+
+    assert_eq!(expected, result);
+
+    Ok(())
+}
+
+#[test]
+fn at_invalid_unicode() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("decoding error")]
+    #[diagnostic(code(decode_err))]
+    struct E {
+        #[label("invalid data here")]
+        src: SourceSpan,
+    }
+
+    // 3 bytes here are mapped to 1 char when replaced by replacement character
+    // this tests that the line pointing from the label is the correct length when rendered
+    // - it should be 1 char wide not 3 chars
+    let invalid_source: &[u8] = b"malformed h\xf0\x93\x8aXYZ";
+
+    // invalid utf8 lint only available from 1.72
+    #[allow(unknown_lints, invalid_from_utf8)]
+    let utf8_err = std::str::from_utf8(invalid_source).unwrap_err();
+
+    // make err pointing at the invalid part
+    let err = E {
+        src: SourceSpan::from((utf8_err.valid_up_to(), utf8_err.error_len().unwrap_or(1))),
+    };
+
+    // check that we're testing the thing we think we're testing
+    assert_eq!(err.src.len(), 3);
+
+    let result = fmt_report(Report::new(err).with_source_code(Vec::from(invalid_source)));
+
+    let expected = "decode_err
+
+  × decoding error
+   ╭────
+ 1 │ malformed h�XYZ
+   ·            ┬
+   ·            ╰── invalid data here
+   ╰────
+";
+
+    assert_eq!(expected, result);
+
+    Ok(())
+}
+
+#[test]
+fn after_invalid_unicode() -> Result<(), MietteError> {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("decoding error")]
+    #[diagnostic(code(decode_err))]
+    struct E {
+        #[label("valid data here")]
+        src: SourceSpan,
+    }
+
+    let invalid_source: &[u8] = b"malformed h\xf0\x93\x8aXYZ";
+
+    let (x_index, _) = invalid_source
+        .iter()
+        .enumerate()
+        .find(|&(_, &x)| x == b'X')
+        .unwrap();
+
+    // make err pointing at the X
+    let err = E {
+        src: SourceSpan::from((x_index, 1)),
+    };
+
+    let result = fmt_report(Report::new(err).with_source_code(invalid_source));
+
+    let expected = "decode_err
+
+  × decoding error
+   ╭────
+ 1 │ malformed h�XYZ
+   ·             ┬
+   ·             ╰── valid data here
+   ╰────
+";
+
+    assert_eq!(expected, result);
+
+    Ok(())
+}
