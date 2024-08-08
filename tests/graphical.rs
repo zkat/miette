@@ -2440,9 +2440,10 @@ fn at_invalid_unicode() -> Result<(), MietteError> {
     // 3 bytes here are mapped to 1 char when replaced by replacement character
     // this tests that the line pointing from the label is the correct length when rendered
     // - it should be 1 char wide not 3 chars
-    let invalid_source = b"malformed h\xf0\x93\x8aXYZ";
+    let invalid_source: &[u8] = b"malformed h\xf0\x93\x8aXYZ";
 
-    #[allow(invalid_from_utf8)]
+    // invalid utf8 lint only available from 1.72
+    #[allow(unknown_lints, invalid_from_utf8)]
     let utf8_err = std::str::from_utf8(invalid_source).unwrap_err();
 
     // make err pointing at the invalid part
