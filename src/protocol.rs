@@ -69,6 +69,48 @@ pub trait Diagnostic: std::error::Error {
     }
 }
 
+macro_rules! blanket_ref_impls {
+    ($($ref_type:ty),+ $(,)?) => {
+        $(
+            impl<T: Diagnostic> Diagnostic for $ref_type {
+                fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                    (**self).code()
+                }
+
+                fn severity(&self) -> Option<Severity> {
+                    (**self).severity()
+                }
+
+                fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                    (**self).help()
+                }
+
+                fn url<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+                    (**self).url()
+                }
+
+                fn source_code(&self) -> Option<&dyn SourceCode> {
+                    (**self).source_code()
+                }
+
+                fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+                    (**self).labels()
+                }
+
+                fn related<'a>(&'a self) -> Option<Box<dyn Iterator<Item = &'a dyn Diagnostic> + 'a>> {
+                    (**self).related()
+                }
+
+                fn diagnostic_source(&self) -> Option<&dyn Diagnostic> {
+                    (**self).diagnostic_source()
+                }
+            }
+        )+
+    };
+}
+
+blanket_ref_impls!(&T, Box<T>);
+
 macro_rules! box_error_impls {
     ($($box_type:ty),*) => {
         $(
