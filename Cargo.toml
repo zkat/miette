@@ -46,24 +46,24 @@ strip-ansi-escapes = "0.2.0"
 
 [features]
 default = ["derive"]
-derive = ["miette-derive"]
+derive = ["dep:miette-derive"]
 no-format-args-capture = []
 fancy-base = [
-    "owo-colors",
-    "textwrap",
+    "dep:owo-colors",
+    "dep:textwrap",
 ]
 fancy-no-syscall = [
     "fancy-base",
 ]
 fancy-no-backtrace = [
     "fancy-base",
-    "terminal_size",
-    "supports-hyperlinks",
-    "supports-color",
-    "supports-unicode",
+    "dep:terminal_size",
+    "dep:supports-hyperlinks",
+    "dep:supports-color",
+    "dep:supports-unicode",
 ]
-fancy = ["fancy-no-backtrace", "backtrace", "backtrace-ext"]
-syntect-highlighter = ["fancy-no-backtrace", "syntect"]
+fancy = ["fancy-no-backtrace", "dep:backtrace", "dep:backtrace-ext"]
+syntect-highlighter = ["fancy-no-backtrace", "dep:syntect"]
 
 [workspace]
 members = ["miette-derive"]
