@@ -26,16 +26,16 @@ mod syntect;
 
 /// A syntax highlighter for highlighting miette [`SourceCode`](crate::SourceCode) snippets.
 pub trait Highlighter {
-    ///  Creates a new [HighlighterState] to begin parsing and highlighting
-    /// a [SpanContents].
+    ///  Creates a new [`HighlighterState`] to begin parsing and highlighting
+    /// a [`SpanContents`].
     ///
-    /// The [GraphicalReportHandler](crate::GraphicalReportHandler) will call
-    /// this method at the start of rendering a [SpanContents].
+    /// The [`GraphicalReportHandler`](crate::GraphicalReportHandler) will call
+    /// this method at the start of rendering a [`SpanContents`].
     ///
-    /// The [SpanContents] is provided as input only so that the [Highlighter]
+    /// The [`SpanContents`] is provided as input only so that the [`Highlighter`]
     /// can detect language syntax and make other initialization decisions prior
     /// to highlighting, but it is not intended that the Highlighter begin
-    /// highlighting at this point. The returned [HighlighterState] is
+    /// highlighting at this point. The returned [`HighlighterState`] is
     /// responsible for the actual rendering.
     fn start_highlighter_state<'h>(
         &'h self,
@@ -46,12 +46,12 @@ pub trait Highlighter {
 /// A stateful highlighter that incrementally highlights lines of a particular
 /// source code.
 ///
-/// The [GraphicalReportHandler](crate::GraphicalReportHandler)
+/// The [`GraphicalReportHandler`](crate::GraphicalReportHandler)
 /// will create a highlighter state by calling
-/// [start_highlighter_state](Highlighter::start_highlighter_state) at the
+/// [`start_highlighter_state`](Highlighter::start_highlighter_state) at the
 /// start of rendering, then it will iteratively call
-/// [highlight_line](HighlighterState::highlight_line) to render individual
-/// highlighted lines. This allows [Highlighter] implementations to maintain
+/// [`highlight_line`](HighlighterState::highlight_line) to render individual
+/// highlighted lines. This allows [`Highlighter`] implementations to maintain
 /// mutable parsing and highlighting state.
 pub trait HighlighterState {
     /// Highlight an individual line from the source code by returning a vector of [Styled]
@@ -59,9 +59,9 @@ pub trait HighlighterState {
     fn highlight_line<'s>(&mut self, line: &'s str) -> Vec<Styled<&'s str>>;
 }
 
-/// Arcified trait object for Highlighter. Used internally by [GraphicalReportHandler]
+/// Arcified trait object for Highlighter. Used internally by [`GraphicalReportHandler`]
 ///
-/// Wrapping the trait object in this way allows us to implement Debug and Clone.
+/// Wrapping the trait object in this way allows us to implement `Debug` and `Clone`.
 #[derive(Clone)]
 #[repr(transparent)]
 pub(crate) struct MietteHighlighter(Arc<dyn Highlighter + Send + Sync>);

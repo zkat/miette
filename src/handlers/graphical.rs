@@ -178,7 +178,8 @@ impl GraphicalReportHandler {
     }
 
     /// Enable syntax highlighting for source code snippets, using the given
-    /// [`Highlighter`]. See the [crate::highlighters] crate for more details.
+    /// [`Highlighter`]. See the [highlighters](crate::highlighters) crate
+    /// for more details.
     pub fn with_syntax_highlighting(
         mut self,
         highlighter: impl Highlighter + Send + Sync + 'static,

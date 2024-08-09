@@ -523,7 +523,7 @@ impl<'a> MietteSpanContents<'a> {
         }
     }
 
-    /// Sets the [`language`](SourceCode::language) for syntax highlighting.
+    /// Sets the [`language`](SpanContents::language) for syntax highlighting.
     pub fn with_language(mut self, language: impl Into<String>) -> Self {
         self.language = Some(language.into());
         self
