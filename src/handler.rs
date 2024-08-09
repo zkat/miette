@@ -89,7 +89,7 @@ impl MietteHandlerOpts {
     /// Syntax highlighting is disabled by default unless the
     /// `syntect-highlighter` feature is enabled. Call this method
     /// to override the default and use a custom highlighter
-    /// implmentation instead.
+    /// implementation instead.
     ///
     /// Use
     /// [`without_syntax_highlighting()`](MietteHandlerOpts::without_syntax_highlighting())

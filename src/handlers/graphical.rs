@@ -799,7 +799,7 @@ impl GraphicalReportHandler {
             return Ok(());
         }
 
-        // keeps track of how many colums wide the gutter is
+        // keeps track of how many columns wide the gutter is
         // important for ansi since simply measuring the size of the final string
         // gives the wrong result when the string contains ansi codes.
         let mut gutter_cols = 0;
