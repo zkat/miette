@@ -217,9 +217,18 @@ impl GraphicalReportHandler {
         f: &mut impl fmt::Write,
         diagnostic: &(dyn Diagnostic),
     ) -> fmt::Result {
+        self.render_report_inner(f, diagnostic, diagnostic.source_code())
+    }
+
+    fn render_report_inner(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+        parent_src: Option<&dyn SourceCode>,
+    ) -> fmt::Result {
+        let src = diagnostic.source_code().or(parent_src);
         self.render_header(f, diagnostic)?;
-        self.render_causes(f, diagnostic)?;
-        let src = diagnostic.source_code();
+        self.render_causes(f, diagnostic, src)?;
         self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
         self.render_related(f, diagnostic, src)?;
@@ -277,7 +286,14 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_causes(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+        parent_src: Option<&dyn SourceCode>,
+    ) -> fmt::Result {
+        let src = diagnostic.source_code().or(parent_src);
+
         let (severity_style, severity_icon) = match diagnostic.severity() {
             Some(Severity::Error) | None => (self.theme.styles.error, &self.theme.characters.error),
             Some(Severity::Warning) => (self.theme.styles.warning, &self.theme.characters.warning),
@@ -355,7 +371,7 @@ impl GraphicalReportHandler {
                         inner_renderer.with_cause_chain = false;
                         // Since everything from here on is indented, shrink the virtual terminal
                         inner_renderer.termwidth -= rest_indent.width();
-                        inner_renderer.render_report(&mut inner, diag)?;
+                        inner_renderer.render_report_inner(&mut inner, diag, src)?;
 
                         // If there was no header, remove the leading newline
                         let inner = inner.trim_start_matches('\n');
@@ -409,8 +425,8 @@ impl GraphicalReportHandler {
                     Some(Severity::Advice) => write!(f, "Advice: ")?,
                 };
                 inner_renderer.render_header(f, rel)?;
-                inner_renderer.render_causes(f, rel)?;
                 let src = rel.source_code().or(parent_src);
+                inner_renderer.render_causes(f, rel, src)?;
                 inner_renderer.render_snippets(f, rel, src)?;
                 inner_renderer.render_footer(f, rel)?;
                 inner_renderer.render_related(f, rel, src)?;
