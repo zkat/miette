@@ -788,6 +788,7 @@ pub use protocol::*;
 
 mod chain;
 mod diagnostic_chain;
+mod diagnostic_impls;
 mod error;
 mod eyreish;
 #[cfg(feature = "fancy-base")]
