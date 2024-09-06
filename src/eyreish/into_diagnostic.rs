@@ -6,7 +6,7 @@ use crate::{Diagnostic, Report};
 /// Errors. This is intended to be paired with [`IntoDiagnostic`].
 #[derive(Debug, Error)]
 #[error(transparent)]
-struct DiagnosticError(Box<dyn std::error::Error + Send + Sync + 'static>);
+pub(crate) struct DiagnosticError(pub(crate) Box<dyn std::error::Error + Send + Sync + 'static>);
 impl Diagnostic for DiagnosticError {}
 
 /**
