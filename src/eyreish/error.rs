@@ -425,6 +425,14 @@ impl Report {
         }
         .into()
     }
+
+    /// Construct a [`Report`] directly from an error-like type
+    pub fn from_err<E>(err: E) -> Self
+    where
+        E: std::error::Error + Send + Sync + 'static,
+    {
+        super::DiagnosticError(Box::new(err)).into()
+    }
 }
 
 impl<E> From<E> for Report
