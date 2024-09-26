@@ -92,7 +92,7 @@ impl Default for MietteHighlighter {
     }
     #[cfg(not(feature = "syntect-highlighter"))]
     fn default() -> Self {
-        return MietteHighlighter::nocolor();
+        MietteHighlighter::nocolor()
     }
 }
 
