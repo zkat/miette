@@ -4,7 +4,9 @@ use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::protocol::{Diagnostic, Severity};
-use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use crate::{
+    AsDiagnostic, LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents,
+};
 
 /**
 [`ReportHandler`] that renders plain text and avoids extraneous graphics.
@@ -69,8 +71,9 @@ impl NarratableReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: impl AsDiagnostic,
     ) -> fmt::Result {
+        let diagnostic = diagnostic.as_dyn();
         self.render_header(f, diagnostic)?;
         if self.with_cause_chain {
             self.render_causes(f, diagnostic)?;

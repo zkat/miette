@@ -12,11 +12,11 @@ fn fmt_report(diag: Report) -> String {
     if cfg!(feature = "fancy-no-backtrace") && std::env::var("STYLE").is_ok() {
         #[cfg(feature = "fancy-no-backtrace")]
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, diag)
             .unwrap();
     } else {
         NarratableReportHandler::new()
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, diag)
             .unwrap();
     };
     out
