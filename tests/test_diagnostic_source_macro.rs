@@ -299,3 +299,53 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
 
     assert_eq!(expected, out);
 }
+
+#[cfg(feature = "fancy-no-backtrace")]
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("A case1 error happened")]
+enum NestedEnumError {
+    Case1 {
+        #[source_code]
+        code: String,
+        #[diagnostic_source]
+        the_other_err: Case1Inner,
+    },
+}
+
+#[derive(Debug, miette::Diagnostic, thiserror::Error)]
+#[error("I am the inner error")]
+struct Case1Inner {
+    #[label("inner-label")]
+    label: (usize, usize),
+}
+
+#[cfg(feature = "fancy-no-backtrace")]
+#[test]
+fn source_is_inherited_to_causes() {
+    let diag = NestedEnumError::Case1 {
+        code: String::from("this is the parent source"),
+        the_other_err: Case1Inner { label: (8, 3) },
+    };
+    let mut out = String::new();
+    miette::GraphicalReportHandler::new_themed(miette::GraphicalTheme::unicode_nocolor())
+        .with_width(80)
+        .with_footer("Yooo, a footer".to_string())
+        .render_report(&mut out, &diag)
+        .unwrap();
+    println!("{}", out);
+
+    let expected = r#"
+  × A case1 error happened
+  ╰─▶   × I am the inner error
+         ╭────
+       1 │ this is the parent source
+         ·         ─┬─
+         ·          ╰── inner-label
+         ╰────
+      
+
+  Yooo, a footer
+"#;
+
+    assert_eq!(expected, out);
+}
