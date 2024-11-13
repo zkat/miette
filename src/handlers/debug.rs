@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::{protocol::Diagnostic, ReportHandler};
+use crate::{protocol::Diagnostic, AsDiagnostic, ReportHandler};
 
 /**
 [`ReportHandler`] that renders plain text and avoids extraneous graphics.
@@ -31,8 +31,9 @@ impl DebugReportHandler {
     pub fn render_report(
         &self,
         f: &mut fmt::Formatter<'_>,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: impl AsDiagnostic,
     ) -> fmt::Result {
+        let diagnostic = diagnostic.as_dyn();
         let mut diag = f.debug_struct("Diagnostic");
         diag.field("message", &format!("{}", diagnostic));
         if let Some(code) = diagnostic.code() {
