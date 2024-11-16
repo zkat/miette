@@ -38,6 +38,44 @@ mod ext {
     }
 }
 
+impl<T> WrapErr<T, std::convert::Infallible> for Option<T> {
+    fn wrap_err<D>(self, msg: D) -> Result<T, Report>
+    where
+        D: Display + Send + Sync + 'static,
+    {
+        match self {
+            Some(t) => Ok(t),
+            None => Err(Report::from(crate::eyreish::wrapper::DisplayError(msg))),
+        }
+    }
+
+    fn wrap_err_with<D, F>(self, msg: F) -> Result<T, Report>
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
+    {
+        match self {
+            Some(t) => Ok(t),
+            None => Err(Report::from(crate::eyreish::wrapper::DisplayError(msg()))),
+        }
+    }
+
+    fn context<D>(self, msg: D) -> Result<T, Report>
+    where
+        D: Display + Send + Sync + 'static,
+    {
+        self.wrap_err(msg)
+    }
+
+    fn with_context<D, F>(self, msg: F) -> Result<T, Report>
+    where
+        D: Display + Send + Sync + 'static,
+        F: FnOnce() -> D,
+    {
+        self.wrap_err_with(msg)
+    }
+}
+
 impl<T, E> WrapErr<T, E> for Result<T, E>
 where
     E: ext::Diag + Send + Sync + 'static,
