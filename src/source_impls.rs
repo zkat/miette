@@ -98,7 +98,7 @@ impl SourceCode for [u8] {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         let contents = context_info(self, span, context_lines_before, context_lines_after)?;
         Ok(Box::new(contents))
     }
@@ -110,7 +110,7 @@ impl<'src> SourceCode for &'src [u8] {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
@@ -121,7 +121,7 @@ impl SourceCode for Vec<u8> {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
@@ -132,7 +132,7 @@ impl SourceCode for str {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         <[u8] as SourceCode>::read_span(
             self.as_bytes(),
             span,
@@ -149,7 +149,7 @@ impl<'s> SourceCode for &'s str {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
@@ -160,7 +160,7 @@ impl SourceCode for String {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         <str as SourceCode>::read_span(self, span, context_lines_before, context_lines_after)
     }
 }
@@ -171,7 +171,7 @@ impl<T: ?Sized + SourceCode> SourceCode for Arc<T> {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
     }
@@ -191,7 +191,7 @@ where
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         self.as_ref()
             .read_span(span, context_lines_before, context_lines_after)
     }
