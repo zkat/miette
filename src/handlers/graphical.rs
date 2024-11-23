@@ -1183,7 +1183,7 @@ impl GraphicalReportHandler {
         &'a self,
         source: &'a dyn SourceCode,
         context_span: &'a SourceSpan,
-    ) -> Result<(Box<dyn SpanContents<'a> + 'a>, Vec<Line>), fmt::Error> {
+    ) -> Result<(Box<dyn SpanContents + 'a>, Vec<Line>), fmt::Error> {
         let context_data = source
             .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;

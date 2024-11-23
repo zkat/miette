@@ -12,7 +12,7 @@ pub struct BlankHighlighter;
 impl Highlighter for BlankHighlighter {
     fn start_highlighter_state<'h>(
         &'h self,
-        _source: &dyn SpanContents<'_>,
+        _source: &(dyn SpanContents + 'h),
     ) -> Box<dyn super::HighlighterState + 'h> {
         Box::new(BlankHighlighterState)
     }
