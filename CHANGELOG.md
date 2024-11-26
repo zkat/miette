@@ -1,5 +1,38 @@
 # `miette` Release Changelog
 
+<a name="7.3.0"></a>
+## 7.3.0 (2024-11-26)
+
+### Features
+
+* **SourceSpan:** add impl From<InclusiveRange> (#385) ([73da45b6](https://github.com/zkat/miette/commit/73da45b65c965777a00ba64aa03a247c0e5241ca))
+* **Report:** add `from_err()` method to `Report` (#403) ([93d3bd11](https://github.com/zkat/miette/commit/93d3bd118a072c35aa761f0ec74317166ec08113))
+* **Diagnostic:** Implement `Diagnostic` for `Infallible` (#402) ([f3fb4c1e](https://github.com/zkat/miette/commit/f3fb4c1ecd196ce389cbd71139bb7e3b35474add))
+
+### Performance
+
+* **handlers:** optimize string-buffer reallocations (#387) ([b8dfcda4](https://github.com/zkat/miette/commit/b8dfcda4a8c10a14116ee275250356ac991dc7be))
+
+### Bug Fixes
+
+* **graphical:** fix nested error wrapping (#358) ([3eabbceb](https://github.com/zkat/miette/commit/3eabbcebf113d1d620a6a3f98e8a455414ed3042))
+* **docs:** updated example image (fixes #111) (#270) ([7b42b12c](https://github.com/zkat/miette/commit/7b42b12c5f6316322ce79c59bcb9e99f5d49edb8))
+* **clippy:** Fix clippy lints in docs (#365) ([ea4296da](https://github.com/zkat/miette/commit/ea4296dacec3b0e4762281d9d115c1bd69ecfac3))
+* **docs:** `alt` attribut for `single-line-example.png` (#372) ([b82cc81b](https://github.com/zkat/miette/commit/b82cc81b8ea32a1cf1b4598ed5832bc8e3b0e161))
+* **color:** setting NO_COLOR should not print ansi codes for non-terminals (#381) ([813232ba](https://github.com/zkat/miette/commit/813232ba7957ae09e4fb9d9416d821f4fd9da66d))
+* **clippy:** fix Rust v1.78.0 clippy warnings (#382) ([e1026f75](https://github.com/zkat/miette/commit/e1026f75e0a5d19bbc8e468cb3f5292074543a97))
+* **perf:** mark error constructors cold (#378) ([9bbcf3c6](https://github.com/zkat/miette/commit/9bbcf3c6017fa3455a7db714879816c1cfc511fd))
+* **handlers:** Disable textwrap::smawk feature (#379) ([edfdcb52](https://github.com/zkat/miette/commit/edfdcb525ee30fc54747460ada621f13f0ed1996))
+* **graphical:** Format entire link instead of just name (#389) ([bf5aa374](https://github.com/zkat/miette/commit/bf5aa3742fd664be3c93160b9c28c145b1ed8bc9))
+* **clippy:** fix `clippy::doc_lazy_continuation` lints (#395) ([15beec43](https://github.com/zkat/miette/commit/15beec43303180b811d4c04d1a78775feb9b0905))
+* **graphical:** Handle invalid UTF-8 in source code (#393) ([d6b45585](https://github.com/zkat/miette/commit/d6b4558502e82fa74e030ccb3c8040656590d7eb))
+* **features:** Use `dep:` syntax for dependencies in features. (#394) ([789a04e3](https://github.com/zkat/miette/commit/789a04e30d041179b373b4eb8b340456534a3f0e))
+* **clippy:** Fix `needless_return` lint. (#405) ([5f441d01](https://github.com/zkat/miette/commit/5f441d011560a091fe5d6a6cdb05f09acf622d36))
+
+### Documentation
+
+* **examples:** add serde_json integration example (#407) ([2902a233](https://github.com/zkat/miette/commit/2902a2337c2e36a5d8e0e54b007d6100cca0c9ff))
+
 <a name="7.2.0"></a>
 ## 7.2.0 (2024-03-07)
 
