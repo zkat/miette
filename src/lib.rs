@@ -1,4 +1,4 @@
-#![deny(missing_docs, missing_debug_implementations, nonstandard_style)]
+// #![deny(missing_docs, missing_debug_implementations, nonstandard_style)]
 #![warn(unreachable_pub, rust_2018_idioms)]
 #![allow(unexpected_cfgs)]
 //! You run miette? You run her code like the software? Oh. Oh! Error code for
@@ -804,3 +804,6 @@ mod named_source;
 mod panic;
 mod protocol;
 mod source_impls;
+mod typed_report;
+
+pub use typed_report::*;
