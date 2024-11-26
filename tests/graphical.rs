@@ -13,24 +13,24 @@ fn fmt_report(diag: Report) -> String {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
             .with_width(80)
             .with_footer("this is a footer".into())
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
     } else if std::env::var("NARRATED").is_ok() {
         NarratableReportHandler::new()
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, diag)
             .unwrap();
     } else if let Ok(w) = std::env::var("REPLACE_TABS") {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
             .without_syntax_highlighting()
             .with_width(80)
             .tab_width(w.parse().expect("Invalid tab width."))
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
     } else {
         GraphicalReportHandler::new_themed(GraphicalTheme::unicode_nocolor())
             .without_syntax_highlighting()
             .with_width(80)
-            .render_report(&mut out, diag.as_ref())
+            .render_report(&mut out, &diag)
             .unwrap();
     };
     out
@@ -46,7 +46,7 @@ fn fmt_report_with_settings(
         GraphicalTheme::unicode_nocolor(),
     ));
 
-    handler.render_report(&mut out, diag.as_ref()).unwrap();
+    handler.render_report(&mut out, diag).unwrap();
 
     println!("Error:\n```\n{}\n```", out);
 
