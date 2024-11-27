@@ -1,6 +1,6 @@
 [package]
 name = "miette"
-version = "7.3.0"
+version = "7.4.0"
 authors = ["Kat Marchán <kzm@zkat.tech>"]
 description = "Fancy diagnostic reporting library and protocol for us mere mortals who aren't compiler hackers."
 categories = ["rust-patterns"]
@@ -14,7 +14,7 @@ exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
 thiserror = "1.0.56"
-miette-derive = { path = "miette-derive", version = "=7.3.0", optional = true }
+miette-derive = { path = "miette-derive", version = "=7.4.0", optional = true }
 unicode-width = "0.1.11"
 cfg-if = "1.0.0"
 
