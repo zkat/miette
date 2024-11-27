@@ -1,5 +1,13 @@
 # `miette` Release Changelog
 
+<a name="7.4.0"></a>
+## 7.4.0 (2024-11-27)
+
+### Features
+
+* **graphical:** Inherit source code to causes (#401) ([465e6b6a](https://github.com/zkat/miette/commit/465e6b6ab627f8da34baa5f46441d944fb88186e))
+* **report:** Implement `WrapError` for `Option` (#409) ([7fae60fd](https://github.com/zkat/miette/commit/7fae60fd8462f95cf3140c6a3b9eb06cb7953405))
+
 <a name="7.3.0"></a>
 ## 7.3.0 (2024-11-26)
 
