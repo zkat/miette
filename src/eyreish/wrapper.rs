@@ -7,6 +7,30 @@ use crate::{Diagnostic, LabeledSpan, Report, SourceCode};
 use crate as miette;
 
 #[repr(transparent)]
+pub(crate) struct DisplayError<M>(pub(crate) M);
+
+impl<M> Debug for DisplayError<M>
+where
+    M: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl<M> Display for DisplayError<M>
+where
+    M: Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.0, f)
+    }
+}
+
+impl<M> StdError for DisplayError<M> where M: Display + 'static {}
+impl<M> Diagnostic for DisplayError<M> where M: Display + 'static {}
+
+#[repr(transparent)]
 pub(crate) struct MessageError<M>(pub(crate) M);
 
 impl<M> Debug for MessageError<M>
