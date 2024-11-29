@@ -1,4 +1,4 @@
-use crate::{MietteError, MietteSpanContents, SourceCode, SpanContents};
+use crate::{MietteError, SourceCode, SpanContents};
 
 /// Utility struct for when you have a regular [`SourceCode`] type that doesn't
 /// implement `name`. For example [`String`]. Or if you want to override the
@@ -51,6 +51,43 @@ impl<S: SourceCode + 'static> NamedSource<S> {
         self
     }
 }
+/// Utility struct used by [`NamedSource`] to attach a file name to an inner [`SpanContents`] value
+#[derive(Debug)]
+pub struct NamedSpanContents<T: ?Sized> {
+    inner: Box<T>,
+    name: Box<str>,
+    language: Option<Box<str>>,
+}
+impl<T: SpanContents + ?Sized> SpanContents for NamedSpanContents<T> {
+    #[inline]
+    fn data(&self) -> &[u8] {
+        self.inner.data()
+    }
+    #[inline]
+    fn span(&self) -> &crate::SourceSpan {
+        self.inner.span()
+    }
+    #[inline]
+    fn line(&self) -> usize {
+        self.inner.line()
+    }
+    #[inline]
+    fn column(&self) -> usize {
+        self.inner.column()
+    }
+    #[inline]
+    fn line_count(&self) -> usize {
+        self.inner.line_count()
+    }
+    #[inline]
+    fn name(&self) -> Option<&str> {
+        Some(&self.name)
+    }
+    #[inline]
+    fn language(&self) -> Option<&str> {
+        self.language.as_deref()
+    }
+}
 
 impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
     fn read_span<'a>(
@@ -58,21 +95,14 @@ impl<S: SourceCode + 'static> SourceCode for NamedSource<S> {
         span: &crate::SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError> {
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError> {
         let inner_contents =
             self.inner()
                 .read_span(span, context_lines_before, context_lines_after)?;
-        let mut contents = MietteSpanContents::new_named(
-            self.name.clone(),
-            inner_contents.data(),
-            *inner_contents.span(),
-            inner_contents.line(),
-            inner_contents.column(),
-            inner_contents.line_count(),
-        );
-        if let Some(language) = &self.language {
-            contents = contents.with_language(language);
-        }
-        Ok(Box::new(contents))
+        Ok(Box::new(NamedSpanContents {
+            inner: inner_contents,
+            name: self.name.clone().into_boxed_str(),
+            language: self.language.as_ref().map(|v| v.clone().into_boxed_str()),
+        }))
     }
 }
