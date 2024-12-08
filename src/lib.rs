@@ -266,7 +266,7 @@
 //! }
 //! ```
 //!
-//! To construct your own simple adhoc error use the [miette!] macro:
+//! To construct your own simple adhoc error use the [`miette!`] macro:
 //! ```rust
 //! // my_app/lib/my_internal_file.rs
 //! use miette::{miette, Result};
