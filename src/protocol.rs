@@ -252,7 +252,7 @@ pub trait SourceCode: Send + Sync {
         span: &SourceSpan,
         context_lines_before: usize,
         context_lines_after: usize,
-    ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
+    ) -> Result<Box<dyn SpanContents + 'a>, MietteError>;
 }
 
 /// A labeled [`SourceSpan`].
@@ -434,9 +434,9 @@ Contents of a [`SourceCode`] covered by [`SourceSpan`].
 
 Includes line and column information to optimize highlight calculations.
 */
-pub trait SpanContents<'a> {
+pub trait SpanContents {
     /// Reference to the data inside the associated span, in bytes.
-    fn data(&self) -> &'a [u8];
+    fn data(&self) -> &[u8];
     /// [`SourceSpan`] representing the span covered by this `SpanContents`.
     fn span(&self) -> &SourceSpan;
     /// An optional (file?) name for the container of this `SpanContents`.
@@ -530,8 +530,8 @@ impl<'a> MietteSpanContents<'a> {
     }
 }
 
-impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
-    fn data(&self) -> &'a [u8] {
+impl<'a> SpanContents for MietteSpanContents<'a> {
+    fn data(&self) -> &[u8] {
         self.data
     }
     fn span(&self) -> &SourceSpan {

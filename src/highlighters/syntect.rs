@@ -42,7 +42,7 @@ impl Default for SyntectHighlighter {
 impl Highlighter for SyntectHighlighter {
     fn start_highlighter_state<'h>(
         &'h self,
-        source: &dyn SpanContents<'_>,
+        source: &(dyn SpanContents + 'h),
     ) -> Box<dyn HighlighterState + 'h> {
         if let Some(syntax) = self.detect_syntax(source) {
             let highlighter = syntect::Highlighter::new(&self.theme);
@@ -82,7 +82,7 @@ impl SyntectHighlighter {
     }
 
     /// Determine syntect [`SyntaxReference`] to use for given [`SpanContents`].
-    fn detect_syntax(&self, contents: &dyn SpanContents<'_>) -> Option<&syntect::SyntaxReference> {
+    fn detect_syntax(&self, contents: &dyn SpanContents) -> Option<&syntect::SyntaxReference> {
         // use language if given
         if let Some(language) = contents.language() {
             return self.syntax_set.find_syntax_by_name(language);
