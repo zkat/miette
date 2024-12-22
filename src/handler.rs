@@ -57,6 +57,7 @@ pub struct MietteHandlerOpts {
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
     pub(crate) highlighter: Option<MietteHighlighter>,
+    pub(crate) show_related_as_nested: Option<bool>,
 }
 
 impl MietteHandlerOpts {
@@ -164,6 +165,18 @@ impl MietteHandlerOpts {
     /// Do not include the cause chain of the top-level error in the report.
     pub fn without_cause_chain(mut self) -> Self {
         self.with_cause_chain = Some(false);
+        self
+    }
+
+    /// Show related errors as siblings.
+    pub fn show_related_errors_as_siblings(mut self) -> Self {
+        self.show_related_as_nested = Some(false);
+        self
+    }
+
+    /// Show related errors as nested errors.
+    pub fn show_related_errors_as_nested(mut self) -> Self {
+        self.show_related_as_nested = Some(true);
         self
     }
 
@@ -331,6 +344,9 @@ impl MietteHandlerOpts {
             }
             if let Some(s) = self.word_splitter {
                 handler = handler.with_word_splitter(s)
+            }
+            if let Some(b) = self.show_related_as_nested {
+                handler = handler.with_show_related_as_nested(b)
             }
 
             MietteHandler {

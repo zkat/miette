@@ -301,6 +301,64 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
 }
 
 #[cfg(feature = "fancy-no-backtrace")]
+#[test]
+fn test_display_related_errors_as_nested() {
+    let inner_error = TestStructError {
+        asdf_inner_foo: SourceError {
+            code: String::from("This is another error"),
+            help: String::from("You should fix this"),
+            label: (3, 4),
+        },
+    };
+    let first_error = NestedError {
+        code: String::from("right here"),
+        label: (6, 4),
+        the_other_err: Box::new(inner_error),
+    };
+    let second_error = SourceError {
+        code: String::from("You're actually a mess"),
+        help: String::from("Get a grip..."),
+        label: (3, 4),
+    };
+    let diag = MultiError {
+        related_errs: vec![
+            Box::new(MultiError {
+                related_errs: vec![Box::new(first_error), Box::new(AnErr)],
+            }),
+            Box::new(second_error),
+        ],
+    };
+
+    let mut out = String::new();
+    miette::GraphicalReportHandler::new_themed(miette::GraphicalTheme::unicode_nocolor())
+        .with_width(80)
+        .with_show_related_as_nested(true)
+        .render_report(&mut out, &diag)
+        .unwrap();
+    println!("{}", out);
+
+    let expected = r#"
+  × A multi-error happened
+  ├─▶   × A multi-error happened
+  │     ├─▶   × A nested error happened
+  │     │      ╭────
+  │     │    1 │ right here
+  │     │      ·       ──┬─
+  │     │      ·         ╰── here
+  │     │      ╰────
+  │     ╰─▶   × AnErr
+  ╰─▶   × A complex error happened
+         ╭────
+       1 │ You're actually a mess
+         ·    ──┬─
+         ·      ╰── here
+         ╰────
+        help: Get a grip...
+"#;
+    assert_eq!(expected, out);
+}
+
+#[cfg(feature = "fancy-no-backtrace")]
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("A case1 error happened")]
 enum NestedEnumError {
