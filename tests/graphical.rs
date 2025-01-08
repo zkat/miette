@@ -59,7 +59,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
     let out =
         fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| handler);
 
-    let expected = "\n  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
     assert_eq!(expected, out);
 
     // A long word can break with a smaller width
@@ -75,14 +75,14 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ uvwx
   │ yz
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Unless, word breaking is disabled
     let out = fmt_report_with_settings(Report::msg("abcdefghijklmnopqrstuvwxyz"), |handler| {
         handler.with_width(10).with_break_words(false)
     });
-    let expected = "\n  × abcdefghijklmnopqrstuvwxyz\n".to_string();
+    let expected = "  × abcdefghijklmnopqrstuvwxyz\n".to_string();
     assert_eq!(expected, out);
 
     // Breaks should start at the boundary of each word if possible
@@ -104,7 +104,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ 5678
   │ 90
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // But long words should not break if word breaking is disabled
@@ -121,7 +121,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ 1234567
   │ 1234567890
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Unless, of course, there are hyphens
@@ -149,7 +149,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ f-g-
   │ h
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Which requires an additional opt-out
@@ -171,7 +171,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ a-b-c-d-e-f-g
   │ a-b-c-d-e-f-g-h
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Or if there are _other_ unicode word boundaries
@@ -199,7 +199,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ f/g/
   │ h
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Such things require you to opt-in to only breaking on ASCII whitespace
@@ -221,7 +221,7 @@ fn word_wrap_options() -> Result<(), MietteError> {
   │ a/b/c/d/e/f/g
   │ a/b/c/d/e/f/g/h
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     Ok(())
@@ -245,7 +245,7 @@ fn wrap_option() -> Result<(), MietteError> {
   │ pqr stu
   │ vwx yz
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     // Unless, wrapping is disabled
@@ -254,7 +254,7 @@ fn wrap_option() -> Result<(), MietteError> {
         |handler| handler.with_width(15).with_wrap_lines(false),
     );
     let expected =
-        "\n  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
+        "  × abc def ghi jkl mno pqr stu vwx yz abc def ghi jkl mno pqr stu vwx yz\n".to_string();
     assert_eq!(expected, out);
 
     // Then, user-defined new lines should be preserved wrapping is disabled
@@ -267,7 +267,7 @@ fn wrap_option() -> Result<(), MietteError> {
   │ abc def ghi jkl mno pqr stu vwx yz
   │ abc def ghi jkl mno pqr stu vwx yz
 "#
-    .to_string();
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 
     Ok(())
@@ -485,8 +485,7 @@ if true {
    · ╰──── big
    ╰────
 "#
-    .to_string();
-
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 }
 
@@ -517,8 +516,7 @@ fn single_line_highlight_span_full_line() {
    ·   ╰── This bit here
    ╰────
 "#
-    .to_string();
-
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 }
 
@@ -1781,8 +1779,7 @@ fn zero_length_eol_span() {
    · ╰── This bit here
    ╰────
 "#
-    .to_string();
-
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 }
 
@@ -1817,8 +1814,7 @@ fn primary_label() {
    ·    ╰── nope
    ╰────
 "#
-    .to_string();
-
+    .trim_start_matches('\n');
     assert_eq!(expected, out);
 }
 
@@ -1968,7 +1964,8 @@ fn syntax_highlighter() {
    ·                  ╰── this is a label
  3 │ }
    ╰────
-"#;
+"#
+    .trim_start_matches('\n');
     assert!(out.contains("\u{1b}[38;2;180;142;173m"));
     assert_eq!(expected, strip_ansi_escapes::strip_str(out))
 }
@@ -2028,6 +2025,7 @@ fn syntax_highlighter_on_real_file() {
         l2 = line,
         l3 = line + 1
     );
+    let expected = expected.trim_start_matches('\n');
     assert!(out.contains("\u{1b}[38;2;180;142;173m"));
     assert_eq!(expected, strip_ansi_escapes::strip_str(out));
 }

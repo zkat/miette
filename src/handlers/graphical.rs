@@ -237,7 +237,7 @@ impl GraphicalReportHandler {
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         let src = diagnostic.source_code().or(parent_src);
-        self.render_header(f, diagnostic)?;
+        self.render_header(f, diagnostic, false)?;
         self.render_causes(f, diagnostic, src)?;
         self.render_snippets(f, diagnostic, src)?;
         self.render_footer(f, diagnostic)?;
@@ -261,13 +261,19 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_header(
+        &self,
+        f: &mut impl fmt::Write,
+        diagnostic: &(dyn Diagnostic),
+        is_nested: bool,
+    ) -> fmt::Result {
         let severity_style = match diagnostic.severity() {
             Some(Severity::Error) | None => self.theme.styles.error,
             Some(Severity::Warning) => self.theme.styles.warning,
             Some(Severity::Advice) => self.theme.styles.advice,
         };
         let mut header = String::new();
+        let mut need_newline = is_nested;
         if self.links == LinkStyle::Link && diagnostic.url().is_some() {
             let url = diagnostic.url().unwrap(); // safe
             let code = if let Some(code) = diagnostic.code() {
@@ -284,6 +290,7 @@ impl GraphicalReportHandler {
             );
             write!(header, "{}", link)?;
             writeln!(f, "{}", header)?;
+            need_newline = true;
         } else if let Some(code) = diagnostic.code() {
             write!(header, "{}", code.style(severity_style),)?;
             if self.links == LinkStyle::Text && diagnostic.url().is_some() {
@@ -291,8 +298,11 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
+            need_newline = true;
         }
-        writeln!(f)?;
+        if need_newline {
+            writeln!(f)?;
+        }
         Ok(())
     }
 
@@ -493,7 +503,7 @@ impl GraphicalReportHandler {
                         Some(Severity::Warning) => write!(f, "Warning: ")?,
                         Some(Severity::Advice) => write!(f, "Advice: ")?,
                     };
-                    inner_renderer.render_header(f, rel)?;
+                    inner_renderer.render_header(f, rel, true)?;
                     let src = rel.source_code().or(parent_src);
                     inner_renderer.render_causes(f, rel, src)?;
                     inner_renderer.render_snippets(f, rel, src)?;
