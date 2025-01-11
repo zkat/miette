@@ -2510,3 +2510,63 @@ fn after_invalid_unicode() -> Result<(), MietteError> {
 
     Ok(())
 }
+
+#[test]
+fn option_include_primary_span_start() {
+    #[derive(Debug, Clone, Diagnostic, Error)]
+    #[error("decoding error")]
+    #[diagnostic(code(decode_err))]
+    struct E {
+        #[label("valid data here")]
+        src: SourceSpan,
+    }
+
+    let invalid_source: &[u8] = b"malformed\nh\xf0\x93\x8aXYZ";
+
+    let (x_index, _) = invalid_source
+        .iter()
+        .enumerate()
+        .find(|&(_, &x)| x == b'X')
+        .unwrap();
+
+    // make err pointing at the X
+    let err = E {
+        src: SourceSpan::from((x_index, 1)),
+    };
+
+    let result = fmt_report_with_settings(
+        Report::new(err.clone()).with_source_code(invalid_source),
+        |handler| handler,
+    );
+
+    let expected = "decode_err
+
+  × decoding error
+   ╭─[2:5]
+ 1 │ malformed
+ 2 │ h�XYZ
+   ·   ┬
+   ·   ╰── valid data here
+   ╰────
+";
+
+    assert_eq!(expected, result);
+
+    let result = fmt_report_with_settings(
+        Report::new(err).with_source_code(invalid_source),
+        |handler| handler.without_primary_span_start(),
+    );
+
+    let expected = "decode_err
+
+  × decoding error
+   ╭────
+ 1 │ malformed
+ 2 │ h�XYZ
+   ·   ┬
+   ·   ╰── valid data here
+   ╰────
+";
+
+    assert_eq!(expected, result);
+}

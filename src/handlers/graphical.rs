@@ -33,6 +33,7 @@ pub struct GraphicalReportHandler {
     pub(crate) with_cause_chain: bool,
     pub(crate) wrap_lines: bool,
     pub(crate) break_words: bool,
+    pub(crate) with_primary_span_start: bool,
     pub(crate) word_separator: Option<textwrap::WordSeparator>,
     pub(crate) word_splitter: Option<textwrap::WordSplitter>,
     pub(crate) highlighter: MietteHighlighter,
@@ -61,6 +62,7 @@ impl GraphicalReportHandler {
             with_cause_chain: true,
             wrap_lines: true,
             break_words: true,
+            with_primary_span_start: true,
             word_separator: None,
             word_splitter: None,
             highlighter: MietteHighlighter::default(),
@@ -80,6 +82,7 @@ impl GraphicalReportHandler {
             tab_width: 4,
             wrap_lines: true,
             with_cause_chain: true,
+            with_primary_span_start: true,
             break_words: true,
             word_separator: None,
             word_splitter: None,
@@ -116,6 +119,20 @@ impl GraphicalReportHandler {
     /// output.
     pub fn without_cause_chain(mut self) -> Self {
         self.with_cause_chain = false;
+        self
+    }
+
+    /// Include the line and column for the the start of the primary span when the
+    /// snippet extends multiple lines
+    pub fn with_primary_span_start(mut self) -> Self {
+        self.with_primary_span_start = true;
+        self
+    }
+
+    /// Do not include the line and column for the the start of the primary span
+    /// when the snippet extends multiple lines
+    pub fn without_primary_span_start(mut self) -> Self {
+        self.with_primary_span_start = false;
         self
     }
 
@@ -654,26 +671,34 @@ impl GraphicalReportHandler {
         };
 
         if let Some(source_name) = primary_contents.name() {
-            writeln!(
-                f,
-                "[{}]",
-                format_args!(
-                    "{}:{}:{}",
-                    source_name,
-                    primary_contents.line() + 1,
-                    primary_contents.column() + 1
-                )
-                .style(self.theme.styles.link)
-            )?;
-        } else if lines.len() <= 1 {
-            writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
-        } else {
+            if self.with_primary_span_start {
+                writeln!(
+                    f,
+                    "[{}]",
+                    format_args!(
+                        "{}:{}:{}",
+                        source_name,
+                        primary_contents.line() + 1,
+                        primary_contents.column() + 1
+                    )
+                    .style(self.theme.styles.link)
+                )?;
+            } else {
+                writeln!(
+                    f,
+                    "[{}]",
+                    format_args!("{}", source_name,).style(self.theme.styles.link)
+                )?;
+            }
+        } else if self.with_primary_span_start && lines.len() > 1 {
             writeln!(
                 f,
                 "[{}:{}]",
                 primary_contents.line() + 1,
                 primary_contents.column() + 1
             )?;
+        } else {
+            writeln!(f, "{}", self.theme.characters.hbar.to_string().repeat(3))?;
         }
 
         // Now it's time for the fun part--actually rendering everything!
