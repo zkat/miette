@@ -118,7 +118,8 @@ fn test_diagnostic_source_pass_extra_info() {
 
   this is a footer
 "#
-    .to_string();
+    .trim_start_matches('\n');
+
     assert_eq!(expected, out);
 }
 
@@ -149,7 +150,8 @@ fn test_diagnostic_source_is_output() {
          ╰────
         help: That's where the error is!
       
-"#;
+"#
+    .trim_start_matches('\n');
 
     assert_eq!(expected, out);
 }
@@ -208,7 +210,8 @@ fn test_nested_diagnostic_source_is_output() {
    ╰────
 
   Yooo, a footer
-"#;
+"#
+    .trim_start_matches('\n');
 
     assert_eq!(expected, out);
 }
@@ -295,7 +298,8 @@ fn test_nested_cause_chains_for_related_errors_are_output() {
    ╰────
 
   Yooo, a footer
-"#;
+"#
+    .trim_start_matches('\n');
 
     assert_eq!(expected, out);
 }
@@ -354,7 +358,9 @@ fn test_display_related_errors_as_nested() {
          ·      ╰── here
          ╰────
         help: Get a grip...
-"#;
+"#
+    .trim_start_matches('\n');
+
     assert_eq!(expected, out);
 }
 
@@ -403,7 +409,8 @@ fn source_is_inherited_to_causes() {
       
 
   Yooo, a footer
-"#;
+"#
+    .trim_start_matches('\n');
 
     assert_eq!(expected, out);
 }
