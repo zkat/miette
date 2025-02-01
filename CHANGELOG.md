@@ -1,5 +1,16 @@
 # `miette` Release Changelog
 
+<a name="7.5.0"></a>
+## 7.5.0 (2025-02-01)
+
+### Features
+
+* **graphical:** support rendering related diagnostics as nested (#417) ([771a0751](https://github.com/zkat/miette/commit/771a07519f078b94aceb1a2d2532d786f09f350b))
+
+### Bug Fixes
+
+* **graphical:** prevent leading newline when no link/code (#418) ([1e1938a0](https://github.com/zkat/miette/commit/1e1938a099409969c69b9f070e0fb0d13d564527))
+
 <a name="7.4.0"></a>
 ## 7.4.0 (2024-11-27)
 
