@@ -156,11 +156,11 @@ impl Labels {
 
                     match lbl_ty {
                         LabelType::Default | LabelType::Primary => {
-                            bounds_store.register_source_span_usage(&field.ty);
+                            bounds_store.register_label_usage(&field.ty);
                         }
 
                         LabelType::Collection => {
-                            bounds_store.register_source_span_collection_usage(&field.ty);
+                            bounds_store.register_label_collection_usage(&field.ty);
                         }
                     }
 
@@ -207,9 +207,10 @@ impl Labels {
 
             Some(quote! {
                 miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
+                .as_ref()
                 .map(|#var| #ctor(
                     #display,
-                    #var.clone(),
+                    (*#var).clone(),
                 ))
             })
         });
@@ -229,10 +230,11 @@ impl Labels {
             } else {
                 quote! { std::option::Option::None }
             };
+
             Some(quote! {
                 .chain({
                     let display = #display;
-                    self.#span.iter().map(move |span| {
+                    ::std::iter::IntoIterator::into_iter(&self.#span).map(move |span| {
                         use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
                         let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
                         if display.is_some() && labeled_span.label().is_none() {

@@ -217,6 +217,8 @@ fn fmt_help() {
         #[diagnostic(code(foo::x), help("{} x {len} x {:?}", 1, "2"))]
         Y { len: usize },
 
+        // for some reason rust analyzer has a false positive with the self = self in the format!
+        // here but it compiles and tests just fine. (02/02/2025)
         #[diagnostic(code(foo::x), help("{} x {self:?} x {:?}", 1, "2"))]
         Z,
     }
