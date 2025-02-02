@@ -11,6 +11,7 @@ use crate::label::Labels;
 use crate::related::Related;
 use crate::severity::Severity;
 use crate::source_code::SourceCode;
+use crate::trait_bounds::TraitBoundStore;
 use crate::url::Url;
 
 pub enum Diagnostic {
@@ -19,11 +20,13 @@ pub enum Diagnostic {
         ident: syn::Ident,
         fields: syn::Fields,
         args: DiagnosticDefArgs,
+        bound_store: TraitBoundStore,
     },
     Enum {
         ident: syn::Ident,
         generics: syn::Generics,
         variants: Vec<DiagnosticDef>,
+        bound_store: TraitBoundStore,
     },
 }
 
@@ -71,12 +74,15 @@ pub struct DiagnosticConcreteArgs {
 }
 
 impl DiagnosticConcreteArgs {
-    fn for_fields(fields: &syn::Fields) -> Result<Self, syn::Error> {
-        let labels = Labels::from_fields(fields)?;
-        let source_code = SourceCode::from_fields(fields)?;
-        let related = Related::from_fields(fields)?;
+    fn for_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TraitBoundStore,
+    ) -> Result<Self, syn::Error> {
+        let labels = Labels::from_fields(fields, bounds_store)?;
+        let source_code = SourceCode::from_fields(fields, bounds_store)?;
+        let related = Related::from_fields(fields, bounds_store)?;
         let help = Help::from_fields(fields)?;
-        let diagnostic_source = DiagnosticSource::from_fields(fields)?;
+        let diagnostic_source = DiagnosticSource::from_fields(fields, bounds_store)?;
         Ok(DiagnosticConcreteArgs {
             code: None,
             help,
@@ -156,6 +162,7 @@ impl DiagnosticDefArgs {
         _ident: &syn::Ident,
         fields: &syn::Fields,
         attrs: &[&syn::Attribute],
+        bounds_store: &mut TraitBoundStore,
         allow_transparent: bool,
     ) -> syn::Result<Self> {
         let mut errors = Vec::new();
@@ -166,7 +173,7 @@ impl DiagnosticDefArgs {
                 attrs[0].parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated)
             {
                 if matches!(args.first(), Some(DiagnosticArg::Transparent)) {
-                    let forward = Forward::for_transparent_field(fields)?;
+                    let forward = Forward::for_transparent_field(fields, bounds_store)?;
                     return Ok(Self::Transparent(forward));
                 }
             }
@@ -182,7 +189,7 @@ impl DiagnosticDefArgs {
             matches!(d, DiagnosticArg::Transparent)
         }
 
-        let mut concrete = DiagnosticConcreteArgs::for_fields(fields)?;
+        let mut concrete = DiagnosticConcreteArgs::for_fields(fields, bounds_store)?;
         for attr in attrs {
             let args =
                 attr.parse_args_with(Punctuated::<DiagnosticArg, Token![,]>::parse_terminated);
@@ -226,10 +233,13 @@ impl Diagnostic {
             .collect::<Vec<&syn::Attribute>>();
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
+                let mut bounds_store = TraitBoundStore::new(&input.generics);
+
                 let args = DiagnosticDefArgs::parse(
                     &input.ident,
                     &data_struct.fields,
                     &input_attrs,
+                    &mut bounds_store,
                     true,
                 )?;
 
@@ -238,16 +248,23 @@ impl Diagnostic {
                     ident: input.ident,
                     generics: input.generics,
                     args,
+                    bound_store: bounds_store,
                 }
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 let mut vars = Vec::new();
+                let mut bound_store = TraitBoundStore::new(&input.generics);
                 for var in variants {
                     let mut variant_attrs = input_attrs.clone();
                     variant_attrs
                         .extend(var.attrs.iter().filter(|x| x.path().is_ident("diagnostic")));
-                    let args =
-                        DiagnosticDefArgs::parse(&var.ident, &var.fields, &variant_attrs, true)?;
+                    let args = DiagnosticDefArgs::parse(
+                        &var.ident,
+                        &var.fields,
+                        &variant_attrs,
+                        &mut bound_store,
+                        true,
+                    )?;
                     vars.push(DiagnosticDef {
                         ident: var.ident,
                         fields: var.fields,
@@ -258,6 +275,7 @@ impl Diagnostic {
                     ident: input.ident,
                     generics: input.generics,
                     variants: vars,
+                    bound_store,
                 }
             }
             syn::Data::Union(_) => {
@@ -276,8 +294,11 @@ impl Diagnostic {
                 fields,
                 generics,
                 args,
+                bound_store,
             } => {
-                let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
+                let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+                let where_clause = bound_store.merge_with(where_clause);
+
                 match args {
                     DiagnosticDefArgs::Transparent(forward) => {
                         let code_method = forward.gen_struct_method(WhichFn::Code);
@@ -369,8 +390,11 @@ impl Diagnostic {
                 ident,
                 generics,
                 variants,
+                bound_store,
             } => {
-                let (impl_generics, ty_generics, where_clause) = &generics.split_for_impl();
+                let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
+                let where_clause = bound_store.merge_with(where_clause);
+
                 let code_body = Code::gen_enum(variants);
                 let help_body = Help::gen_enum(variants);
                 let sev_body = Severity::gen_enum(variants);

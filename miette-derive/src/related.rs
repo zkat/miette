@@ -5,23 +5,32 @@ use syn::spanned::Spanned;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
+    trait_bounds::TraitBoundStore,
     utils::{display_pat_members, gen_all_variants_with},
 };
 
 pub struct Related(syn::Member);
 
 impl Related {
-    pub(crate) fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub(crate) fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("related") {
@@ -33,6 +42,7 @@ impl Related {
                             span: field.span(),
                         })
                     };
+                    bounds_store.register_related_usage(&field.ty);
                     return Ok(Some(Related(related)));
                 }
             }
