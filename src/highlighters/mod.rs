@@ -39,7 +39,7 @@ pub trait Highlighter {
     /// responsible for the actual rendering.
     fn start_highlighter_state<'h>(
         &'h self,
-        source: &dyn SpanContents<'_>,
+        source: &(dyn SpanContents + 'h),
     ) -> Box<dyn HighlighterState + 'h>;
 }
 
