@@ -1,10 +1,11 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, AngleBracketedGenericArguments, GenericArgument, PathArguments};
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
+    trait_bounds::TraitBoundStore,
     utils::{display_pat_members, gen_all_variants_with},
 };
 
@@ -14,17 +15,25 @@ pub struct SourceCode {
 }
 
 impl SourceCode {
-    pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("source_code") {
@@ -35,11 +44,32 @@ impl SourceCode {
                     {
                         segments
                             .last()
-                            .map(|seg| seg.ident == "Option")
-                            .unwrap_or(false)
+                            .filter(|seg| seg.ident == "Option")
+                            .and_then(|seg| match &seg.arguments {
+                                PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                                    args,
+                                    ..
+                                }) => {
+                                    let mut iter = args.iter();
+
+                                    let ty = iter.next();
+                                    iter.next().xor(ty)
+                                }
+                                _ => None,
+                            })
+                            .and_then(|arg| match arg {
+                                GenericArgument::Type(ty) => Some(ty),
+                                _ => None,
+                            })
                     } else {
-                        false
+                        None
                     };
+
+                    if let Some(option_ty) = is_option {
+                        bounds_store.register_source_code_usage(option_ty);
+                    } else {
+                        bounds_store.register_source_code_usage(&field.ty);
+                    }
 
                     let source_code = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
@@ -51,7 +81,7 @@ impl SourceCode {
                     };
                     return Ok(Some(SourceCode {
                         source_code,
-                        is_option,
+                        is_option: is_option.is_some(),
                     }));
                 }
             }

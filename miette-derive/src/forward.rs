@@ -6,6 +6,8 @@ use syn::{
     spanned::Spanned,
 };
 
+use crate::trait_bounds::TraitBoundStore;
+
 pub enum Forward {
     Unnamed(usize),
     Named(syn::Ident),
@@ -90,7 +92,10 @@ impl WhichFn {
 }
 
 impl Forward {
-    pub fn for_transparent_field(fields: &syn::Fields) -> syn::Result<Self> {
+    pub fn for_transparent_field(
+        fields: &syn::Fields,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Self> {
         let make_err = || {
             syn::Error::new(
                 fields.span(),
@@ -108,12 +113,18 @@ impl Forward {
                     .ident
                     .clone()
                     .unwrap_or_else(|| format_ident!("unnamed"));
+
+                bounds_store.register_transparent_usage(&field.ty);
                 Ok(Self::Named(field_name))
             }
             syn::Fields::Unnamed(unnamed) => {
-                if unnamed.unnamed.iter().len() != 1 {
+                let mut iter = unnamed.unnamed.iter();
+                let field = iter.next().ok_or_else(make_err)?;
+                if iter.next().is_some() {
                     return Err(make_err());
                 }
+
+                bounds_store.register_transparent_usage(&field.ty);
                 Ok(Self::Unnamed(0))
             }
             _ => Err(syn::Error::new(

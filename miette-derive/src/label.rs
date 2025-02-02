@@ -11,6 +11,7 @@ use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     fmt::{self, Display},
     forward::WhichFn,
+    trait_bounds::TraitBoundStore,
     utils::{display_pat_members, gen_all_variants_with},
 };
 
@@ -101,22 +102,31 @@ impl Parse for LabelAttr {
         } else {
             (LabelType::Default, None)
         };
+
         Ok(LabelAttr { label, lbl_ty })
     }
 }
 
 impl Labels {
-    pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TraitBoundStore,
+    ) -> syn::Result<Option<Self>> {
         let mut labels = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
@@ -142,6 +152,16 @@ impl Labels {
                             field.span(),
                             "Cannot have more than one primary label.",
                         ));
+                    }
+
+                    match lbl_ty {
+                        LabelType::Default | LabelType::Primary => {
+                            bounds_store.register_source_span_usage(&field.ty);
+                        }
+
+                        LabelType::Collection => {
+                            bounds_store.register_source_span_collection_usage(&field.ty);
+                        }
                     }
 
                     labels.push(Label {
