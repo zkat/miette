@@ -37,33 +37,7 @@ impl SourceCode {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("source_code") {
-                    let is_option = if let syn::Type::Path(syn::TypePath {
-                        path: syn::Path { segments, .. },
-                        ..
-                    }) = &field.ty
-                    {
-                        segments
-                            .last()
-                            .filter(|seg| seg.ident == "Option")
-                            .and_then(|seg| match &seg.arguments {
-                                PathArguments::AngleBracketed(AngleBracketedGenericArguments {
-                                    args,
-                                    ..
-                                }) => {
-                                    let mut iter = args.iter();
-
-                                    let ty = iter.next();
-                                    iter.next().xor(ty)
-                                }
-                                _ => None,
-                            })
-                            .and_then(|arg| match arg {
-                                GenericArgument::Type(ty) => Some(ty),
-                                _ => None,
-                            })
-                    } else {
-                        None
-                    };
+                    let is_option = TraitBoundStore::extract_option(&field.ty);
 
                     if let Some(option_ty) = is_option {
                         bounds_store.register_source_code_usage(option_ty);

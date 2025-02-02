@@ -5,10 +5,11 @@ use std::{
 
 use proc_macro2::Span;
 use syn::{
-    punctuated::Punctuated, token::Plus, AngleBracketedGenericArguments, AssocType,
+    punctuated::Punctuated, token::Plus, AngleBracketedGenericArguments, AssocType, BoundLifetimes,
     GenericArgument, GenericParam, Generics, ParenthesizedGenericArguments, Path, PathArguments,
-    PathSegment, PredicateType, ReturnType, Token, Type, TypeArray, TypeGroup, TypeParamBound,
-    TypeParen, TypePath, TypePtr, TypeReference, TypeSlice, TypeTuple, WhereClause, WherePredicate,
+    PathSegment, PredicateType, ReturnType, Token, TraitBound, Type, TypeArray, TypeGroup,
+    TypeParamBound, TypeParen, TypePath, TypePtr, TypeReference, TypeSlice, TypeTuple, WhereClause,
+    WherePredicate,
 };
 
 #[derive(Default)]
@@ -19,6 +20,7 @@ pub struct RequiredTraitBound {
     source_code: bool,
     into_source_span: bool,
     std_into_iter: bool,
+    std_clone: bool,
 }
 
 impl RequiredTraitBound {
@@ -54,6 +56,12 @@ impl RequiredTraitBound {
             )))
         }
 
+        if self.std_clone {
+            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
+                ::std::clone::Clone
+            )))
+        }
+
         if self.r#static {
             bounds.push(TypeParamBound::Lifetime(syn::parse_quote!('static)))
         }
@@ -70,8 +78,9 @@ impl RequiredTraitBound {
         self.source_code = true;
     }
 
-    fn register_source_span_usage(&mut self) {
+    fn register_label_usage(&mut self) {
         self.into_source_span = true;
+        self.std_clone = true;
     }
 
     fn register_collection_usage(&mut self) {
@@ -88,7 +97,7 @@ impl RequiredTraitBound {
     }
 }
 
-pub struct TraitBoundStore(HashMap<Type, RequiredTraitBound>);
+pub struct TraitBoundStore(HashMap<(Option<BoundLifetimes>, Type), RequiredTraitBound>);
 
 impl TraitBoundStore {
     pub fn new(generics: &Generics) -> Self {
@@ -114,10 +123,39 @@ impl TraitBoundStore {
                     },
                 })
             })
-            .map(|v| (v, RequiredTraitBound::default()))
+            .map(|v| ((None, v), RequiredTraitBound::default()))
             .collect::<HashMap<_, _>>();
 
         Self(hash_map)
+    }
+
+    pub fn extract_option(r#type: &Type) -> Option<&Type> {
+        if let syn::Type::Path(syn::TypePath {
+            path: syn::Path { segments, .. },
+            ..
+        }) = r#type
+        {
+            segments
+                .last()
+                .filter(|seg| seg.ident == "Option")
+                .and_then(|seg| match &seg.arguments {
+                    PathArguments::AngleBracketed(AngleBracketedGenericArguments {
+                        args, ..
+                    }) => {
+                        let mut iter = args.iter();
+
+                        let ty = iter.next();
+                        iter.next().xor(ty)
+                    }
+                    _ => None,
+                })
+                .and_then(|arg| match arg {
+                    GenericArgument::Type(ty) => Some(ty),
+                    _ => None,
+                })
+        } else {
+            None
+        }
     }
 
     fn check_generic_usage<'ty>(&self, mut r#type: &'ty Type) -> Option<&'ty Type> {
@@ -161,7 +199,7 @@ impl TraitBoundStore {
             //
             // this is also the "bottom" check since we add the generics themselves to the map when
             // constructing self
-            if self.0.contains_key(elem) {
+            if self.0.contains_key(&(None, elem.clone())) {
                 depends_on_generic = true;
                 break;
             }
@@ -250,10 +288,6 @@ impl TraitBoundStore {
     }
 
     pub fn merge_with(&self, where_clause: Option<&WhereClause>) -> Option<WhereClause> {
-        if self.0.is_empty() {
-            return where_clause.cloned();
-        }
-
         let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
             where_token: Token![where](Span::mixed_site()),
             predicates: Punctuated::new(),
@@ -261,13 +295,39 @@ impl TraitBoundStore {
 
         where_clause
             .predicates
-            .extend(self.0.iter().map(|(ty, bounds)| {
-                WherePredicate::Type(PredicateType {
-                    lifetimes: None,
-                    bounded_ty: ty.clone(),
-                    colon_token: Token![:](Span::mixed_site()),
-                    bounds: bounds.to_bounds(),
+            .extend(self.0.iter().filter_map(|(ty, bounds)| {
+                let bounds = bounds.to_bounds();
+                (!bounds.is_empty()).then(|| {
+                    WherePredicate::Type(PredicateType {
+                        lifetimes: ty.0.clone(),
+                        bounded_ty: ty.1.clone(),
+                        colon_token: Token![:](Span::mixed_site()),
+                        bounds,
+                    })
                 })
+            }));
+
+        where_clause
+            .predicates
+            .push(WherePredicate::Type(PredicateType {
+                lifetimes: None,
+                bounded_ty: Type::Path(TypePath {
+                    qself: None,
+                    path: Path {
+                        leading_colon: None,
+                        segments: Punctuated::from_iter(once(PathSegment {
+                            ident: syn::Ident::new("Self", Span::mixed_site()),
+                            arguments: PathArguments::None,
+                        })),
+                    },
+                }),
+                colon_token: syn::Token![:](Span::mixed_site()),
+                bounds: Punctuated::from_iter(once(TypeParamBound::Trait(TraitBound {
+                    paren_token: None,
+                    modifier: syn::TraitBoundModifier::None,
+                    lifetimes: None,
+                    path: syn::parse_quote!(::std::error::Error),
+                }))),
             }));
 
         Some(where_clause)
@@ -278,7 +338,7 @@ impl TraitBoundStore {
             return;
         };
 
-        let type_opts = self.0.entry(r#type.clone()).or_default();
+        let type_opts = self.0.entry((None, r#type.clone())).or_default();
         type_opts.register_transparent_usage()
     }
 
@@ -287,32 +347,45 @@ impl TraitBoundStore {
             return;
         };
 
-        let type_opts = self.0.entry(r#type.clone()).or_default();
+        let type_opts = self.0.entry((None, r#type.clone())).or_default();
         type_opts.register_source_code_usage()
     }
 
-    pub fn register_source_span_usage(&mut self, r#type: &Type) {
+    pub fn register_label_usage(&mut self, r#type: &Type) {
+        let r#type = Self::extract_option(r#type).unwrap_or(r#type);
+
         let Some(r#type) = self.check_generic_usage(r#type) else {
             return;
         };
 
-        let type_opts = self.0.entry(r#type.clone()).or_default();
-        type_opts.register_source_span_usage()
+        let type_opts = self.0.entry((None, r#type.clone())).or_default();
+        type_opts.register_label_usage()
     }
 
-    pub fn register_source_span_collection_usage(&mut self, r#type: &Type) {
+    pub fn register_label_collection_usage(&mut self, r#type: &Type) {
         let Some(ty) = self.check_generic_usage(r#type) else {
             return;
         };
 
-        let type_opts = self.0.entry(ty.clone()).or_default();
+        let ty: syn::Type = syn::parse_quote!(&'__miette_internal_lt #ty);
+
+        let type_opts = self
+            .0
+            .entry((
+                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
+                ty.clone(),
+            ))
+            .or_default();
         type_opts.register_collection_usage();
 
         let type_opts_item = self
             .0
-            .entry(syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item))
+            .entry((
+                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
+                syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item),
+            ))
             .or_default();
-        type_opts_item.register_source_span_usage();
+        type_opts_item.register_label_usage();
     }
 
     pub fn register_related_usage(&mut self, r#type: &Type) {
@@ -320,22 +393,29 @@ impl TraitBoundStore {
             return;
         };
 
-        let type_opts = self.0.entry(ty.clone()).or_default();
-        type_opts.register_collection_usage();
-
+        // this is somewhat hacky and only supports concrete types for the #[related] type
+        // ittself but supports generics for the arguments, i.e. Vec<T> where T is generic.
+        //
+        // I think that this is a current limitation of the design of the Diagnostic trait,
+        // since we'd need bounds on the method and we can't do that (to refer to the lifetime)
+        //
+        // Someone smarter than me might be able to figure out a better solution (?)
         let type_opts_item = self
             .0
-            .entry(syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item))
+            .entry((
+                None,
+                syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item),
+            ))
             .or_default();
         type_opts_item.register_related_item_usage();
     }
 
-    pub(crate) fn register_source_usage(&mut self, r#type: &Type) {
+    pub fn register_source_usage(&mut self, r#type: &Type) {
         let Some(ty) = self.check_generic_usage(r#type) else {
             return;
         };
 
-        let type_opts = self.0.entry(ty.clone()).or_default();
+        let type_opts = self.0.entry((None, ty.clone())).or_default();
         type_opts.register_source_usage();
     }
 }
