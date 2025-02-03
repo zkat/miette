@@ -14,6 +14,7 @@ mod label;
 mod related;
 mod severity;
 mod source_code;
+mod trait_bounds;
 mod url;
 mod utils;
 
