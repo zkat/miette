@@ -145,3 +145,133 @@ fn attr_not_required() {
     let expectation = LabeledSpan::new(Some("this bit here".into()), 9usize, 4usize);
     assert_eq!(err_span, expectation);
 }
+
+fn assert_impl_diagnostic<T: Diagnostic>() {}
+
+#[test]
+fn transparent_generic() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Combined<T> {
+        #[error(transparent)]
+        #[diagnostic(transparent)]
+        Other(T),
+        #[error("foo")]
+        Custom,
+    }
+
+    assert_impl_diagnostic::<Combined<miette::MietteDiagnostic>>();
+}
+
+#[test]
+fn generic_label() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[label]
+        label: T,
+    }
+
+    assert_impl_diagnostic::<Combined<SourceSpan>>();
+    assert_impl_diagnostic::<Combined<(usize, usize)>>();
+}
+
+#[test]
+fn generic_source_code() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[source_code]
+        label: T,
+    }
+
+    assert_impl_diagnostic::<Combined<String>>();
+}
+
+#[test]
+fn generic_optional_source_code() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[source_code]
+        label: Option<T>,
+    }
+
+    assert_impl_diagnostic::<Combined<String>>();
+}
+
+#[test]
+fn generic_label_primary() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[label(primary)]
+        label: T,
+    }
+
+    assert_impl_diagnostic::<Combined<SourceSpan>>();
+    assert_impl_diagnostic::<Combined<(usize, usize)>>();
+}
+
+#[test]
+fn generic_label_collection() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[label(collection)]
+        label: Vec<T>,
+    }
+
+    assert_impl_diagnostic::<Combined<SourceSpan>>();
+    assert_impl_diagnostic::<Combined<(usize, usize)>>();
+}
+
+#[test]
+fn generic_label_generic_collection() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[label(collection)]
+        label: T,
+    }
+
+    assert_impl_diagnostic::<Combined<Vec<SourceSpan>>>();
+    assert_impl_diagnostic::<Combined<Vec<(usize, usize)>>>();
+}
+
+#[test]
+fn generic_related() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("foo")]
+    struct Combined<T> {
+        #[related]
+        label: Vec<T>,
+    }
+
+    assert_impl_diagnostic::<Combined<miette::MietteDiagnostic>>();
+}
+
+#[test]
+fn generic_diagnostic_source() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Combined<T> {
+        #[error(transparent)]
+        Other(#[diagnostic_source] T),
+        #[error("foo")]
+        Custom,
+    }
+
+    assert_impl_diagnostic::<Combined<miette::MietteDiagnostic>>();
+}
+
+#[test]
+fn generic_not_influencing_default() {
+    #[derive(Debug, Diagnostic, Error)]
+    enum Combined<T> {
+        #[error("bar")]
+        Other(T),
+        #[error("foo")]
+        Custom,
+    }
+
+    assert_impl_diagnostic::<Combined<i32>>();
+}

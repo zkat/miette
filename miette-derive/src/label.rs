@@ -210,7 +210,7 @@ impl Labels {
                 .as_ref()
                 .map(|#var| #ctor(
                     #display,
-                    (*#var).clone(),
+                    (*#var).to_owned(),
                 ))
             })
         });
@@ -236,7 +236,7 @@ impl Labels {
                     let display = #display;
                     ::std::iter::IntoIterator::into_iter(&self.#span).map(move |span| {
                         use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.to_owned());
                         if display.is_some() && labeled_span.label().is_none() {
                             labeled_span.set_label(display.clone())
                         }
