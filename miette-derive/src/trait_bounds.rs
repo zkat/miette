@@ -20,7 +20,8 @@ pub struct RequiredTraitBound {
     source_code: bool,
     into_source_span: bool,
     std_into_iter: bool,
-    std_clone: bool,
+    std_deref: bool,
+    std_to_owned: bool,
 }
 
 impl RequiredTraitBound {
@@ -56,9 +57,13 @@ impl RequiredTraitBound {
             )))
         }
 
-        if self.std_clone {
+        if self.std_deref {
+            bounds.push(TypeParamBound::Trait(syn::parse_quote!(::std::ops::Deref)))
+        }
+
+        if self.std_to_owned {
             bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::std::clone::Clone
+                ::std::borrow::ToOwned
             )))
         }
 
@@ -80,7 +85,6 @@ impl RequiredTraitBound {
 
     fn register_label_usage(&mut self) {
         self.into_source_span = true;
-        self.std_clone = true;
     }
 
     fn register_collection_usage(&mut self) {
@@ -94,6 +98,14 @@ impl RequiredTraitBound {
     fn register_source_usage(&mut self) {
         self.miette_diagnostic = true;
         self.r#static = true;
+    }
+
+    fn register_deref_usage(&mut self) {
+        self.std_deref = true;
+    }
+
+    fn register_to_owned_usage(&mut self) {
+        self.std_to_owned = true;
     }
 }
 
@@ -354,12 +366,22 @@ impl TraitBoundStore {
     pub fn register_label_usage(&mut self, r#type: &Type) {
         let r#type = Self::extract_option(r#type).unwrap_or(r#type);
 
-        let Some(r#type) = self.check_generic_usage(r#type) else {
+        let Some(ty) = self.check_generic_usage(r#type) else {
             return;
         };
 
-        let type_opts = self.0.entry((None, r#type.clone())).or_default();
-        type_opts.register_label_usage()
+        let type_opts = self.0.entry((None, ty.clone())).or_default();
+
+        type_opts.register_to_owned_usage();
+
+        let type_opts_to_owned = self
+            .0
+            .entry((
+                None,
+                syn::parse_quote!(<#ty as ::std::borrow::ToOwned>::Owned),
+            ))
+            .or_default();
+        type_opts_to_owned.register_label_usage();
     }
 
     pub fn register_label_collection_usage(&mut self, r#type: &Type) {
@@ -385,7 +407,25 @@ impl TraitBoundStore {
                 syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item),
             ))
             .or_default();
-        type_opts_item.register_label_usage();
+        type_opts_item.register_deref_usage();
+
+        let type_opts_deref_item = self
+            .0
+            .entry((
+                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
+                syn::parse_quote!(<<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target),
+            ))
+            .or_default();
+        type_opts_deref_item.register_to_owned_usage();
+
+        let type_opts_deref_to_owned_item = self
+            .0
+            .entry((
+                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
+                syn::parse_quote!(<<<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target as ::std::borrow::ToOwned>::Owned),
+            ))
+            .or_default();
+        type_opts_deref_to_owned_item.register_label_usage();
     }
 
     pub fn register_related_usage(&mut self, r#type: &Type) {

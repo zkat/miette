@@ -208,10 +208,14 @@ impl Labels {
             Some(quote! {
                 miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
                 .as_ref()
-                .map(|#var| #ctor(
-                    #display,
-                    (*#var).clone(),
-                ))
+                .map(|#var| {
+                    use ::std::borrow::ToOwned;
+
+                    #ctor(
+                        #display,
+                        (*#var).to_owned(),
+                    )
+                })
             })
         });
         let collections_chain = self.0.iter().filter_map(|label| {
@@ -236,7 +240,8 @@ impl Labels {
                     let display = #display;
                     ::std::iter::IntoIterator::into_iter(&self.#span).map(move |span| {
                         use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                        use ::std::borrow::ToOwned;
+                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.to_owned());
                         if display.is_some() && labeled_span.label().is_none() {
                             labeled_span.set_label(display.clone())
                         }
@@ -296,10 +301,15 @@ impl Labels {
 
                         Some(quote! {
                             miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
-                            .map(|#var| #ctor(
-                                #display,
-                                #var.clone(),
-                            ))
+                            .as_ref()
+                            .map(|#var| {
+                                use ::std::borrow::ToOwned;
+
+                                #ctor(
+                                    #display,
+                                    (*#var).to_owned(),
+                                )
+                            })
                         })
                     });
                     let collections_chain = labels.0.iter().filter_map(|label| {
@@ -322,9 +332,12 @@ impl Labels {
                         Some(quote! {
                             .chain({
                                 let display = #display;
-                                #field.iter().map(move |span| {
+                                ::std::iter::IntoIterator::into_iter(#field).map(move |span| {
                                     use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                                    let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                    use ::std::borrow::ToOwned;
+                                    let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(
+                                        span.to_owned()
+                                    );
                                     if display.is_some() && labeled_span.label().is_none() {
                                         labeled_span.set_label(display.clone());
                                     }
