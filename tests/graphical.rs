@@ -1,9 +1,10 @@
 #![cfg(feature = "fancy-no-backtrace")]
 
 use miette::{
-    Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, NamedSource,
+    Diagnostic, GraphicalReportHandler, GraphicalTheme, MietteError, MietteSourceCode,
     NarratableReportHandler, Report, SourceSpan,
 };
+use std::fmt::Debug;
 use thiserror::Error;
 
 fn fmt_report(diag: Report) -> String {
@@ -417,14 +418,14 @@ fn empty_source() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (0, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -450,22 +451,22 @@ fn multiple_spans_multiline() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<&'static str>,
+        src: MietteSourceCode<&'static str>,
         #[label("big")]
         big: SourceSpan,
         #[label("small")]
         small: SourceSpan,
     }
     let err = MyBad {
-        src: NamedSource::new(
-            "issue",
+        src: MietteSourceCode::new(
             "\
 if true {
     a
 } else {
     b
 }",
-        ),
+        )
+        .with_name("issue"),
         big: (0, 32).into(),
         small: (14, 1).into(),
     };
@@ -496,12 +497,12 @@ fn single_line_highlight_span_full_line() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<&'static str>,
+        src: MietteSourceCode<&'static str>,
         #[label("This bit here")]
         bad_bit: SourceSpan,
     }
     let err = MyBad {
-        src: NamedSource::new("issue", "source\ntext"),
+        src: MietteSourceCode::new("source\ntext").with_name("issue"),
         bad_bit: (7, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -527,14 +528,14 @@ fn single_line_with_wide_char() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  👼🏼text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (13, 8).into(),
     };
     let out = fmt_report(err.into());
@@ -564,7 +565,7 @@ fn single_line_with_two_tabs() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -573,7 +574,7 @@ fn single_line_with_two_tabs() -> Result<(), MietteError> {
 
     let src = "source\n\t\ttext\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -603,7 +604,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
@@ -612,7 +613,7 @@ fn single_line_with_tab_in_middle() -> Result<(), MietteError> {
 
     let src = "source\ntext =\ttext\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (14, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -642,14 +643,14 @@ fn single_line_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -686,7 +687,7 @@ fn external_source() -> Result<(), MietteError> {
     let err = Report::from(MyBad {
         highlight: (9, 4).into(),
     })
-    .with_source_code(NamedSource::new("bad_file.rs", src));
+    .with_source_code(MietteSourceCode::new(src).with_name("bad_file.rs"));
     let out = fmt_report(err);
     println!("Error: {}", out);
     let expected = r#"oops::my::bad
@@ -714,14 +715,14 @@ fn single_line_highlight_offset_zero() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (0, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -750,14 +751,14 @@ fn single_line_highlight_offset_end_of_line() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (6, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -786,14 +787,14 @@ fn single_line_highlight_include_end_of_line() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 5).into(),
     };
     let out = fmt_report(err.into());
@@ -823,14 +824,14 @@ fn single_line_highlight_include_end_of_line_crlf() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\r\n  text\r\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (10, 6).into(),
     };
     let out = fmt_report(err.into());
@@ -860,14 +861,14 @@ fn single_line_highlight_with_empty_span() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -897,14 +898,14 @@ fn single_line_highlight_no_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -933,14 +934,14 @@ fn single_line_highlight_at_line_start() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\ntext\n  here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (7, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -970,14 +971,14 @@ fn multiline_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here\nand\nthis\ntoo")]
         highlight: SourceSpan,
     }
 
     let src = "source\ntext\n  here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (7, 4).into(),
     };
     let out = fmt_report(err.into());
@@ -1010,7 +1011,7 @@ fn multiple_multi_line_labels() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "x\ny"]
         highlight1: SourceSpan,
         #[label = "z\nw"]
@@ -1021,7 +1022,7 @@ fn multiple_multi_line_labels() -> Result<(), MietteError> {
 
     let src = "source\n  text text text text text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (9, 4).into(),
         highlight2: (14, 4).into(),
         highlight3: (24, 4).into(),
@@ -1058,7 +1059,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "x"]
         highlight1: SourceSpan,
         #[label = "y"]
@@ -1069,7 +1070,7 @@ fn multiple_same_line_highlights() -> Result<(), MietteError> {
 
     let src = "source\n  text text text text text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (9, 4).into(),
         highlight2: (14, 4).into(),
         highlight3: (24, 4).into(),
@@ -1103,7 +1104,7 @@ fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "x"]
         highlight1: SourceSpan,
         #[label = "y"]
@@ -1116,7 +1117,7 @@ fn multiple_same_line_highlights_with_tabs_in_middle() -> Result<(), MietteError
 
     let src = "source\n  text text text\ttext text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (9, 4).into(),
         highlight2: (14, 4).into(),
         highlight3: (24, 4).into(),
@@ -1150,14 +1151,14 @@ fn multiline_highlight_adjacent() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "these two lines"]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 11).into(),
     };
     let out = fmt_report(err.into());
@@ -1186,14 +1187,14 @@ fn multiline_highlight_multiline_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "these two lines\nare the problem"]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 11).into(),
     };
     let out = fmt_report(err.into());
@@ -1223,7 +1224,7 @@ fn multiline_highlight_flyby() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "block 1"]
         highlight1: SourceSpan,
         #[label = "block 2"]
@@ -1239,7 +1240,7 @@ line5
     .to_string();
     let len = src.len();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, len).into(),
         highlight2: (10, 9).into(),
     };
@@ -1274,7 +1275,7 @@ fn multiline_highlight_no_label() -> Result<(), MietteError> {
         #[source]
         source: Inner,
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "block 1"]
         highlight1: SourceSpan,
         #[label]
@@ -1299,7 +1300,7 @@ line5
     let len = src.len();
     let err = MyBad {
         source: Inner(InnerInner),
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, len).into(),
         highlight2: (10, 9).into(),
     };
@@ -1338,7 +1339,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1347,7 +1348,7 @@ fn multiple_multiline_highlights_adjacent() -> Result<(), MietteError> {
 
     let src = "source\n  text\n    here\nmore here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 10).into(),
         highlight2: (20, 6).into(),
     };
@@ -1384,7 +1385,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1393,7 +1394,7 @@ fn multiple_multiline_highlights_overlapping_lines() -> Result<(), MietteError> 
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 8).into(),
         highlight2: (9, 10).into(),
     };
@@ -1412,7 +1413,7 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -1421,7 +1422,7 @@ fn multiple_multiline_highlights_overlapping_offsets() -> Result<(), MietteError
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 8).into(),
         highlight2: (10, 10).into(),
     };
@@ -1516,7 +1517,7 @@ fn related() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1525,10 +1526,10 @@ fn related() -> Result<(), MietteError> {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src.clone()),
+        src: MietteSourceCode::new(src.clone()).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         related: vec![MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (0, 6).into(),
             related: vec![],
         }],
@@ -1571,7 +1572,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1588,7 +1589,7 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         related: vec![InnerError {
             highlight: (0, 6).into(),
@@ -1631,7 +1632,7 @@ fn related_severity() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[related]
@@ -1648,7 +1649,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Error {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1661,7 +1662,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Warning {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1674,7 +1675,7 @@ fn related_severity() -> Result<(), MietteError> {
         )]
         Advice {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -1682,19 +1683,19 @@ fn related_severity() -> Result<(), MietteError> {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src.clone()),
+        src: MietteSourceCode::new(src.clone()).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         related: vec![
             MyRelated::Error {
-                src: NamedSource::new("bad_file.rs", src.clone()),
+                src: MietteSourceCode::new(src.clone()).with_name("bad_file.rs"),
                 highlight: (0, 6).into(),
             },
             MyRelated::Warning {
-                src: NamedSource::new("bad_file.rs", src.clone()),
+                src: MietteSourceCode::new(src.clone()).with_name("bad_file.rs"),
                 highlight: (0, 6).into(),
             },
             MyRelated::Advice {
-                src: NamedSource::new("bad_file.rs", src),
+                src: MietteSourceCode::new(src).with_name("bad_file.rs"),
                 highlight: (0, 6).into(),
             },
         ],
@@ -1759,12 +1760,13 @@ fn zero_length_eol_span() {
     #[diagnostic(severity(Error))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<&'static str>,
+        src: MietteSourceCode<&'static str>,
         #[label("This bit here")]
         bad_bit: SourceSpan,
     }
     let err = MyBad {
-        src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
+        src: MietteSourceCode::new("this is the first line\nthis is the second line")
+            .with_name("issue"),
         bad_bit: (23, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -1789,14 +1791,15 @@ fn primary_label() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<&'static str>,
+        src: MietteSourceCode<&'static str>,
         #[label]
         first_label: SourceSpan,
         #[label(primary, "nope")]
         second_label: SourceSpan,
     }
     let err = MyBad {
-        src: NamedSource::new("issue", "this is the first line\nthis is the second line"),
+        src: MietteSourceCode::new("this is the first line\nthis is the second line")
+            .with_name("issue"),
         first_label: (2, 4).into(),
         second_label: (24, 4).into(),
     };
@@ -1825,14 +1828,14 @@ fn single_line_with_wide_char_unaligned_span_start() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  👼🏼text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (10, 5).into(),
     };
     let out = fmt_report(err.into());
@@ -1862,14 +1865,14 @@ fn single_line_with_wide_char_unaligned_span_end() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  text 👼🏼\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 6).into(),
     };
     let out = fmt_report(err.into());
@@ -1899,14 +1902,14 @@ fn single_line_with_wide_char_unaligned_span_empty() -> Result<(), MietteError> 
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
     }
 
     let src = "source\n  👼🏼text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (10, 0).into(),
     };
     let out = fmt_report(err.into());
@@ -1938,17 +1941,17 @@ fn syntax_highlighter() {
     #[diagnostic()]
     pub struct Test {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this is a label")]
         src_span: SourceSpan,
     }
-    let src = NamedSource::new(
-        "hello_world", //NOTE: intentionally missing file extension
-        "fn main() {\n    println!(\"Hello, World!\");\n}\n".to_string(),
-    )
-    .with_language("Rust");
+    let name = "hello_world"; // NOTE: intentionally missing file extension
+    let src =
+        MietteSourceCode::new("fn main() {\n    println!(\"Hello, World!\");\n}\n".to_string())
+            .with_language("Rust");
+    let src_with_name = src.clone().with_name(name);
     let err = Test {
-        src,
+        src: src_with_name,
         src_span: (16, 26).into(),
     };
     let mut out = String::new();
@@ -1966,8 +1969,33 @@ fn syntax_highlighter() {
    ╰────
 "#
     .trim_start_matches('\n');
-    assert!(out.contains("\u{1b}[38;2;180;142;173m"));
-    assert_eq!(expected, strip_ansi_escapes::strip_str(out))
+    let colors = "\u{1b}[38;2;180;142;173m";
+    assert!(out.contains(colors));
+    assert_eq!(expected, strip_ansi_escapes::strip_str(out));
+
+    // test unnamed source code
+    let err = Test {
+        src,
+        src_span: (16, 26).into(),
+    };
+    let mut out = String::new();
+    GraphicalReportHandler::new_themed(GraphicalTheme::unicode())
+        .render_report(&mut out, &err)
+        .unwrap();
+
+    let expected = r#"
+  × This is an error
+   ╭─[2:5]
+ 1 │ fn main() {
+ 2 │     println!("Hello, World!");
+   ·     ─────────────┬────────────
+   ·                  ╰── this is a label
+ 3 │ }
+   ╰────
+"#
+    .trim_start_matches('\n');
+    assert!(out.contains(colors));
+    assert_eq!(expected, strip_ansi_escapes::strip_str(out));
 }
 
 // This test reads a line from the current source file and renders it with Rust
@@ -1985,7 +2013,7 @@ fn syntax_highlighter_on_real_file() {
     #[diagnostic()]
     pub struct Test {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this is a label")]
         src_span: SourceSpan,
     }
@@ -2000,7 +2028,7 @@ fn syntax_highlighter_on_real_file() {
     let file_src = std::fs::read_to_string(filename).unwrap();
     let offset = miette::SourceOffset::from_location(&file_src, line, CO);
     let err = Test {
-        src: NamedSource::new(filename, file_src.clone()),
+        src: MietteSourceCode::new(file_src.clone()).with_name(filename),
         src_span: SourceSpan::new(offset, LEN),
     };
 
@@ -2037,7 +2065,7 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -2048,7 +2076,7 @@ fn triple_adjacent_highlight() -> Result<(), MietteError> {
 
     let src = "source\n\n\n  text\n\n\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 6).into(),
         highlight2: (11, 4).into(),
         highlight3: (22, 4).into(),
@@ -2086,7 +2114,7 @@ fn non_adjacent_highlight() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "this bit here"]
         highlight1: SourceSpan,
         #[label = "also this bit"]
@@ -2095,7 +2123,7 @@ fn non_adjacent_highlight() -> Result<(), MietteError> {
 
     let src = "source\n\n\n\n  text    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 6).into(),
         highlight2: (12, 4).into(),
     };
@@ -2129,14 +2157,14 @@ fn invalid_span_bad_offset() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "1st"]
         highlight1: SourceSpan,
     }
 
     let src = "blabla blibli".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (50, 6).into(),
     };
     let out = fmt_report(err.into());
@@ -2158,14 +2186,14 @@ fn invalid_span_bad_length() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label = "1st"]
         highlight1: SourceSpan,
     }
 
     let src = "blabla blibli".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 50).into(),
     };
     let out = fmt_report(err.into());
@@ -2187,14 +2215,14 @@ fn invalid_span_no_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label]
         highlight1: SourceSpan,
     }
 
     let src = "blabla blibli".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (50, 6).into(),
     };
     let out = fmt_report(err.into());
@@ -2216,7 +2244,7 @@ fn invalid_span_2nd_label() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::bad), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("1st")]
         highlight1: SourceSpan,
         #[label("2nd")]
@@ -2225,7 +2253,7 @@ fn invalid_span_2nd_label() -> Result<(), MietteError> {
 
     let src = "blabla blibli".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight1: (0, 6).into(),
         highlight2: (50, 6).into(),
     };
@@ -2248,7 +2276,7 @@ fn invalid_span_inner() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::inner), help("help info"))]
     struct MyInner {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("inner label")]
         inner_label: SourceSpan,
     }
@@ -2258,7 +2286,7 @@ fn invalid_span_inner() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::outer), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("outer label")]
         outer_label: SourceSpan,
         #[source]
@@ -2268,10 +2296,10 @@ fn invalid_span_inner() -> Result<(), MietteError> {
     let src_outer = "outer source".to_string();
     let src_inner = "inner source".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src_outer),
+        src: MietteSourceCode::new(src_outer).with_name("bad_file.rs"),
         outer_label: (0, 6).into(),
         inner: MyInner {
-            src: NamedSource::new("bad_file2.rs", src_inner),
+            src: MietteSourceCode::new(src_inner).with_name("bad_file2.rs"),
             inner_label: (60, 6).into(),
         },
     };
@@ -2299,7 +2327,7 @@ fn invalid_span_related() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::inner), help("help info"))]
     struct MyRelated {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("inner label")]
         inner_label: SourceSpan,
     }
@@ -2309,7 +2337,7 @@ fn invalid_span_related() -> Result<(), MietteError> {
     #[diagnostic(code(oops::my::outer), help("help info"))]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("outer label")]
         outer_label: SourceSpan,
         #[related]
@@ -2319,10 +2347,10 @@ fn invalid_span_related() -> Result<(), MietteError> {
     let src_outer = "outer source".to_string();
     let src_inner = "related source".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src_outer),
+        src: MietteSourceCode::new(src_outer).with_name("bad_file.rs"),
         outer_label: (0, 6).into(),
         inner: vec![MyRelated {
-            src: NamedSource::new("bad_file2.rs", src_inner),
+            src: MietteSourceCode::new(src_inner).with_name("bad_file2.rs"),
             inner_label: (60, 6).into(),
         }],
     };

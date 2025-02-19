@@ -100,7 +100,7 @@
 //!
 //! `thiserror` is a great way to define them, and plays nicely with `miette`!
 //! */
-//! use miette::{Diagnostic, NamedSource, SourceSpan};
+//! use miette::{Diagnostic, MietteSourceCode, SourceSpan};
 //! use thiserror::Error;
 //!
 //! #[derive(Error, Debug, Diagnostic)]
@@ -114,7 +114,7 @@
 //!     // The Source that we're gonna be printing snippets out of.
 //!     // This can be a String if you don't have or care about file names.
 //!     #[source_code]
-//!     src: NamedSource<String>,
+//!     src: MietteSourceCode<String>,
 //!     // Snippets and highlights can be included in the diagnostic!
 //!     #[label("This bit here")]
 //!     bad_bit: SourceSpan,
@@ -134,7 +134,7 @@
 //!     let src = "source\n  text\n    here".to_string();
 //!
 //!     Err(MyBad {
-//!         src: NamedSource::new("bad_file.rs", src),
+//!         src: MietteSourceCode::new(src).with_name("bad_file.rs"),
 //!         bad_bit: (9, 4).into(),
 //!     })?;
 //!
@@ -650,7 +650,6 @@
 //!
 //! ```rust,ignore
 //! # use miette::{miette, LabeledSpan, Report};
-//!
 //! let source = "2 + 2 * 2 = 8".to_string();
 //! let report = miette!(
 //!   labels = vec![
@@ -666,23 +665,34 @@
 //!
 //! `miette` can be configured to highlight syntax in source code snippets.
 //!
-//! <!-- TODO: screenshot goes here once default Theme is decided -->
+//! <img src="https://raw.githubusercontent.com/zkat/miette/main/images/syntax_highlight.png"/>
 //!
 //! To use the built-in highlighting functionality, you must enable the
 //! `syntect-highlighter` crate feature. When this feature is enabled, `miette` will
 //! automatically use the [`syntect`] crate to highlight the `#[source_code]`
 //! field of your [`Diagnostic`].
 //!
-//! Syntax detection with [`syntect`] is handled by checking 2 methods on the [`SpanContents`] trait, in order:
-//! * [`language()`](SpanContents::language) - Provides the name of the language
+//! Syntax detection with [`syntect`] is handled by checking 2 methods on the [`SourceCode`] trait, in order:
+//! * [`language()`](SourceCode::language) - Provides the name of the language
 //!   as a string. For example `"Rust"` will indicate Rust syntax highlighting.
-//!   You can set the language of the [`SpanContents`] produced by a
-//!   [`NamedSource`] via the [`with_language`](NamedSource::with_language)
+//!   You can set the language of a [`SourceCode`] by using a
+//!   [`MietteSourceCode`], via the [`with_language`](MietteSourceCode::with_language)
 //!   method.
-//! * [`name()`](SpanContents::name) - In the absence of an explicitly set
+//! * [`name()`](SourceCode::name) - In the absence of an explicitly set
 //!   language, the name is assumed to contain a file name or file path.
 //!   The highlighter will check for a file extension at the end of the name and
-//!   try to guess the syntax from that.
+//!   try to guess the syntax from that. Can also be set via the
+//!   [`with_name`](MietteSourceCod::with_name) method.
+//!
+//! ```rust
+//! # use miette::{miette, LabeledSpan, MietteSourceCode};
+//! # use miette::Result;
+//! let src = MietteSourceCode::new("fn hello(oops) -> &str { \"hello!\" }").with_language("Rust");
+//! let report = miette!(
+//!     labels = vec![LabeledSpan::at((9, 4), "this is wrong")],
+//!     "invalid syntax!",
+//! ).with_source_code(src);
+//! ```
 //!
 //! If you want to use a custom highlighter, you can provide a custom
 //! implementation of the [`Highlighter`](highlighters::Highlighter)
@@ -781,10 +791,10 @@ pub use eyreish::*;
 pub use handler::*;
 pub use handlers::*;
 pub use miette_diagnostic::*;
-pub use named_source::*;
 #[cfg(feature = "fancy")]
 pub use panic::*;
 pub use protocol::*;
+pub use source_code::*;
 
 mod chain;
 mod diagnostic_chain;
@@ -799,8 +809,8 @@ pub mod highlighters;
 #[doc(hidden)]
 pub mod macro_helpers;
 mod miette_diagnostic;
-mod named_source;
 #[cfg(feature = "fancy")]
 mod panic;
 mod protocol;
+mod source_code;
 mod source_impls;

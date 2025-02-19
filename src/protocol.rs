@@ -253,6 +253,16 @@ pub trait SourceCode: Send + Sync {
         context_lines_before: usize,
         context_lines_after: usize,
     ) -> Result<Box<dyn SpanContents<'a> + 'a>, MietteError>;
+
+    /// Optional method. Get this `SourceCode`'s name.
+    fn name(&self) -> Option<&str> {
+        None
+    }
+
+    /// Optional method. Get this `SourceCode`'s language.
+    fn language(&self) -> Option<&str> {
+        None
+    }
 }
 
 /// A labeled [`SourceSpan`].
@@ -439,10 +449,6 @@ pub trait SpanContents<'a> {
     fn data(&self) -> &'a [u8];
     /// [`SourceSpan`] representing the span covered by this `SpanContents`.
     fn span(&self) -> &SourceSpan;
-    /// An optional (file?) name for the container of this `SpanContents`.
-    fn name(&self) -> Option<&str> {
-        None
-    }
     /// The 0-indexed line in the associated [`SourceCode`] where the data
     /// begins.
     fn line(&self) -> usize;
@@ -451,15 +457,6 @@ pub trait SpanContents<'a> {
     fn column(&self) -> usize;
     /// Total number of lines covered by this `SpanContents`.
     fn line_count(&self) -> usize;
-
-    /// Optional method. The language name for this source code, if any.
-    /// This is used to drive syntax highlighting.
-    ///
-    /// Examples: Rust, TOML, C
-    ///
-    fn language(&self) -> Option<&str> {
-        None
-    }
 }
 
 /**
@@ -477,10 +474,6 @@ pub struct MietteSpanContents<'a> {
     column: usize,
     // Number of line in this snippet.
     line_count: usize,
-    // Optional filename
-    name: Option<String>,
-    // Optional language
-    language: Option<String>,
 }
 
 impl<'a> MietteSpanContents<'a> {
@@ -498,35 +491,7 @@ impl<'a> MietteSpanContents<'a> {
             line,
             column,
             line_count,
-            name: None,
-            language: None,
         }
-    }
-
-    /// Make a new [`MietteSpanContents`] object, with a name for its 'file'.
-    pub const fn new_named(
-        name: String,
-        data: &'a [u8],
-        span: SourceSpan,
-        line: usize,
-        column: usize,
-        line_count: usize,
-    ) -> MietteSpanContents<'a> {
-        MietteSpanContents {
-            data,
-            span,
-            line,
-            column,
-            line_count,
-            name: Some(name),
-            language: None,
-        }
-    }
-
-    /// Sets the [`language`](SpanContents::language) for syntax highlighting.
-    pub fn with_language(mut self, language: impl Into<String>) -> Self {
-        self.language = Some(language.into());
-        self
     }
 }
 
@@ -545,12 +510,6 @@ impl<'a> SpanContents<'a> for MietteSpanContents<'a> {
     }
     fn line_count(&self) -> usize {
         self.line_count
-    }
-    fn name(&self) -> Option<&str> {
-        self.name.as_deref()
-    }
-    fn language(&self) -> Option<&str> {
-        self.language.as_deref()
     }
 }
 

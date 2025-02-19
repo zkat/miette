@@ -1,6 +1,6 @@
 use owo_colors::Style;
 
-use crate::SpanContents;
+use crate::{SourceCode, SpanContents};
 
 use super::{Highlighter, HighlighterState};
 
@@ -12,7 +12,8 @@ pub struct BlankHighlighter;
 impl Highlighter for BlankHighlighter {
     fn start_highlighter_state<'h>(
         &'h self,
-        _source: &dyn SpanContents<'_>,
+        _source: &dyn SourceCode,
+        _span: &dyn SpanContents<'_>,
     ) -> Box<dyn super::HighlighterState + 'h> {
         Box::new(BlankHighlighterState)
     }

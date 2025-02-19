@@ -4,7 +4,7 @@ use std::{
 };
 
 // Testing of the `diagnostic` attr used by derive(Diagnostic)
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceSpan};
+use miette::{Diagnostic, LabeledSpan, MietteSourceCode, SourceSpan};
 use thiserror::Error;
 
 #[test]
@@ -14,7 +14,7 @@ fn attr_collection_in_enum() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[label(collection, "and here")]
@@ -24,7 +24,7 @@ fn attr_collection_in_enum() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![(1, 2).into(), (3, 4).into()],
     };
@@ -46,7 +46,7 @@ fn attr_collection_in_struct() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -55,7 +55,7 @@ fn attr_collection_in_struct() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![(1, 2).into(), (3, 4).into()],
     };
@@ -77,7 +77,7 @@ fn attr_collection_as_deque() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -86,7 +86,7 @@ fn attr_collection_as_deque() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: VecDeque::from([(1, 2).into(), (3, 4).into()]),
     };
@@ -108,7 +108,7 @@ fn attr_collection_as_linked_list() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -117,7 +117,7 @@ fn attr_collection_as_linked_list() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: LinkedList::from([(1, 2).into(), (3, 4).into()]),
     };
@@ -139,7 +139,7 @@ fn attr_collection_of_tuple() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -148,7 +148,7 @@ fn attr_collection_of_tuple() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![(1, 2), (3, 4)],
     };
@@ -170,7 +170,7 @@ fn attr_collection_of_range() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -179,7 +179,7 @@ fn attr_collection_of_range() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![1..3, 3..7],
     };
@@ -201,7 +201,7 @@ fn attr_collection_of_labeled_span_in_struct() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "then there")]
@@ -210,7 +210,7 @@ fn attr_collection_of_labeled_span_in_struct() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![
             LabeledSpan::new_with_span(Some("continuing here".to_string()), (1, 2)),
@@ -236,7 +236,7 @@ fn attr_collection_of_labeled_span_in_enum() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[label(collection, "then there")]
@@ -246,7 +246,7 @@ fn attr_collection_of_labeled_span_in_enum() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![
             LabeledSpan::new_with_span(Some("continuing here".to_string()), (1, 2)),
@@ -271,7 +271,7 @@ fn attr_collection_multi() {
     #[error("oops!")]
     struct MyBad {
         #[source_code]
-        src: NamedSource<String>,
+        src: MietteSourceCode<String>,
         #[label("this bit here")]
         highlight: SourceSpan,
         #[label(collection, "and here")]
@@ -282,7 +282,7 @@ fn attr_collection_multi() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
         highlight2: vec![(1, 2).into(), (3, 4).into()],
         highlight3: vec![(5, 6).into(), (7, 8).into()],
