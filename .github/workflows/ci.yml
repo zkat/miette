@@ -46,9 +46,8 @@ jobs:
         with:
           toolchain: ${{ matrix.rust }}
           components: clippy
-# TODO: Uncomment
-#      - name: Clippy
-#        run: cargo clippy --all -- -D warnings
+      - name: Clippy
+        run: cargo clippy --all -- -D warnings
       - name: Run tests
         if: matrix.rust == 'stable'
         run: cargo test --all --verbose --features ${{matrix.features}}
