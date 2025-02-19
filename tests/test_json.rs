@@ -1,5 +1,5 @@
 mod json_report_handler {
-    use miette::{Diagnostic, MietteError, NamedSource, Report, SourceSpan};
+    use miette::{Diagnostic, MietteError, MietteSourceCode, Report, SourceSpan};
 
     use miette::JSONReportHandler;
 
@@ -20,14 +20,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
 
         let src = "source\n  👼🏼text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 6).into(),
         };
         let out = fmt_report(err.into());
@@ -65,14 +65,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 4).into(),
         };
         let out = fmt_report(err.into());
@@ -110,14 +110,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (0, 0).into(),
         };
         let out = fmt_report(err.into());
@@ -155,14 +155,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 0).into(),
         };
         let out = fmt_report(err.into());
@@ -200,14 +200,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label]
             highlight: SourceSpan,
         }
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 4).into(),
         };
         let out = fmt_report(err.into());
@@ -244,14 +244,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         }
 
         let src = "source\ntext\n  here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (7, 4).into(),
         };
         let out = fmt_report(err.into());
@@ -289,7 +289,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "x"]
             highlight1: SourceSpan,
             #[label = "y"]
@@ -300,7 +300,7 @@ mod json_report_handler {
 
         let src = "source\n  text text text text text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (9, 4).into(),
             highlight2: (14, 4).into(),
             highlight3: (24, 4).into(),
@@ -354,14 +354,14 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "these two lines"]
             highlight: SourceSpan,
         }
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 11).into(),
         };
         let out = fmt_report(err.into());
@@ -399,7 +399,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "block 1"]
             highlight1: SourceSpan,
             #[label = "block 2"]
@@ -415,7 +415,7 @@ mod json_report_handler {
         .to_string();
         let len = src.len();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (0, len).into(),
             highlight2: (10, 9).into(),
         };
@@ -463,7 +463,7 @@ mod json_report_handler {
             #[source]
             source: Inner,
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "block 1"]
             highlight1: SourceSpan,
             #[label]
@@ -488,7 +488,7 @@ mod json_report_handler {
         let len = src.len();
         let err = MyBad {
             source: Inner(InnerInner),
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (0, len).into(),
             highlight2: (10, 9).into(),
         };
@@ -536,7 +536,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -545,7 +545,7 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here\nmore here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (0, 10).into(),
             highlight2: (20, 6).into(),
         };
@@ -591,7 +591,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -600,7 +600,7 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (0, 8).into(),
             highlight2: (9, 10).into(),
         };
@@ -646,7 +646,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label = "this bit here"]
             highlight1: SourceSpan,
             #[label = "also this bit"]
@@ -655,7 +655,7 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight1: (0, 8).into(),
             highlight2: (10, 10).into(),
         };
@@ -728,7 +728,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[related]
@@ -737,16 +737,16 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src.clone()),
+            src: MietteSourceCode::new(src.clone()).with_name("bad_file.rs"),
             highlight: (9, 4).into(),
             related: vec![
                 MyBad {
-                    src: NamedSource::new("bad_file2.rs", src.clone()),
+                    src: MietteSourceCode::new(src.clone()).with_name("bad_file2.rs"),
                     highlight: (0, 6).into(),
                     related: vec![],
                 },
                 MyBad {
-                    src: NamedSource::new("bad_file3.rs", src),
+                    src: MietteSourceCode::new(src).with_name("bad_file3.rs"),
                     highlight: (0, 6).into(),
                     related: vec![],
                 },
@@ -821,7 +821,7 @@ mod json_report_handler {
         #[diagnostic(code(oops::my::bad), help("try doing it better next time?"))]
         struct MyBad {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
             #[related]
@@ -838,7 +838,7 @@ mod json_report_handler {
 
         let src = "source\n  text\n    here".to_string();
         let err = MyBad {
-            src: NamedSource::new("bad_file.rs", src),
+            src: MietteSourceCode::new(src).with_name("bad_file.rs"),
             highlight: (9, 4).into(),
             related: vec![
                 InnerError {

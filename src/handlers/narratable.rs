@@ -227,7 +227,7 @@ impl NarratableReportHandler {
     ) -> fmt::Result {
         let (contents, lines) = self.get_lines(source, context.inner())?;
         write!(f, "Begin snippet")?;
-        if let Some(filename) = contents.name() {
+        if let Some(filename) = source.name() {
             write!(f, " for {}", filename,)?;
         }
         writeln!(

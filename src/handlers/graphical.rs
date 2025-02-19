@@ -619,7 +619,7 @@ impl GraphicalReportHandler {
             .map(|(label, st)| FancySpan::new(label.label().map(String::from), *label.inner(), st))
             .collect::<Vec<_>>();
 
-        let mut highlighter_state = self.highlighter.start_highlighter_state(&*contents);
+        let mut highlighter_state = self.highlighter.start_highlighter_state(source, &*contents);
 
         // The max number of gutter-lines that will be active at any given
         // point. We need this to figure out indentation, so we do one loop
@@ -663,7 +663,7 @@ impl GraphicalReportHandler {
             None => contents,
         };
 
-        if let Some(source_name) = primary_contents.name() {
+        if let Some(source_name) = source.name() {
             writeln!(
                 f,
                 "[{}]",

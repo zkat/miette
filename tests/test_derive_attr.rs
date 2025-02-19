@@ -1,5 +1,5 @@
 // Testing of the `diagnostic` attr used by derive(Diagnostic)
-use miette::{Diagnostic, LabeledSpan, NamedSource, SourceSpan};
+use miette::{Diagnostic, LabeledSpan, MietteSourceCode, SourceSpan};
 use thiserror::Error;
 
 #[test]
@@ -10,7 +10,7 @@ fn enum_uses_base_attr() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -18,7 +18,7 @@ fn enum_uses_base_attr() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     assert_eq!(err.code().unwrap().to_string(), "error::on::base");
@@ -32,7 +32,7 @@ fn enum_uses_variant_attr() {
         #[diagnostic(code(error::on::variant))]
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -40,7 +40,7 @@ fn enum_uses_variant_attr() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     assert_eq!(err.code().unwrap().to_string(), "error::on::variant");
@@ -55,7 +55,7 @@ fn multiple_attrs_allowed_on_item() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -63,7 +63,7 @@ fn multiple_attrs_allowed_on_item() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     assert_eq!(err.code().unwrap().to_string(), "error::on::base");
@@ -79,7 +79,7 @@ fn multiple_attrs_allowed_on_variant() {
         #[diagnostic(help("try doing it correctly"))]
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -87,7 +87,7 @@ fn multiple_attrs_allowed_on_variant() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     assert_eq!(err.code().unwrap().to_string(), "error::on::variant");
@@ -104,7 +104,7 @@ fn attrs_can_be_split_between_item_and_variants() {
         #[diagnostic(url("https://example.com/foo/bar"))]
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -112,7 +112,7 @@ fn attrs_can_be_split_between_item_and_variants() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     assert_eq!(err.code().unwrap().to_string(), "error::on::base");
@@ -130,7 +130,7 @@ fn attr_not_required() {
     enum MyBad {
         Only {
             #[source_code]
-            src: NamedSource<String>,
+            src: MietteSourceCode<String>,
             #[label("this bit here")]
             highlight: SourceSpan,
         },
@@ -138,7 +138,7 @@ fn attr_not_required() {
 
     let src = "source\n  text\n    here".to_string();
     let err = MyBad::Only {
-        src: NamedSource::new("bad_file.rs", src),
+        src: MietteSourceCode::new(src).with_name("bad_file.rs"),
         highlight: (9, 4).into(),
     };
     let err_span = err.labels().unwrap().next().unwrap();
