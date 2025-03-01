@@ -26,7 +26,7 @@ pub fn set_panic_hook() {
 }
 
 #[derive(Debug, Error, Diagnostic)]
-#[error("{0}{}", Panic::backtrace())]
+#[error("{0}{panic}", panic = Panic::backtrace())]
 #[diagnostic(help("set the `RUST_BACKTRACE=1` environment variable to display a backtrace."))]
 struct Panic(String);
 
