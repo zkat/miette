@@ -1,5 +1,3 @@
-use std::fmt;
-
 use crate::highlighters::Highlighter;
 use crate::highlighters::MietteHighlighter;
 use crate::protocol::Diagnostic;
@@ -9,6 +7,8 @@ use crate::NarratableReportHandler;
 use crate::ReportHandler;
 use crate::ThemeCharacters;
 use crate::ThemeStyles;
+use cfg_if::cfg_if;
+use std::fmt;
 
 /// Settings to control the color format used for graphical rendering.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
@@ -99,7 +99,9 @@ impl MietteHandlerOpts {
     /// Setting this option will not force color output. In all cases, the
     /// current color configuration via
     /// [`color()`](MietteHandlerOpts::color()) takes precedence over
-    /// highlighter configuration.
+    /// highlighter configuration. However, this option does take precedence over
+    /// [`rgb_colors()`](MietteHandlerOpts::rgb_colors()) (meaning syntax highlighting will be
+    /// enabled regardless of the value of [`MietteHandlerOpts::rgb_colors`]).
     pub fn with_syntax_highlighting(
         mut self,
         highlighter: impl Highlighter + Send + Sync + 'static,
@@ -203,6 +205,8 @@ impl MietteHandlerOpts {
     /// first place. That is handled by the [`MietteHandlerOpts::color`]
     /// setting. If colors are not being used, the value of `rgb_colors` has
     /// no effect.
+    ///
+    /// It also does not control colors when a syntax highlighter is in use.
     pub fn rgb_colors(mut self, color: RgbColors) -> Self {
         self.rgb_colors = color;
         self
@@ -292,31 +296,13 @@ impl MietteHandlerOpts {
             } else {
                 ThemeStyles::none()
             };
-            #[cfg(not(feature = "syntect-highlighter"))]
-            let highlighter = self.highlighter.unwrap_or_else(MietteHighlighter::nocolor);
-            #[cfg(feature = "syntect-highlighter")]
-            let highlighter = if self.color == Some(false) {
-                MietteHighlighter::nocolor()
-            } else if self.color == Some(true) || syscall::supports_color() {
-                match self.highlighter {
-                    Some(highlighter) => highlighter,
-                    None => match self.rgb_colors {
-                        // Because the syntect highlighter currently only supports 24-bit truecolor,
-                        // respect RgbColor::Never by disabling the highlighter.
-                        // TODO: In the future, find a way to convert the RGB syntect theme
-                        // into an ANSI color theme.
-                        RgbColors::Never => MietteHighlighter::nocolor(),
-                        _ => MietteHighlighter::syntect_truecolor(),
-                    },
-                }
-            } else {
-                MietteHighlighter::nocolor()
-            };
+            let highlighter_opt =
+                HighlighterOption::select(self.color, self.highlighter, syscall::supports_color());
             let theme = self.theme.unwrap_or(GraphicalTheme { characters, styles });
             let mut handler = GraphicalReportHandler::new_themed(theme)
                 .with_width(width)
                 .with_links(linkify);
-            handler.highlighter = highlighter;
+            handler.highlighter = highlighter_opt.into();
             if let Some(with_cause_chain) = self.with_cause_chain {
                 if with_cause_chain {
                     handler = handler.with_cause_chain();
@@ -425,6 +411,55 @@ impl ReportHandler for MietteHandler {
     }
 }
 
+enum HighlighterOption {
+    Disable,
+    EnableCustom(MietteHighlighter),
+    #[cfg(feature = "syntect-highlighter")]
+    EnableSyntect,
+}
+
+impl HighlighterOption {
+    fn select(
+        color: Option<bool>,
+        highlighter: Option<MietteHighlighter>,
+        supports_color: bool,
+    ) -> HighlighterOption {
+        if color == Some(false) || (color == None && !supports_color) {
+            return HighlighterOption::Disable;
+        }
+        highlighter
+            .map(HighlighterOption::EnableCustom)
+            .unwrap_or_default()
+    }
+}
+
+impl Default for HighlighterOption {
+    fn default() -> Self {
+        cfg_if! {
+            if #[cfg(feature = "syntect-highlighter")] {
+                // Because the syntect highlighter currently only supports 24-bit truecolor,
+                // it supersedes and ignores the `rgb_colors` config.
+                // TODO: In the future, if we find a way to convert the RGB syntect theme
+                // into an ANSI color theme, we can take `rgb_colors` into account.
+                HighlighterOption::EnableSyntect
+            } else {
+                HighlighterOption::Disable
+            }
+        }
+    }
+}
+
+impl From<HighlighterOption> for MietteHighlighter {
+    fn from(opt: HighlighterOption) -> Self {
+        match opt {
+            HighlighterOption::Disable => MietteHighlighter::nocolor(),
+            HighlighterOption::EnableCustom(highlighter) => highlighter,
+            #[cfg(feature = "syntect-highlighter")]
+            HighlighterOption::EnableSyntect => MietteHighlighter::syntect_truecolor(),
+        }
+    }
+}
+
 mod syscall {
     use cfg_if::cfg_if;
 
@@ -450,7 +485,6 @@ mod syscall {
         }
     }
 
-    #[cfg(feature = "syntect-highlighter")]
     #[inline]
     pub(super) fn supports_color() -> bool {
         cfg_if! {
@@ -482,5 +516,110 @@ mod syscall {
                 supports_unicode::on(supports_unicode::Stream::Stderr)
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::highlighters::BlankHighlighter;
+    use cfg_if::cfg_if;
+
+    #[test]
+    fn test_highlighter_option() {
+        // Syntax highlighting is enabled depending on several variables:
+        // - The `color` config
+        // - The `highlighter` config
+        // - Whether the `syntect-highlighter` feature is enabled
+        // - Whether the terminal supports color
+        //
+        // This test asserts the expected highlighter depending on combinations of those variables.
+
+        macro_rules! assert_highlighter_opt {
+            (opts = $opts:expr, supports_color = $sup_color:literal, expected = $expected:pat $(,)?) => {
+                assert_highlighter_opt!(
+                    opts = $opts,
+                    supports_color = $sup_color,
+                    expected_with_syntect = $expected,
+                    expected_without_syntect = $expected,
+                );
+            };
+
+            (
+                opts = $opts:expr,
+                supports_color = $sup_color:literal,
+                expected_with_syntect = $expected_with:pat,
+                expected_without_syntect = $expected_without:pat $(,)?
+            ) => {{
+                let highlighter_opt =
+                    HighlighterOption::select($opts.color, $opts.highlighter, $sup_color);
+                cfg_if! {
+                    if #[cfg(feature = "syntect-highlighter")] {
+                        assert!(matches!(highlighter_opt, $expected_with));
+                    } else {
+                        assert!(matches!(highlighter_opt, $expected_without));
+                    }
+                }
+            }};
+        }
+
+        // When color is explicitly disabled, highlighting is also always disabled.
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new().color(false),
+            supports_color = true,
+            expected = HighlighterOption::Disable,
+        );
+
+        // When color is unset and the terminal doesn't support color, highlighting is disabled.
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new(),
+            supports_color = false,
+            expected = HighlighterOption::Disable,
+        );
+
+        // With explicit or implicit color support, highlighting is automatically enabled when
+        // `syntect-highlighter` is enabled.
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new().color(true),
+            supports_color = false,
+            expected_with_syntect = HighlighterOption::EnableSyntect,
+            expected_without_syntect = HighlighterOption::Disable,
+        );
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new(),
+            supports_color = true,
+            expected_with_syntect = HighlighterOption::EnableSyntect,
+            expected_without_syntect = HighlighterOption::Disable,
+        );
+
+        // With explicit or implicit color support, if custom highlighting is set, it's enabled.
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new()
+                .color(true)
+                .with_syntax_highlighting(BlankHighlighter),
+            supports_color = false,
+            expected = HighlighterOption::EnableCustom(_),
+        );
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new().with_syntax_highlighting(BlankHighlighter),
+            supports_color = true,
+            expected = HighlighterOption::EnableCustom(_),
+        );
+
+        // Setting `RgbColors::Never` has no effect when syntax highlighting is enabled.
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new()
+                .color(true)
+                .rgb_colors(RgbColors::Never),
+            supports_color = false,
+            expected_with_syntect = HighlighterOption::EnableSyntect,
+            expected_without_syntect = HighlighterOption::Disable,
+        );
+        assert_highlighter_opt!(
+            opts = MietteHandlerOpts::new().rgb_colors(RgbColors::Never),
+            supports_color = true,
+            expected_with_syntect = HighlighterOption::EnableSyntect,
+            expected_without_syntect = HighlighterOption::Disable,
+        );
     }
 }
