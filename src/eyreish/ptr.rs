@@ -69,9 +69,9 @@ where
     lifetime: PhantomData<&'a T>,
 }
 
-impl<'a, T> Copy for Ref<'a, T> where T: ?Sized {}
+impl<T> Copy for Ref<'_, T> where T: ?Sized {}
 
-impl<'a, T> Clone for Ref<'a, T>
+impl<T> Clone for Ref<'_, T>
 where
     T: ?Sized,
 {
@@ -132,9 +132,9 @@ where
     lifetime: PhantomData<&'a mut T>,
 }
 
-impl<'a, T> Copy for Mut<'a, T> where T: ?Sized {}
+impl<T> Copy for Mut<'_, T> where T: ?Sized {}
 
-impl<'a, T> Clone for Mut<'a, T>
+impl<T> Clone for Mut<'_, T>
 where
     T: ?Sized,
 {
@@ -173,7 +173,7 @@ where
     }
 }
 
-impl<'a, T> Mut<'a, T> {
+impl<T> Mut<'_, T> {
     pub(crate) unsafe fn read(self) -> T {
         self.ptr.as_ptr().read()
     }

@@ -134,7 +134,7 @@ impl From<&str> for Box<dyn Diagnostic> {
     }
 }
 
-impl<'a> From<&str> for Box<dyn Diagnostic + Send + Sync + 'a> {
+impl From<&str> for Box<dyn Diagnostic + Send + Sync + '_> {
     fn from(s: &str) -> Self {
         From::from(String::from(s))
     }
