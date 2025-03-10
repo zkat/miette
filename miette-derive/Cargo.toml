@@ -10,6 +10,9 @@ repository = "https://github.com/zkat/miette"
 [lib]
 proc-macro = true
 
+[features]
+perfect-derive = ["syn/extra-traits"]
+
 [dependencies]
 proc-macro2 = "1.0.83"
 quote = "1.0.35"
