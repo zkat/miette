@@ -312,7 +312,9 @@ impl Diagnostic {
                             forward.gen_struct_method(WhichFn::DiagnosticSource);
 
                         quote! {
-                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                            impl #impl_generics miette::Diagnostic
+                                for #ident #ty_generics
+                            #where_clause {
                                 #code_method
                                 #help_method
                                 #url_method
@@ -372,7 +374,9 @@ impl Diagnostic {
                             .and_then(|x| x.gen_struct())
                             .or_else(|| forward(WhichFn::DiagnosticSource));
                         quote! {
-                            impl #impl_generics miette::Diagnostic for #ident #ty_generics #where_clause {
+                            impl #impl_generics miette::Diagnostic
+                                for #ident #ty_generics
+                            #where_clause {
                                 #code_body
                                 #help_body
                                 #sev_body
