@@ -159,6 +159,9 @@ fn transparent_generic() {
         Custom,
     }
 
+    std::hint::black_box(Combined::<i32>::Other(1));
+    std::hint::black_box(Combined::<i32>::Custom);
+
     assert_impl_diagnostic::<Combined<miette::MietteDiagnostic>>();
 }
 
@@ -260,6 +263,9 @@ fn generic_diagnostic_source() {
         Custom,
     }
 
+    std::hint::black_box(Combined::<i32>::Other(1));
+    std::hint::black_box(Combined::<i32>::Custom);
+
     assert_impl_diagnostic::<Combined<miette::MietteDiagnostic>>();
 }
 
@@ -272,6 +278,9 @@ fn generic_not_influencing_default() {
         #[error("foo")]
         Custom,
     }
+
+    std::hint::black_box(Combined::<i32>::Other(1));
+    std::hint::black_box(Combined::<i32>::Custom);
 
     assert_impl_diagnostic::<Combined<i32>>();
 }
