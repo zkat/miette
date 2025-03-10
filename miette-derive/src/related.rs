@@ -5,7 +5,7 @@ use syn::spanned::Spanned;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
-    trait_bounds::TraitBoundStore,
+    trait_bounds::TypeParamBoundStore,
     utils::{display_pat_members, gen_all_variants_with},
 };
 
@@ -14,7 +14,7 @@ pub struct Related(syn::Member);
 impl Related {
     pub(crate) fn from_fields(
         fields: &syn::Fields,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         match fields {
             syn::Fields::Named(named) => {
@@ -29,7 +29,7 @@ impl Related {
 
     fn from_fields_vec(
         fields: Vec<&syn::Field>,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
@@ -42,7 +42,17 @@ impl Related {
                             span: field.span(),
                         })
                     };
-                    bounds_store.register_related_usage(&field.ty);
+                    // this is somewhat hacky and only supports concrete types for the #[related] type
+                    // ittself but supports generics for the arguments, i.e. Vec<T> where T is generic.
+                    //
+                    // I think that this is a current limitation of the design of the Diagnostic trait,
+                    // since we'd need bounds on the method and we can't do that (to refer to the lifetime)
+                    //
+                    // Someone smarter than me might be able to figure out a better solution (?)
+                    let ty = &field.ty;
+                    bounds_store.add_where_predicate(syn::parse_quote!(
+                        <#ty as ::std::iter::IntoIterator>::Item: ::miette::Diagnostic + 'static
+                    ));
                     return Ok(Some(Related(related)));
                 }
             }

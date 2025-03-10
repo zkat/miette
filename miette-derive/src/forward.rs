@@ -6,7 +6,7 @@ use syn::{
     spanned::Spanned,
 };
 
-use crate::trait_bounds::TraitBoundStore;
+use crate::trait_bounds::TypeParamBoundStore;
 
 pub enum Forward {
     Unnamed(usize),
@@ -98,7 +98,7 @@ impl WhichFn {
 impl Forward {
     pub fn for_transparent_field(
         fields: &syn::Fields,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Self> {
         let make_err = || {
             syn::Error::new(
@@ -118,7 +118,9 @@ impl Forward {
                     .clone()
                     .unwrap_or_else(|| format_ident!("unnamed"));
 
-                bounds_store.register_transparent_usage(&field.ty);
+                let ty = &field.ty;
+                bounds_store
+                    .add_where_predicate(syn::parse_quote! {#ty: ::miette::Diagnostic + 'static});
                 Ok(Self::Named(field_name))
             }
             syn::Fields::Unnamed(unnamed) => {
@@ -128,7 +130,9 @@ impl Forward {
                     return Err(make_err());
                 }
 
-                bounds_store.register_transparent_usage(&field.ty);
+                let ty = &field.ty;
+                bounds_store
+                    .add_where_predicate(syn::parse_quote! {#ty: ::miette::Diagnostic + 'static});
                 Ok(Self::Unnamed(0))
             }
             _ => Err(syn::Error::new(

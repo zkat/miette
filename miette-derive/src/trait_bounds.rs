@@ -1,176 +1,51 @@
 use std::{
-    collections::{HashMap, VecDeque},
-    iter::{once, FromIterator},
+    collections::{HashMap, HashSet, VecDeque},
+    iter::once,
 };
 
 use proc_macro2::Span;
 use syn::{
-    punctuated::Punctuated, token::Plus, AngleBracketedGenericArguments, AssocType, BoundLifetimes,
-    GenericArgument, GenericParam, Generics, ParenthesizedGenericArguments, Path, PathArguments,
-    PathSegment, PredicateType, ReturnType, Token, TraitBound, Type, TypeArray, TypeGroup,
-    TypeParamBound, TypeParen, TypePath, TypePtr, TypeReference, TypeSlice, TypeTuple, WhereClause,
-    WherePredicate,
+    punctuated::Punctuated, AngleBracketedGenericArguments, AssocType, BoundLifetimes,
+    GenericArgument, GenericParam, Generics, ParenthesizedGenericArguments, PathArguments,
+    PredicateType, ReturnType, Token, Type, TypeArray, TypeGroup, TypeParamBound, TypeParen,
+    TypePath, TypePtr, TypeReference, TypeSlice, TypeTuple, WhereClause, WherePredicate,
 };
 
-#[derive(Default)]
-pub struct RequiredTraitBound {
-    r#static: bool,
-    std_error: bool,
-    miette_diagnostic: bool,
-    source_code: bool,
-    into_source_span: bool,
-    std_into_iter: bool,
-    std_deref: bool,
-    std_to_owned: bool,
-}
+// Potential improvement, although idk if this actually ends up
+// mattering is to switch this to something like FxHashMap like the rustc compiler uses internally
+pub struct TypeParamBoundStore(HashMap<(Option<BoundLifetimes>, Type), HashSet<TypeParamBound>>);
 
-impl RequiredTraitBound {
-    fn to_bounds(&self) -> Punctuated<TypeParamBound, Plus> {
-        let mut bounds = Punctuated::new();
-        if self.std_error && !self.miette_diagnostic {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::std::error::Error
-            )));
-        }
-
-        if self.miette_diagnostic {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::miette::Diagnostic
-            )))
-        }
-
-        if self.source_code {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::miette::SourceCode
-            )))
-        }
-
-        if self.into_source_span {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::std::convert::Into<::miette::SourceSpan>
-            )))
-        }
-
-        if self.std_into_iter {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::std::iter::IntoIterator
-            )))
-        }
-
-        if self.std_deref {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(::std::ops::Deref)))
-        }
-
-        if self.std_to_owned {
-            bounds.push(TypeParamBound::Trait(syn::parse_quote!(
-                ::std::borrow::ToOwned
-            )))
-        }
-
-        if self.r#static {
-            bounds.push(TypeParamBound::Lifetime(syn::parse_quote!('static)))
-        }
-
-        bounds
-    }
-
-    fn register_transparent_usage(&mut self) {
-        self.r#static = true;
-        self.miette_diagnostic = true;
-    }
-
-    fn register_source_code_usage(&mut self) {
-        self.source_code = true;
-    }
-
-    fn register_label_usage(&mut self) {
-        self.into_source_span = true;
-    }
-
-    fn register_collection_usage(&mut self) {
-        self.std_into_iter = true;
-    }
-    fn register_related_item_usage(&mut self) {
-        self.miette_diagnostic = true;
-        self.r#static = true;
-    }
-
-    fn register_source_usage(&mut self) {
-        self.miette_diagnostic = true;
-        self.r#static = true;
-    }
-
-    fn register_deref_usage(&mut self) {
-        self.std_deref = true;
-    }
-
-    fn register_to_owned_usage(&mut self) {
-        self.std_to_owned = true;
-    }
-}
-
-pub struct TraitBoundStore(HashMap<(Option<BoundLifetimes>, Type), RequiredTraitBound>);
-
-impl TraitBoundStore {
+impl TypeParamBoundStore {
+    /// Creates a new TraitBoundStore, filling it with some generics which are used to heuristically remove trivial bounds.
+    ///
+    /// Note that it is essential that all relevant generics are actually passed here, since if they aren't bounds which are required might be heuristically removed.
     pub fn new(generics: &Generics) -> Self {
         let hash_map = generics
             .params
             .iter()
-            .filter_map(|param| {
-                if let GenericParam::Type(ty) = param {
-                    Some(ty)
-                } else {
-                    None
-                }
+            .filter_map(|param| match param {
+                GenericParam::Type(ty) => Some(ty),
+                _ => None,
             })
             .map(|param| {
-                Type::Path(TypePath {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: Punctuated::from_iter(once(PathSegment {
-                            ident: param.ident.clone(),
-                            arguments: PathArguments::None,
-                        })),
-                    },
-                })
+                let ident = &param.ident;
+                Type::Path(syn::parse_quote!(#ident))
             })
-            .map(|v| ((None, v), RequiredTraitBound::default()))
+            .map(|ty| ((None, ty), Default::default()))
             .collect::<HashMap<_, _>>();
 
         Self(hash_map)
     }
 
-    pub fn extract_option(r#type: &Type) -> Option<&Type> {
-        if let syn::Type::Path(syn::TypePath {
-            path: syn::Path { segments, .. },
-            ..
-        }) = r#type
-        {
-            segments
-                .last()
-                .filter(|seg| seg.ident == "Option")
-                .and_then(|seg| match &seg.arguments {
-                    PathArguments::AngleBracketed(AngleBracketedGenericArguments {
-                        args, ..
-                    }) => {
-                        let mut iter = args.iter();
-
-                        let ty = iter.next();
-                        iter.next().xor(ty)
-                    }
-                    _ => None,
-                })
-                .and_then(|arg| match arg {
-                    GenericArgument::Type(ty) => Some(ty),
-                    _ => None,
-                })
-        } else {
-            None
-        }
-    }
-
-    fn check_generic_usage<'ty>(&self, mut r#type: &'ty Type) -> Option<&'ty Type> {
+    /// Checks heuristically if `type` is using any generic type inside it.
+    ///
+    /// This is guaranteed to never false-negative but might
+    /// false-positive if checking exhaustively would be expensive or
+    /// an unexpected case is encountered which this can't handle.
+    ///
+    /// # Returns
+    /// Option with a simplified type if determined to be dependant, none otherwise
+    fn generic_usage_heuristics(&self, mut r#type: Type) -> Option<Type> {
         // in theory we could skip all this logic and just allow trivial bounds but that would add redundant trait bounds
         // to the derived impl - would be another choice to make. I choose to filter as much as possible so that we don't
         // introduce unneccessary bounds.
@@ -178,8 +53,8 @@ impl TraitBoundStore {
         // this reduces the type down as much as possible to remove unneeded groups.
         let original_type = loop {
             match r#type {
-                Type::Paren(TypeParen { elem, .. }) => r#type = &**elem,
-                Type::Group(TypeGroup { elem, .. }) => r#type = &**elem,
+                Type::Paren(TypeParen { elem, .. }) => r#type = *elem,
+                Type::Group(TypeGroup { elem, .. }) => r#type = *elem,
                 x => break x,
             }
         };
@@ -193,7 +68,7 @@ impl TraitBoundStore {
         let max_depth = 8;
 
         let mut to_check_queue: VecDeque<(&Type, usize)> = VecDeque::new();
-        to_check_queue.push_back((original_type, 0));
+        to_check_queue.push_back((&original_type, 0));
 
         while !depends_on_generic {
             // this needs to be like this cuz if-let-chains aren't supported yet
@@ -299,173 +174,70 @@ impl TraitBoundStore {
         depends_on_generic.then_some(original_type)
     }
 
-    pub fn merge_with(&self, where_clause: Option<&WhereClause>) -> Option<WhereClause> {
-        let mut where_clause = where_clause.cloned().unwrap_or_else(|| WhereClause {
-            where_token: Token![where](Span::mixed_site()),
-            predicates: Punctuated::new(),
-        });
+    pub fn add_predicate(
+        &mut self,
+        PredicateType {
+            lifetimes,
+            bounded_ty,
+            colon_token: _,
+            bounds,
+        }: PredicateType,
+    ) {
+        let Some(bounded_ty) = self.generic_usage_heuristics(bounded_ty) else {
+            return;
+        };
 
-        where_clause
-            .predicates
-            .extend(self.0.iter().filter_map(|(ty, bounds)| {
-                let bounds = bounds.to_bounds();
-                (!bounds.is_empty()).then(|| {
-                    WherePredicate::Type(PredicateType {
-                        lifetimes: ty.0.clone(),
-                        bounded_ty: ty.1.clone(),
-                        colon_token: Token![:](Span::mixed_site()),
-                        bounds,
-                    })
+        self.0
+            .entry((lifetimes, bounded_ty))
+            .or_default()
+            .extend(bounds);
+    }
+
+    // Since syn for some reason doesn't implement `Parse` for `PredicateType`
+    // this method is meant for ease of use with `syn::parse_quote!`.
+    pub fn add_where_predicate(&mut self, predicate: WherePredicate) {
+        let WherePredicate::Type(ty) = predicate else {
+            unimplemented!("Only type predicates are supported");
+        };
+
+        self.add_predicate(ty);
+    }
+
+    pub fn extend_where_predicates(&mut self, predicates: Punctuated<WherePredicate, Token![,]>) {
+        for predicate in predicates {
+            self.add_where_predicate(predicate);
+        }
+    }
+
+    pub fn add_to_where_clause(&self, where_clause: Option<&WhereClause>) -> Option<WhereClause> {
+        let predicates = self
+            .0
+            .iter()
+            .filter(|(_, bounds)| !bounds.is_empty())
+            .map(|(a, b)| (a.clone(), b.clone()))
+            .map(|((lifetimes, bounded_ty), bounds)| {
+                WherePredicate::Type(PredicateType {
+                    lifetimes,
+                    bounded_ty,
+                    colon_token: Token![:](Span::mixed_site()),
+                    bounds: bounds.into_iter().collect(),
                 })
-            }));
+            })
+            .peekable();
 
-        where_clause
-            .predicates
-            .push(WherePredicate::Type(PredicateType {
-                lifetimes: None,
-                bounded_ty: Type::Path(TypePath {
-                    qself: None,
-                    path: Path {
-                        leading_colon: None,
-                        segments: Punctuated::from_iter(once(PathSegment {
-                            ident: syn::Ident::new("Self", Span::mixed_site()),
-                            arguments: PathArguments::None,
-                        })),
-                    },
-                }),
-                colon_token: syn::Token![:](Span::mixed_site()),
-                bounds: Punctuated::from_iter(once(TypeParamBound::Trait(TraitBound {
-                    paren_token: None,
-                    modifier: syn::TraitBoundModifier::None,
-                    lifetimes: None,
-                    path: syn::parse_quote!(::std::error::Error),
-                }))),
-            }));
+        // de-duplicate elements newly added and within existing where clause
+        let predicates = predicates
+            .chain(
+                where_clause
+                    .into_iter()
+                    .flat_map(|where_clause| where_clause.predicates.clone()),
+            )
+            .chain(once(syn::parse_quote!(Self: ::std::error::Error)))
+            .collect::<HashSet<_>>();
 
-        Some(where_clause)
-    }
-
-    pub fn register_transparent_usage(&mut self, r#type: &Type) {
-        let Some(r#type) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        let type_opts = self.0.entry((None, r#type.clone())).or_default();
-        type_opts.register_transparent_usage()
-    }
-
-    pub fn register_source_code_usage(&mut self, r#type: &Type) {
-        let Some(r#type) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        let type_opts = self.0.entry((None, r#type.clone())).or_default();
-        type_opts.register_source_code_usage()
-    }
-
-    pub fn register_label_usage(&mut self, r#type: &Type) {
-        let r#type = Self::extract_option(r#type).unwrap_or(r#type);
-
-        let Some(ty) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        let type_opts = self.0.entry((None, ty.clone())).or_default();
-
-        type_opts.register_to_owned_usage();
-
-        let type_opts_to_owned = self
-            .0
-            .entry((
-                None,
-                syn::parse_quote!(<#ty as ::std::borrow::ToOwned>::Owned),
-            ))
-            .or_default();
-        type_opts_to_owned.register_label_usage();
-    }
-
-    pub fn register_label_collection_usage(&mut self, r#type: &Type) {
-        let Some(ty) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        let ty: syn::Type = syn::parse_quote!(&'__miette_internal_lt #ty);
-
-        let type_opts = self
-            .0
-            .entry((
-                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
-                ty.clone(),
-            ))
-            .or_default();
-        type_opts.register_collection_usage();
-
-        let type_opts_item = self
-            .0
-            .entry((
-                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
-                syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item),
-            ))
-            .or_default();
-        type_opts_item.register_deref_usage();
-
-        let type_opts_deref_item = self
-            .0
-            .entry((
-                Some(syn::parse_quote! {for<'__miette_internal_lt>}),
-                syn::parse_quote! {
-                    <<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target
-                },
-            ))
-            .or_default();
-        type_opts_deref_item.register_to_owned_usage();
-
-        let type_opts_deref_to_owned_item = self
-            .0
-            .entry((
-                Some(syn::parse_quote! {for<'__miette_internal_lt>}),
-                syn::parse_quote! {
-                    <
-                        <
-                            <#ty as ::std::iter::IntoIterator>::Item
-                            as ::std::ops::Deref
-                        >::Target
-                        as ::std::borrow::ToOwned
-                    >::Owned
-                },
-            ))
-            .or_default();
-        type_opts_deref_to_owned_item.register_label_usage();
-    }
-
-    pub fn register_related_usage(&mut self, r#type: &Type) {
-        let Some(ty) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        // this is somewhat hacky and only supports concrete types for the #[related] type
-        // ittself but supports generics for the arguments, i.e. Vec<T> where T is generic.
-        //
-        // I think that this is a current limitation of the design of the Diagnostic trait,
-        // since we'd need bounds on the method and we can't do that (to refer to the lifetime)
-        //
-        // Someone smarter than me might be able to figure out a better solution (?)
-        let type_opts_item = self
-            .0
-            .entry((
-                None,
-                syn::parse_quote!(<#ty as ::std::iter::IntoIterator>::Item),
-            ))
-            .or_default();
-        type_opts_item.register_related_item_usage();
-    }
-
-    pub fn register_source_usage(&mut self, r#type: &Type) {
-        let Some(ty) = self.check_generic_usage(r#type) else {
-            return;
-        };
-
-        let type_opts = self.0.entry((None, ty.clone())).or_default();
-        type_opts.register_source_usage();
+        Some(WhereClause {
+            where_token: Token![where](Span::mixed_site()),
+            predicates: predicates.into_iter().collect(),
+        })
     }
 }
