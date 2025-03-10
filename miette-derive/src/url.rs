@@ -96,7 +96,9 @@ impl Url {
                     }
                 };
                 Some(quote! {
-                    Self::#ident #pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
+                    Self::#ident #pat => {
+                        std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
+                    },
                 })
             },
         )

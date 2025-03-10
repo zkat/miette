@@ -94,7 +94,9 @@ impl Help {
                     Help::Display(display) => {
                         let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                         Some(quote! {
-                            Self::#ident #display_pat => std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args))),
+                            Self::#ident #display_pat => {
+                                std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
+                            },
                         })
                     }
                     Help::Field(member, ty) => {
@@ -123,7 +125,9 @@ impl Help {
             Help::Display(display) => {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
                 Some(quote! {
-                    fn help(&self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>> {
+                    fn help(&self) -> std::option::Option<
+                        std::boxed::Box<dyn std::fmt::Display + '_>
+                    > {
                         #[allow(unused_variables, deprecated)]
                         let Self #display_pat = self;
                         std::option::Option::Some(std::boxed::Box::new(format!(#fmt #args)))
@@ -133,7 +137,9 @@ impl Help {
             Help::Field(member, ty) => {
                 let var = quote! { __miette_internal_var };
                 Some(quote! {
-                    fn help(&self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>> {
+                    fn help(&self) -> std::option::Option<
+                        std::boxed::Box<dyn std::fmt::Display + '_>
+                    > {
                         #[allow(unused_variables, deprecated)]
                         let Self #display_pat = self;
                         use miette::macro_helpers::ToOption;

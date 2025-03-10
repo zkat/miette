@@ -56,13 +56,25 @@ impl Code {
                 let code = &code.as_ref()?.0;
                 Some(match fields {
                     syn::Fields::Named(_) => {
-                        quote! { Self::#ident { .. } => std::option::Option::Some(std::boxed::Box::new(#code)), }
+                        quote! {
+                            Self::#ident { .. } => {
+                                std::option::Option::Some(std::boxed::Box::new(#code))
+                            },
+                        }
                     }
                     syn::Fields::Unnamed(_) => {
-                        quote! { Self::#ident(..) => std::option::Option::Some(std::boxed::Box::new(#code)), }
+                        quote! {
+                            Self::#ident(..) => {
+                                std::option::Option::Some(std::boxed::Box::new(#code))
+                            },
+                        }
                     }
                     syn::Fields::Unit => {
-                        quote! { Self::#ident => std::option::Option::Some(std::boxed::Box::new(#code)), }
+                        quote! {
+                            Self::#ident => {
+                                std::option::Option::Some(std::boxed::Box::new(#code))
+                            },
+                        }
                     }
                 })
             },

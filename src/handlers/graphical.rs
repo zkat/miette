@@ -1401,13 +1401,17 @@ impl Line {
     /// text on this line
     fn span_applies(&self, span: &FancySpan) -> bool {
         let spanlen = if span.len() == 0 { 1 } else { span.len() };
-        // Span starts in this line
 
-        (span.offset() >= self.offset && span.offset() < self.offset + self.length)
-            // Span passes through this line
-            || (span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length) //todo
-            // Span ends on this line
-            || (span.offset() + spanlen > self.offset && span.offset() + spanlen <= self.offset + self.length)
+        let span_starts_this_line =
+            span.offset() >= self.offset && span.offset() < self.offset + self.length;
+
+        let span_passes_through_this_line =
+            span.offset() < self.offset && span.offset() + spanlen > self.offset + self.length;
+
+        let span_ends_on_this_line = span.offset() + spanlen > self.offset
+            && span.offset() + spanlen <= self.offset + self.length;
+
+        span_starts_this_line || span_passes_through_this_line || span_ends_on_this_line
     }
 
     /// Returns whether `span` should be visible on this line in the gutter (so this excludes spans

@@ -72,10 +72,14 @@ impl WhichFn {
                 fn severity(&self) -> std::option::Option<miette::Severity>
             },
             Self::Related => quote! {
-                fn related(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &dyn miette::Diagnostic> + '_>>
+                fn related(&self) -> std::option::Option<
+                    std::boxed::Box<dyn std::iter::Iterator<Item = &dyn miette::Diagnostic> + '_>
+                >
             },
             Self::Labels => quote! {
-                fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>>
+                fn labels(&self) -> std::option::Option<
+                    std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>
+                >
             },
             Self::SourceCode => quote! {
                 fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode>

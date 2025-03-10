@@ -412,8 +412,10 @@ impl TraitBoundStore {
         let type_opts_deref_item = self
             .0
             .entry((
-                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
-                syn::parse_quote!(<<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target),
+                Some(syn::parse_quote! {for<'__miette_internal_lt>}),
+                syn::parse_quote! {
+                    <<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target
+                },
             ))
             .or_default();
         type_opts_deref_item.register_to_owned_usage();
@@ -421,8 +423,16 @@ impl TraitBoundStore {
         let type_opts_deref_to_owned_item = self
             .0
             .entry((
-                Some(syn::parse_quote!(for<'__miette_internal_lt>)),
-                syn::parse_quote!(<<<#ty as ::std::iter::IntoIterator>::Item as ::std::ops::Deref>::Target as ::std::borrow::ToOwned>::Owned),
+                Some(syn::parse_quote! {for<'__miette_internal_lt>}),
+                syn::parse_quote! {
+                    <
+                        <
+                            <#ty as ::std::iter::IntoIterator>::Item
+                            as ::std::ops::Deref
+                        >::Target
+                        as ::std::borrow::ToOwned
+                    >::Owned
+                },
             ))
             .or_default();
         type_opts_deref_to_owned_item.register_label_usage();
