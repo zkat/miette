@@ -4,15 +4,15 @@ use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
     spanned::Spanned,
-    Token,
+    Lifetime, Token,
 };
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     fmt::{self, Display},
     forward::WhichFn,
-    trait_bounds::TraitBoundStore,
-    utils::{display_pat_members, gen_all_variants_with},
+    trait_bounds::TypeParamBoundStore,
+    utils::{display_pat_members, extract_option, gen_all_variants_with},
 };
 
 pub struct Labels(Vec<Label>);
@@ -110,7 +110,7 @@ impl Parse for LabelAttr {
 impl Labels {
     pub fn from_fields(
         fields: &syn::Fields,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         match fields {
             syn::Fields::Named(named) => {
@@ -125,7 +125,7 @@ impl Labels {
 
     fn from_fields_vec(
         fields: Vec<&syn::Field>,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         let mut labels = Vec::new();
         for (i, field) in fields.iter().enumerate() {
@@ -156,11 +156,31 @@ impl Labels {
 
                     match lbl_ty {
                         LabelType::Default | LabelType::Primary => {
-                            bounds_store.register_label_usage(&field.ty);
+                            let option_ty = extract_option(&field.ty).unwrap_or(&field.ty);
+                            bounds_store.extend_where_predicates(syn::parse_quote!{
+                                #option_ty: ::std::borrow::ToOwned,
+                                <#option_ty as ::std::borrow::ToOwned>::Owned: ::std::convert::Into<::miette::SourceSpan>
+                            });
                         }
 
                         LabelType::Collection => {
-                            bounds_store.register_label_collection_usage(&field.ty);
+                            let ty = &field.ty;
+                            let lt: Lifetime = syn::parse_quote!('__miette_internal_lt);
+                            bounds_store.extend_where_predicates(syn::parse_quote!{
+                                for<#lt> &#lt #ty: ::std::iter::IntoIterator,
+                                for<#lt> <&#lt #ty as ::std::iter::IntoIterator>::Item: ::std::ops::Deref,
+                                for<#lt> <
+                                    <&#lt #ty as ::std::iter::IntoIterator>::Item
+                                    as ::std::ops::Deref
+                                >::Target : ::std::borrow::ToOwned,
+                                for<#lt> <
+                                    <
+                                        <&#lt #ty as ::std::iter::IntoIterator>::Item
+                                        as ::std::ops::Deref
+                                    >::Target
+                                    as ::std::borrow::ToOwned
+                                >::Owned: ::std::convert::Into<::miette::SourceSpan>
+                            });
                         }
                     }
 

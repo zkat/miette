@@ -3,7 +3,7 @@ use quote::quote;
 use syn::spanned::Spanned;
 
 use crate::forward::WhichFn;
-use crate::trait_bounds::TraitBoundStore;
+use crate::trait_bounds::TypeParamBoundStore;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     utils::{display_pat_members, gen_all_variants_with},
@@ -14,7 +14,7 @@ pub struct DiagnosticSource(syn::Member);
 impl DiagnosticSource {
     pub(crate) fn from_fields(
         fields: &syn::Fields,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         match fields {
             syn::Fields::Named(named) => {
@@ -29,7 +29,7 @@ impl DiagnosticSource {
 
     fn from_fields_vec(
         fields: Vec<&syn::Field>,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
@@ -43,7 +43,10 @@ impl DiagnosticSource {
                         })
                     };
 
-                    bounds_store.register_source_usage(&field.ty);
+                    let ty = &field.ty;
+                    bounds_store.add_where_predicate(
+                        syn::parse_quote!(#ty: ::miette::Diagnostic + 'static),
+                    );
 
                     return Ok(Some(DiagnosticSource(diagnostic_source)));
                 }

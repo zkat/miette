@@ -11,7 +11,7 @@ use crate::label::Labels;
 use crate::related::Related;
 use crate::severity::Severity;
 use crate::source_code::SourceCode;
-use crate::trait_bounds::TraitBoundStore;
+use crate::trait_bounds::TypeParamBoundStore;
 use crate::url::Url;
 
 pub enum Diagnostic {
@@ -20,13 +20,13 @@ pub enum Diagnostic {
         ident: syn::Ident,
         fields: syn::Fields,
         args: DiagnosticDefArgs,
-        bound_store: TraitBoundStore,
+        bound_store: TypeParamBoundStore,
     },
     Enum {
         ident: syn::Ident,
         generics: syn::Generics,
         variants: Vec<DiagnosticDef>,
-        bound_store: TraitBoundStore,
+        bound_store: TypeParamBoundStore,
     },
 }
 
@@ -76,7 +76,7 @@ pub struct DiagnosticConcreteArgs {
 impl DiagnosticConcreteArgs {
     fn for_fields(
         fields: &syn::Fields,
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
     ) -> Result<Self, syn::Error> {
         let labels = Labels::from_fields(fields, bounds_store)?;
         let source_code = SourceCode::from_fields(fields, bounds_store)?;
@@ -162,7 +162,7 @@ impl DiagnosticDefArgs {
         _ident: &syn::Ident,
         fields: &syn::Fields,
         attrs: &[&syn::Attribute],
-        bounds_store: &mut TraitBoundStore,
+        bounds_store: &mut TypeParamBoundStore,
         allow_transparent: bool,
     ) -> syn::Result<Self> {
         let mut errors = Vec::new();
@@ -233,7 +233,7 @@ impl Diagnostic {
             .collect::<Vec<&syn::Attribute>>();
         Ok(match input.data {
             syn::Data::Struct(data_struct) => {
-                let mut bounds_store = TraitBoundStore::new(&input.generics);
+                let mut bounds_store = TypeParamBoundStore::new(&input.generics);
 
                 let args = DiagnosticDefArgs::parse(
                     &input.ident,
@@ -253,7 +253,7 @@ impl Diagnostic {
             }
             syn::Data::Enum(syn::DataEnum { variants, .. }) => {
                 let mut vars = Vec::new();
-                let mut bound_store = TraitBoundStore::new(&input.generics);
+                let mut bound_store = TypeParamBoundStore::new(&input.generics);
                 for var in variants {
                     let mut variant_attrs = input_attrs.clone();
                     variant_attrs
@@ -297,7 +297,7 @@ impl Diagnostic {
                 bound_store,
             } => {
                 let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-                let where_clause = bound_store.merge_with(where_clause);
+                let where_clause = bound_store.add_to_where_clause(where_clause);
 
                 match args {
                     DiagnosticDefArgs::Transparent(forward) => {
@@ -397,7 +397,7 @@ impl Diagnostic {
                 bound_store,
             } => {
                 let (impl_generics, ty_generics, where_clause) = generics.split_for_impl();
-                let where_clause = bound_store.merge_with(where_clause);
+                let where_clause = bound_store.add_to_where_clause(where_clause);
 
                 let code_body = Code::gen_enum(variants);
                 let help_body = Help::gen_enum(variants);
