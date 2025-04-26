@@ -31,7 +31,14 @@ impl Display for MietteError {
     }
 }
 
-impl Error for MietteError {}
+impl Error for MietteError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            MietteError::IoError(error) => error.source(),
+            MietteError::OutOfBounds => None,
+        }
+    }
+}
 
 impl From<io::Error> for MietteError {
     fn from(value: io::Error) -> Self {
@@ -70,18 +77,39 @@ impl Diagnostic for MietteError {
 }
 
 #[cfg(test)]
-mod tests {
+pub(crate) mod tests {
     use std::error::Error;
 
     use super::*;
 
+    #[derive(Debug)]
+    pub struct TestError(pub io::Error);
+
+    impl Display for TestError {
+        fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+            write!(f, "testing, testing...")
+        }
+    }
+
+    impl Error for TestError {
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            Some(&self.0)
+        }
+    }
+
     #[test]
     fn io_error() {
-        let io_error = io::Error::new(io::ErrorKind::Other, "halt and catch fire");
+        let inner_error = io::Error::other("halt and catch fire");
+        let outer_error = TestError(inner_error);
+        let io_error = io::Error::other(outer_error);
+
         let miette_error = MietteError::from(io_error);
 
-        assert_eq!(miette_error.to_string(), "halt and catch fire");
-        assert_eq!(miette_error.source().map(ToString::to_string), None);
+        assert_eq!(miette_error.to_string(), "testing, testing...");
+        assert_eq!(
+            miette_error.source().unwrap().to_string(),
+            "halt and catch fire"
+        );
     }
 
     #[test]

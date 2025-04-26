@@ -13,7 +13,11 @@ impl Display for DiagnosticError {
         write!(f, "{msg}")
     }
 }
-impl Error for DiagnosticError {}
+impl Error for DiagnosticError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        self.0.source()
+    }
+}
 
 impl Diagnostic for DiagnosticError {}
 
@@ -46,13 +50,19 @@ mod tests {
 
     use super::*;
 
+    use crate::error::tests::TestError;
+
     #[test]
     fn diagnostic_error() {
-        let io_error: Result<(), _> =
-            Err(io::Error::new(io::ErrorKind::Other, "halt and catch fire"));
-        let diagnostic_error = io_error.into_diagnostic().unwrap_err();
+        let inner_error = io::Error::other("halt and catch fire");
+        let outer_error: Result<(), _> = Err(TestError(inner_error));
 
-        assert_eq!(diagnostic_error.to_string(), "halt and catch fire");
-        assert_eq!(diagnostic_error.source().map(ToString::to_string), None);
+        let diagnostic_error = outer_error.into_diagnostic().unwrap_err();
+
+        assert_eq!(diagnostic_error.to_string(), "testing, testing...");
+        assert_eq!(
+            diagnostic_error.source().unwrap().to_string(),
+            "halt and catch fire"
+        );
     }
 }
