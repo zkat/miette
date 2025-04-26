@@ -78,7 +78,7 @@ impl Diagnostic for MietteError {
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::error::Error;
+    use std::{error::Error, io::ErrorKind};
 
     use super::*;
 
@@ -99,9 +99,9 @@ pub(crate) mod tests {
 
     #[test]
     fn io_error() {
-        let inner_error = io::Error::other("halt and catch fire");
+        let inner_error = io::Error::new(ErrorKind::Other, "halt and catch fire");
         let outer_error = TestError(inner_error);
-        let io_error = io::Error::other(outer_error);
+        let io_error = io::Error::new(ErrorKind::Other, outer_error);
 
         let miette_error = MietteError::from(io_error);
 

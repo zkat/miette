@@ -46,7 +46,7 @@ impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for R
 
 #[cfg(test)]
 mod tests {
-    use std::io;
+    use std::io::{self, ErrorKind};
 
     use super::*;
 
@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn diagnostic_error() {
-        let inner_error = io::Error::other("halt and catch fire");
+        let inner_error = io::Error::new(ErrorKind::Other, "halt and catch fire");
         let outer_error: Result<(), _> = Err(TestError(inner_error));
 
         let diagnostic_error = outer_error.into_diagnostic().unwrap_err();
