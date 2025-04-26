@@ -12,7 +12,7 @@ use std::{
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::MietteError;
+use crate::{DiagnosticError, MietteError};
 
 /// Adds rich metadata to your Error that can be used by
 /// [`Report`](crate::Report) to print really nice and human-friendly error
@@ -174,18 +174,7 @@ impl From<String> for Box<dyn Diagnostic + Send + Sync> {
 
 impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Send + Sync> {
     fn from(s: Box<dyn std::error::Error + Send + Sync>) -> Self {
-        #[derive(thiserror::Error)]
-        #[error(transparent)]
-        struct BoxedDiagnostic(Box<dyn std::error::Error + Send + Sync>);
-        impl fmt::Debug for BoxedDiagnostic {
-            fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-                fmt::Debug::fmt(&self.0, f)
-            }
-        }
-
-        impl Diagnostic for BoxedDiagnostic {}
-
-        Box::new(BoxedDiagnostic(s))
+        Box::new(DiagnosticError(s))
     }
 }
 

@@ -280,7 +280,7 @@ impl Report {
     /// The root cause is the last error in the iterator produced by
     /// [`chain()`](Report::chain).
     pub fn root_cause(&self) -> &(dyn StdError + 'static) {
-        self.chain().last().unwrap()
+        self.chain().next_back().unwrap()
     }
 
     /// Returns true if `E` is the type held by this error object.

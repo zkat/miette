@@ -1,7 +1,8 @@
-use backtrace::Backtrace;
-use thiserror::Error;
+use std::{error::Error, fmt::Display};
 
-use crate::{self as miette, Context, Diagnostic, Result};
+use backtrace::Backtrace;
+
+use crate::{Context, Diagnostic, Result};
 
 /// Tells miette to render panics using its rendering engine.
 pub fn set_panic_hook() {
@@ -25,10 +26,26 @@ pub fn set_panic_hook() {
     }));
 }
 
-#[derive(Debug, Error, Diagnostic)]
-#[error("{0}{panic}", panic = Panic::backtrace())]
-#[diagnostic(help("set the `RUST_BACKTRACE=1` environment variable to display a backtrace."))]
+#[derive(Debug)]
 struct Panic(String);
+
+impl Display for Panic {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = &self.0;
+        let panic = Panic::backtrace();
+        write!(f, "{msg}{panic}")
+    }
+}
+
+impl Error for Panic {}
+
+impl Diagnostic for Panic {
+    fn help<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {
+        Some(Box::new(
+            "set the `RUST_BACKTRACE=1` environment variable to display a backtrace.",
+        ))
+    }
+}
 
 impl Panic {
     fn backtrace() -> String {
@@ -82,5 +99,34 @@ impl Panic {
             }
         }
         "".into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::error::Error;
+
+    use super::*;
+
+    #[test]
+    fn panic() {
+        let panic = Panic("ruh roh raggy".to_owned());
+
+        assert_eq!(panic.to_string(), "ruh roh raggy");
+        assert!(panic.source().is_none());
+        assert!(panic.code().is_none());
+        assert!(panic.severity().is_none());
+        assert_eq!(
+            panic.help().map(|h| h.to_string()),
+            Some(
+                "set the `RUST_BACKTRACE=1` environment variable to display a backtrace."
+                    .to_owned()
+            )
+        );
+        assert!(panic.url().is_none());
+        assert!(panic.source_code().is_none());
+        assert!(panic.labels().is_none());
+        assert!(panic.related().is_none());
+        assert!(panic.diagnostic_source().is_none());
     }
 }

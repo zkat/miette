@@ -51,6 +51,7 @@
 //!   - [... handler options](#-handler-options)
 //!   - [... dynamic diagnostics](#-dynamic-diagnostics)
 //!   - [... syntax highlighting](#-syntax-highlighting)
+//!   - [... primary label](#-primary-label)
 //!   - [... collection of labels](#-collection-of-labels)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
@@ -689,6 +690,37 @@
 //! trait to [`MietteHandlerOpts`] by calling the
 //! [`with_syntax_highlighting`](MietteHandlerOpts::with_syntax_highlighting)
 //! method. See the [`highlighters`] module docs for more details.
+//!
+//! ### ... primary label
+//!
+//! You can use the `primary` parameter to `label` to indicate that the label
+//! is the primary label.
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("oops!")]
+//! struct MyError {
+//!     #[label(primary, "main issue")]
+//!     primary_span: SourceSpan,
+//!
+//!     #[label("other label")]
+//!     other_span: SourceSpan,
+//! }
+//! ```
+//!
+//! The `primary` parameter can be used at most once:
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("oops!")]
+//! struct MyError {
+//!     #[label(primary, "main issue")]
+//!     primary_span: SourceSpan,
+//!
+//!     #[label(primary, "other label")] // Error: Cannot have more than one primary label.
+//!     other_span: SourceSpan,
+//! }
+//! ```
 //!
 //! ### ... collection of labels
 //!

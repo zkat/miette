@@ -424,7 +424,7 @@ impl HighlighterOption {
         highlighter: Option<MietteHighlighter>,
         supports_color: bool,
     ) -> HighlighterOption {
-        if color == Some(false) || (color == None && !supports_color) {
+        if color == Some(false) || (color.is_none() && !supports_color) {
             return HighlighterOption::Disable;
         }
         highlighter
@@ -433,6 +433,9 @@ impl HighlighterOption {
     }
 }
 
+// NOTE: This is manually implemented so that it's clearer what's going on with
+// the conditional compilation — clippy isn't picking up the `cfg` stuff here
+#[allow(clippy::derivable_impls)]
 impl Default for HighlighterOption {
     fn default() -> Self {
         cfg_if! {
