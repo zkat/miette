@@ -13,7 +13,6 @@ rust-version = "1.70.0"
 exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
-thiserror = "2.0.11"
 miette-derive = { path = "miette-derive", version = "=7.5.0", optional = true }
 unicode-width = "0.1.11"
 cfg-if = "1.0.0"
@@ -30,6 +29,7 @@ serde = { version = "1.0.196", features = ["derive"], optional = true }
 syntect = { version = "5.1.0", optional = true }
 
 [dev-dependencies]
+thiserror = "2.0.11"
 semver = "1.0.21"
 
 # Eyre devdeps
