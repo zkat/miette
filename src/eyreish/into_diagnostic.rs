@@ -1,12 +1,20 @@
-use thiserror::Error;
+use std::{error::Error, fmt::Display};
 
 use crate::{Diagnostic, Report};
 
 /// Convenience [`Diagnostic`] that can be used as an "anonymous" wrapper for
 /// Errors. This is intended to be paired with [`IntoDiagnostic`].
-#[derive(Debug, Error)]
-#[error(transparent)]
+#[derive(Debug)]
 pub(crate) struct DiagnosticError(pub(crate) Box<dyn std::error::Error + Send + Sync + 'static>);
+
+impl Display for DiagnosticError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let msg = &self.0;
+        write!(f, "{msg}")
+    }
+}
+impl Error for DiagnosticError {}
+
 impl Diagnostic for DiagnosticError {}
 
 /**
@@ -29,5 +37,22 @@ pub trait IntoDiagnostic<T, E> {
 impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for Result<T, E> {
     fn into_diagnostic(self) -> Result<T, Report> {
         self.map_err(|e| DiagnosticError(Box::new(e)).into())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::io;
+
+    use super::*;
+
+    #[test]
+    fn diagnostic_error() {
+        let io_error: Result<(), _> =
+            Err(io::Error::new(io::ErrorKind::Other, "halt and catch fire"));
+        let diagnostic_error = io_error.into_diagnostic().unwrap_err();
+
+        assert_eq!(diagnostic_error.to_string(), "halt and catch fire");
+        assert_eq!(diagnostic_error.source().map(ToString::to_string), None);
     }
 }
