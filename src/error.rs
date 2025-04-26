@@ -83,7 +83,7 @@ pub(crate) mod tests {
     use super::*;
 
     #[derive(Debug)]
-    pub struct TestError(pub io::Error);
+    pub(crate) struct TestError(pub io::Error);
 
     impl Display for TestError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
