@@ -1,5 +1,21 @@
 # `miette` Release Changelog
 
+<a name="7.6.0"></a>
+## 7.6.0 (2025-04-27)
+
+### Bug Fixes
+
+* **graphical:** prevent leading newline when no link/code (#418) ([1e1938a0](https://github.com/zkat/miette/commit/1e1938a099409969c69b9f070e0fb0d13d564527))
+* **clippy:** elide lifetimes (#423) ([9ba6fad7](https://github.com/zkat/miette/commit/9ba6fad7694c1271f287b8f659a857c4ff540a55))
+* **highlight:** increase syntax highlighter config priority (#424) ([58d9f124](https://github.com/zkat/miette/commit/58d9f12411e7d3d6d580eb219ea32321e6918d79))
+* **deps:** miette can now be used without syn (#436) ([521ef91f](https://github.com/zkat/miette/commit/521ef91f77a143eb5cedfa1344428b804802179d))
+
+### Features
+
+* **graphical:** support rendering related diagnostics as nested (#417) ([771a0751](https://github.com/zkat/miette/commit/771a07519f078b94aceb1a2d2532d786f09f350b))
+* **labels:** add support for disabling the primary label line/col information (#419) ([f2ef693d](https://github.com/zkat/miette/commit/f2ef693d1ce7230e6b9f12805f018f095534b441))
+* **deps:** update `thiserror` from 1.0.56 to 2.0.11 (#426) ([59c81617](https://github.com/zkat/miette/commit/59c81617de8650a6ff3b193b41b4297e560726a0))
+
 <a name="7.5.0"></a>
 ## 7.5.0 (2025-02-01)
 
