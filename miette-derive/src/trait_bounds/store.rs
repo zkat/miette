@@ -12,9 +12,13 @@ use syn::{
 };
 
 // Potential improvement, although idk if this actually ends up
-// mattering is to switch this to something like FxHashMap like the rustc compiler uses internally
+// mattering (if it is a messurable improvement) is to switch this to something like FxHashMap
+// like the rustc compiler uses internally, although we should benchmark this and can always do it later
+// since it is easy enough to change.
+#[cfg(feature = "perfect-derive")]
 pub struct TypeParamBoundStore(HashMap<(Option<BoundLifetimes>, Type), HashSet<TypeParamBound>>);
 
+#[cfg(feature = "perfect-derive")]
 impl TypeParamBoundStore {
     /// Creates a new TraitBoundStore, filling it with some generics which are used to heuristically remove trivial bounds.
     ///

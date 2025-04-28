@@ -146,6 +146,7 @@ fn attr_not_required() {
     assert_eq!(err_span, expectation);
 }
 
+// Tests for the feature = "perfect-derive".
 fn assert_impl_diagnostic<T: Diagnostic>() {}
 
 #[test]
