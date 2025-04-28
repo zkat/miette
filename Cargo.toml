@@ -51,7 +51,7 @@ strip-ansi-escapes = "0.2.0"
 [features]
 default = ["derive"]
 derive = ["dep:miette-derive"]
-perfect-derive = ["dep:miette-derive","miette-derive?/perfect-derive"]
+perfect-derive = ["derive","miette-derive?/perfect-derive"]
 no-format-args-capture = []
 fancy-base = [
     "dep:owo-colors",
