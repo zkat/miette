@@ -53,6 +53,7 @@
 //!   - [... syntax highlighting](#-syntax-highlighting)
 //!   - [... primary label](#-primary-label)
 //!   - [... collection of labels](#-collection-of-labels)
+//!   - [... with generic errors](#-with-generic-errors)
 //! - [Acknowledgements](#acknowledgements)
 //! - [License](#license)
 //!
@@ -772,6 +773,59 @@
 //!
 //! println!("{:?}", report.with_source_code("About something or another or yet another ...".to_string()));
 //! ```
+//! ### ... with generic errors
+//!
+//! When tring to build more complex error types, it can often be useful to use generics.
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! enum MyError<T> {
+//!     #[error(transparent)]
+//!     #[diagnostic(transparent)]
+//!     Base(T),
+//!     #[error("Some other error occured")]
+//!     #[diagnostic(help = "See the manual.")]
+//!     OtherError
+//! }
+//! ```
+//! To enable this pattern, you can enable **the `perfect-derive` feature** on miette.
+//! This will add trait bounds on generics in the `Diagnostic` implementation, depending on how
+//! they are used inside the struct/enum.
+//!
+//! This should work for all other attributes as well, like `#[label]` or `#[diagnostic_source]`.
+//!
+//! <details>
+//! <summary>
+//!
+//! #### ⚠ Warning: (Small) Gotcha with the `#[related]` attribute
+//!
+//! </summary>
+//!
+//! Because of current lifetime constraints, only generic collection elements but not generic
+//! collections are currently supported, meaning the following works:
+//!
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("Some example error")]
+//! struct MyError<T> {
+//!     #[related]   
+//!     related_errors: Vec<T>
+//! }
+//! ```
+//! but the following does not:
+//! ```rust,ignore
+//! #[derive(Debug, Diagnostic, Error)]
+//! #[error("Some example error")]
+//! struct MyError<T> {
+//!     // See the difference here?
+//!     // Note that the collection is general, and not
+//!     // the elements inside the vec. This is **not** supported.
+//!     #[related]   
+//!     related_errors: T // <- here
+//! }
+//! ```
+
+//! </details>
 //!
 //! ## MSRV
 //!
