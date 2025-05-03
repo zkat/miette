@@ -10,6 +10,7 @@ license = "Apache-2.0"
 readme = "README.md"
 edition = "2018"
 rust-version = "1.70.0"
+resolver = "2"
 exclude = ["images/", "tests/", "miette-derive/"]
 
 [dependencies]
@@ -31,6 +32,8 @@ syntect = { version = "5.1.0", optional = true }
 [dev-dependencies]
 thiserror = "2.0.11"
 semver = "1.0.21"
+# (kind of) hacky workaround to enable additional feature flags in tests, requires resolver = "2"
+miette = { path = ".", features = ["perfect-derive"] }
 
 # Eyre devdeps
 futures = { version = "0.3", default-features = false }
@@ -48,6 +51,7 @@ strip-ansi-escapes = "0.2.0"
 [features]
 default = ["derive"]
 derive = ["dep:miette-derive"]
+perfect-derive = ["derive","miette-derive?/perfect-derive"]
 no-format-args-capture = []
 fancy-base = [
     "dep:owo-colors",

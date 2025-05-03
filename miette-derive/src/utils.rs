@@ -3,6 +3,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     spanned::Spanned,
+    AngleBracketedGenericArguments, GenericArgument, PathArguments, Type,
 };
 
 pub(crate) enum MemberOrString {
@@ -137,4 +138,37 @@ impl Display {
         let Display { fmt, args, .. } = display;
         (fmt, args)
     }
+}
+
+/// Tries to extract the type of a (presumed) option type, returning the extracted type if it suceeded.
+pub fn extract_option(r#type: &Type) -> Option<&Type> {
+    let syn::Type::Path(syn::TypePath {
+        path: syn::Path { segments, .. },
+        ..
+    }) = r#type
+    else {
+        return None;
+    };
+
+    let last_segment = segments.last()?;
+
+    if last_segment.ident != "Option" {
+        return None;
+    }
+
+    let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last_segment.arguments
+    else {
+        return None;
+    };
+
+    if args.len() != 1 {
+        return None;
+    }
+
+    let Some(GenericArgument::Type(ty)) = args.first() else {
+        return None;
+    };
+
+    Some(ty)
 }

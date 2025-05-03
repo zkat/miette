@@ -5,23 +5,32 @@ use syn::spanned::Spanned;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
+    trait_bounds::TypeParamBoundStore,
     utils::{display_pat_members, gen_all_variants_with},
 };
 
 pub struct Related(syn::Member);
 
 impl Related {
-    pub(crate) fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub(crate) fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("related") {
@@ -33,6 +42,17 @@ impl Related {
                             span: field.span(),
                         })
                     };
+                    // this is somewhat hacky and only supports concrete types for the #[related] type
+                    // ittself but supports generics for the arguments, i.e. Vec<T> where T is generic.
+                    //
+                    // I think that this is a current limitation of the design of the Diagnostic trait,
+                    // since we'd need bounds on the method and we can't do that (to refer to the lifetime)
+                    //
+                    // Someone smarter than me might be able to figure out a better solution (?)
+                    let ty = &field.ty;
+                    bounds_store.add_where_predicate(syn::parse_quote!(
+                        <#ty as ::std::iter::IntoIterator>::Item: ::miette::Diagnostic + 'static
+                    ));
                     return Ok(Some(Related(related)));
                 }
             }
@@ -68,7 +88,9 @@ impl Related {
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let rel = &self.0;
         Some(quote! {
-            fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
+            fn related<'a>(&'a self) -> std::option::Option<
+                std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>
+            > {
                 use ::core::borrow::Borrow;
                 std::option::Option::Some(std::boxed::Box::new(
                         self.#rel.iter().map(|x| -> &(dyn miette::Diagnostic) { &*x.borrow() })
