@@ -21,6 +21,14 @@ This printer can be customized by using [`new_themed()`](GraphicalReportHandler:
 
 See [`set_hook()`](crate::set_hook) for more details on customizing your global
 printer.
+
+The width with which reports get printed depends on the configured width value, but can also get overridden per call
+using the [Rust fmt width](https://doc.rust-lang.org/std/fmt/#width) specifier.
+
+```ignore
+let diagnostic = // ...
+println!("{diagnostic:300?}"); // Prints with 300 width instead of the configured value
+```
 */
 #[derive(Debug, Clone)]
 pub struct GraphicalReportHandler {
