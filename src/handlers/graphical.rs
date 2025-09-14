@@ -1366,7 +1366,13 @@ impl ReportHandler for GraphicalReportHandler {
             return fmt::Debug::fmt(diagnostic, f);
         }
 
-        self.render_report(f, diagnostic)
+        if let Some(width) = f.width() {
+            let mut handler = self.clone();
+            handler.termwidth = width;
+            handler.render_report(f, diagnostic)
+        } else {
+            self.render_report(f, diagnostic)
+        }
     }
 }
 
