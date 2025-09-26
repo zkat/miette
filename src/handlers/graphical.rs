@@ -242,7 +242,7 @@ impl GraphicalReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         self.render_report_inner(f, diagnostic, diagnostic.source_code())
     }
@@ -250,7 +250,7 @@ impl GraphicalReportHandler {
     fn render_report_inner(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         let src = diagnostic.source_code().or(parent_src);
@@ -281,7 +281,7 @@ impl GraphicalReportHandler {
     fn render_header(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         is_nested: bool,
     ) -> fmt::Result {
         let severity_style = match diagnostic.severity() {
@@ -326,7 +326,7 @@ impl GraphicalReportHandler {
     fn render_causes(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         let src = diagnostic.source_code().or(parent_src);
@@ -424,7 +424,7 @@ impl GraphicalReportHandler {
         Ok(())
     }
 
-    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
             let width = self.termwidth.saturating_sub(2);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
@@ -447,7 +447,7 @@ impl GraphicalReportHandler {
     fn render_related(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         let src = diagnostic.source_code().or(parent_src);
@@ -535,7 +535,7 @@ impl GraphicalReportHandler {
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         opt_source: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         let source = match opt_source {
@@ -1361,7 +1361,7 @@ impl GraphicalReportHandler {
 }
 
 impl ReportHandler for GraphicalReportHandler {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }

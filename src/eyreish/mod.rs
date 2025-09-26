@@ -172,11 +172,7 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
     ///     }
     /// }
     /// ```
-    fn debug(
-        &self,
-        error: &(dyn Diagnostic),
-        f: &mut core::fmt::Formatter<'_>,
-    ) -> core::fmt::Result;
+    fn debug(&self, error: &dyn Diagnostic, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result;
 
     /// Override for the `Display` format
     fn display(

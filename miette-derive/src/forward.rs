@@ -150,7 +150,7 @@ impl Forward {
                 Self::#variant { #field_name, .. } => #field_name.#method_call,
             },
             Forward::Unnamed(index) => {
-                let underscores: Vec<_> = core::iter::repeat(quote! { _, }).take(*index).collect();
+                let underscores: Vec<_> = std::iter::repeat_n(quote! { _, }, *index).collect();
                 let unnamed = format_ident!("unnamed");
                 quote! {
                     Self::#variant ( #(#underscores)* #unnamed, .. ) => #unnamed.#method_call,
