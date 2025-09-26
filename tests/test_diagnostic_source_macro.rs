@@ -376,6 +376,7 @@ enum NestedEnumError {
     },
 }
 
+#[cfg(feature = "fancy-no-backtrace")]
 #[derive(Debug, miette::Diagnostic, thiserror::Error)]
 #[error("I am the inner error")]
 struct Case1Inner {

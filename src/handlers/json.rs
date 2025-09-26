@@ -60,7 +60,7 @@ impl JSONReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         self._render_report(f, diagnostic, None)
     }
@@ -68,7 +68,7 @@ impl JSONReportHandler {
     fn _render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         write!(f, r#"{{"message": "{}","#, escape(&diagnostic.to_string()))?;
@@ -154,7 +154,7 @@ impl JSONReportHandler {
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         source: &dyn SourceCode,
     ) -> fmt::Result {
         if let Some(mut labels) = diagnostic.labels() {
@@ -170,7 +170,7 @@ impl JSONReportHandler {
 }
 
 impl ReportHandler for JSONReportHandler {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.render_report(f, diagnostic)
     }
 }

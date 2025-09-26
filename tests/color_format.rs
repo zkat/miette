@@ -70,7 +70,6 @@ impl Drop for EnvVarGuard<'_> {
 
 static COLOR_ENV_VARS: Mutex<()> = Mutex::new(());
 
-
 /// Assert the color format used by a handler with different levels of terminal
 /// support.
 fn check_colors<F: Fn(MietteHandlerOpts) -> MietteHandlerOpts>(

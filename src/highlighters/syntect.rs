@@ -125,7 +125,7 @@ impl HighlighterState for SyntectHighlighterState<'_> {
                 line,
                 &self.highlighter,
             )
-            .map(|(style, str)| (convert_style(style, use_bg_color).style(str)))
+            .map(|(style, str)| convert_style(style, use_bg_color).style(str))
             .collect()
         } else {
             vec![Style::default().style(line)]
