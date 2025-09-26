@@ -211,6 +211,17 @@
 //!     // Use `#[diagnostic(transparent)]` to wrap another [`Diagnostic`]. You won't see labels otherwise
 //!     #[diagnostic(transparent)]
 //!     AnotherError(#[from] AnotherError),
+//!
+//!     /// Forward the diagnostic to a particular field.
+//!     #[error("other error")]
+//!     #[diagnostic(forward(the_actual_diagnostic))]
+//!     EvenMoreData {
+//!         unrelated_field_1: String,
+//!         unrelated_field_2: usize,
+//!
+//!         #[source]
+//!         the_actual_diagnostic: AnotherError,
+//!     }
 //! }
 //!
 //! #[derive(Error, Diagnostic, Debug)]
