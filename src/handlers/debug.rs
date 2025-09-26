@@ -31,7 +31,7 @@ impl DebugReportHandler {
     pub fn render_report(
         &self,
         f: &mut fmt::Formatter<'_>,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         let mut diag = f.debug_struct("Diagnostic");
         diag.field("message", &format!("{}", diagnostic));
@@ -61,7 +61,7 @@ impl DebugReportHandler {
 }
 
 impl ReportHandler for DebugReportHandler {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }

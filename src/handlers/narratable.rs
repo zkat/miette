@@ -69,7 +69,7 @@ impl NarratableReportHandler {
     pub fn render_report(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         self.render_header(f, diagnostic)?;
         if self.with_cause_chain {
@@ -85,7 +85,7 @@ impl NarratableReportHandler {
         Ok(())
     }
 
-    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_header(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         writeln!(f, "{}", diagnostic)?;
         let severity = match diagnostic.severity() {
             Some(Severity::Error) | None => "error",
@@ -96,7 +96,7 @@ impl NarratableReportHandler {
         Ok(())
     }
 
-    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_causes(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         if let Some(cause_iter) = diagnostic
             .diagnostic_source()
             .map(DiagnosticChain::from_diagnostic)
@@ -110,7 +110,7 @@ impl NarratableReportHandler {
         Ok(())
     }
 
-    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &(dyn Diagnostic)) -> fmt::Result {
+    fn render_footer(&self, f: &mut impl fmt::Write, diagnostic: &dyn Diagnostic) -> fmt::Result {
         if let Some(help) = diagnostic.help() {
             writeln!(f, "diagnostic help: {}", help)?;
         }
@@ -126,7 +126,7 @@ impl NarratableReportHandler {
     fn render_related(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         parent_src: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(related) = diagnostic.related() {
@@ -152,7 +152,7 @@ impl NarratableReportHandler {
     fn render_snippets(
         &self,
         f: &mut impl fmt::Write,
-        diagnostic: &(dyn Diagnostic),
+        diagnostic: &dyn Diagnostic,
         source_code: Option<&dyn SourceCode>,
     ) -> fmt::Result {
         if let Some(source) = source_code {
@@ -344,7 +344,7 @@ impl NarratableReportHandler {
 }
 
 impl ReportHandler for NarratableReportHandler {
-    fn debug(&self, diagnostic: &(dyn Diagnostic), f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if f.alternate() {
             return fmt::Debug::fmt(diagnostic, f);
         }

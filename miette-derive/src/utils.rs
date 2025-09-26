@@ -1,8 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::{
-    spanned::Spanned,
-};
+use syn::spanned::Spanned;
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
