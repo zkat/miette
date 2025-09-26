@@ -23,11 +23,11 @@ See [`set_hook()`](crate::set_hook) for more details on customizing your global
 printer.
 
 The width with which reports get printed depends on the configured width value, but can also get overridden per call
-using the [Rust fmt width](https://doc.rust-lang.org/std/fmt/#width) specifier.
+using the [Rust fmt precision](https://doc.rust-lang.org/std/fmt/#precision) specifier.
 
 ```ignore
 let diagnostic = // ...
-println!("{diagnostic:300?}"); // Prints with 300 width instead of the configured value
+println!("{diagnostic:.300?}"); // Prints with 300 width instead of the configured value
 ```
 */
 #[derive(Debug, Clone)]
@@ -1374,7 +1374,7 @@ impl ReportHandler for GraphicalReportHandler {
             return fmt::Debug::fmt(diagnostic, f);
         }
 
-        if let Some(width) = f.width() {
+        if let Some(width) = f.precision() {
             let mut handler = self.clone();
             handler.termwidth = width;
             handler.render_report(f, diagnostic)
