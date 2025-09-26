@@ -1,6 +1,5 @@
 #![cfg(feature = "fancy-no-backtrace")]
 
-use lazy_static::lazy_static;
 use miette::{Diagnostic, MietteHandler, MietteHandlerOpts, ReportHandler, RgbColors};
 use regex::Regex;
 use std::ffi::OsString;
@@ -69,9 +68,8 @@ impl Drop for EnvVarGuard<'_> {
     }
 }
 
-lazy_static! {
-    static ref COLOR_ENV_VARS: Mutex<()> = Mutex::new(());
-}
+static COLOR_ENV_VARS: Mutex<()> = Mutex::new(());
+
 
 /// Assert the color format used by a handler with different levels of terminal
 /// support.
