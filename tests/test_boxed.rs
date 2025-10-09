@@ -42,13 +42,13 @@ fn test_boxed_str_stderr() {
 #[test]
 fn test_boxed_thiserror() {
     let error = MyError {
-        source: io::Error::new(io::ErrorKind::Other, "oh no!"),
+        source: io::Error::other("oh no!"),
     };
     let report: Report = miette!(error);
     assert_eq!("oh no!", report.source().unwrap().to_string());
 
     let error = MyError {
-        source: io::Error::new(io::ErrorKind::Other, "oh no!!!!"),
+        source: io::Error::other("oh no!!!!"),
     };
     let error: Box<dyn Diagnostic + Send + Sync + 'static> = Box::new(error);
     let report = Report::new_boxed(error);
@@ -203,7 +203,7 @@ fn test_boxed_custom_diagnostic() {
 
     let related = CustomDiagnostic::new();
     let main_diagnostic = CustomDiagnostic::new()
-        .with_source(io::Error::new(io::ErrorKind::Other, "oh no!"))
+        .with_source(io::Error::other("oh no!"))
         .with_related(related);
 
     let report = Report::new_boxed(Box::new(main_diagnostic));
@@ -211,7 +211,7 @@ fn test_boxed_custom_diagnostic() {
 
     let related = CustomDiagnostic::new();
     let main_diagnostic = CustomDiagnostic::new()
-        .with_source(io::Error::new(io::ErrorKind::Other, "oh no!"))
+        .with_source(io::Error::other("oh no!"))
         .with_related(related);
     let main_diagnostic = Box::new(main_diagnostic) as Box<dyn Diagnostic + Send + Sync + 'static>;
     let report = miette!(main_diagnostic);
@@ -228,7 +228,7 @@ fn test_boxed_custom_diagnostic() {
 #[test]
 fn test_boxed_sources() {
     let error = MyError {
-        source: io::Error::new(io::ErrorKind::Other, "oh no!"),
+        source: io::Error::other("oh no!"),
     };
     let error = Box::<dyn Diagnostic + Send + Sync>::from(error);
     let error: Report = miette!(error).wrap_err("it failed");
