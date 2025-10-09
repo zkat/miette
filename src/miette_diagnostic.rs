@@ -258,6 +258,27 @@ impl MietteDiagnostic {
     }
 }
 
+impl From<Box<dyn Diagnostic>> for MietteDiagnostic {
+    fn from(diag: Box<dyn Diagnostic>) -> Self {
+        let message = diag.to_string();
+
+        let code = diag.code().map(|c| c.to_string());
+        let severity = diag.severity();
+        let help = diag.help().map(|h| h.to_string());
+        let url = diag.url().map(|u| u.to_string());
+        let labels = diag.labels().map(|l| l.collect::<Vec<_>>());
+
+        MietteDiagnostic {
+            message,
+            code,
+            severity,
+            help,
+            url,
+            labels,
+        }
+    }
+}
+
 #[cfg(feature = "serde")]
 #[test]
 fn test_serialize_miette_diagnostic() {
