@@ -490,6 +490,54 @@ if true {
 }
 
 #[test]
+fn multiline_span_end_same_line_as_singleline() {
+    #[derive(Error, Debug, Diagnostic)]
+    #[error("oops!")]
+    #[diagnostic(severity(Error))]
+    struct MyBad {
+        #[source_code]
+        src: NamedSource<&'static str>,
+        #[label("multiline label")]
+        multiline: SourceSpan,
+        #[label("singleline label")]
+        singleline: SourceSpan,
+    }
+    let src = "\
+    function test(
+        bool a,
+    ) internal returns (uint256 helloWorld, Test someTest) {
+        // oh hai
+    }
+";
+    let err = MyBad {
+        src: NamedSource::new("issue", src),
+        // multiline span from "function" to end of ")"
+        multiline: (0, 38).into(),
+        // singleline span on "uint256 helloWorld"
+        singleline: (55, 18).into(),
+    };
+    let out = fmt_report(err.into());
+    println!("Error: {}", out);
+
+    // The │ should continue on the underline and label lines until the multiline span's
+    // own label is rendered with ╰────
+    let expected = r#"
+  × oops!
+   ╭─[issue:1:1]
+ 1 │ ╭─▶ function test(
+ 2 │ │           bool a,
+ 3 │ ├─▶     ) internal returns (uint256 helloWorld, Test someTest) {
+   · │                           ─────────┬────────
+   · │                                    ╰── singleline label
+   · ╰──── multiline label
+ 4 │             // oh hai
+   ╰────
+"#
+    .trim_start_matches('\n');
+    assert_eq!(expected, out);
+}
+
+#[test]
 fn single_line_highlight_span_full_line() {
     #[derive(Error, Debug, Diagnostic)]
     #[error("oops!")]
