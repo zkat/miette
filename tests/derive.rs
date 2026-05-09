@@ -632,3 +632,45 @@ fn test_optional_source_code() {
     .source_code()
     .is_some());
 }
+
+#[test]
+fn field_fmt_help() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    struct Foo {
+        #[help("do {suggestion} instead")]
+        suggestion: String,
+    }
+
+    assert_eq!(
+        "do that instead".to_string(),
+        Foo { suggestion: "that".into() }.help().unwrap().to_string()
+    );
+
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    enum Bar {
+        #[error("variant")]
+        Variant {
+            #[help("do {suggestion} instead")]
+            suggestion: String,
+        },
+    }
+
+    assert_eq!(
+        "do that instead".to_string(),
+        Bar::Variant { suggestion: "that".into() }.help().unwrap().to_string()
+    );
+}
+
+#[test]
+fn field_fmt_help_positional() {
+    #[derive(Debug, Diagnostic, Error)]
+    #[error("welp")]
+    struct Foo(#[help("do {0} instead")] String);
+
+    assert_eq!(
+        "do that instead".to_string(),
+        Foo("that".into()).help().unwrap().to_string()
+    );
+}
