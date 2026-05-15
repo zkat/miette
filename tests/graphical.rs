@@ -1548,7 +1548,6 @@ fn related() -> Result<(), MietteError> {
   help: try doing it better next time?
 
 Error: oops::my::bad
-
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -1609,7 +1608,6 @@ fn related_source_code_propagation() -> Result<(), MietteError> {
   help: try doing it better next time?
 
 Error: oops::my::bad
-
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -1714,7 +1712,6 @@ fn related_severity() -> Result<(), MietteError> {
   help: try doing it better next time?
 
 Error: oops::my::related::error
-
   × oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -1725,7 +1722,6 @@ Error: oops::my::related::error
   help: try doing it better next time?
 
 Warning: oops::my::related::warning
-
   ⚠ oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -1736,7 +1732,6 @@ Warning: oops::my::related::warning
   help: try doing it better next time?
 
 Advice: oops::my::related::advice
-
   ☞ oops!
    ╭─[bad_file.rs:1:1]
  1 │ source
@@ -2339,7 +2334,6 @@ fn invalid_span_related() -> Result<(), MietteError> {
   help: help info
 
 Error: oops::my::inner
-
   × oops inside!
   [Failed to read contents for label `inner label` (offset: 60, length: 6): OutOfBounds]
   help: help info
