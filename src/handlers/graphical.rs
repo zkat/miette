@@ -351,7 +351,8 @@ impl GraphicalReportHandler {
             opts = opts.word_splitter(word_splitter);
         }
 
-        writeln!(f, "{}", self.wrap(&diagnostic.to_string(), opts))?;
+        let styled = diagnostic.style(self.theme.styles.title).to_string();
+        writeln!(f, "{}", self.wrap(&styled, opts))?;
 
         if !self.with_cause_chain {
             return Ok(());

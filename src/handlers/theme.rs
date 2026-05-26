@@ -85,6 +85,8 @@ Styles for various parts of graphical rendering for the
 */
 #[derive(Debug, Clone)]
 pub struct ThemeStyles {
+    /// Style to apply to the title.
+    pub title: Style,
     /// Style to apply to things highlighted as "error".
     pub error: Style,
     /// Style to apply to things highlighted as "warning".
@@ -111,6 +113,7 @@ impl ThemeStyles {
     /// [Credit](http://terminal.sexy/#FRUV0NDQFRUVrEFCkKlZ9L91ap-1qnWfdbWq0NDQUFBQrEFCkKlZ9L91ap-1qnWfdbWq9fX1).
     pub fn rgb() -> Self {
         Self {
+            title: style(),
             error: style().fg_rgb::<255, 30, 30>(),
             warning: style().fg_rgb::<244, 191, 117>(),
             advice: style().fg_rgb::<106, 159, 181>(),
@@ -128,6 +131,7 @@ impl ThemeStyles {
     /// ANSI color-based styles.
     pub fn ansi() -> Self {
         Self {
+            title: style(),
             error: style().red(),
             warning: style().yellow(),
             advice: style().cyan(),
@@ -145,6 +149,7 @@ impl ThemeStyles {
     /// No styling. Just regular ol' monochrome.
     pub fn none() -> Self {
         Self {
+            title: style(),
             error: style(),
             warning: style(),
             advice: style(),

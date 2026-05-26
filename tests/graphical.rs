@@ -2031,6 +2031,24 @@ fn syntax_highlighter_on_real_file() {
 }
 
 #[test]
+fn title_style_is_applied() {
+    use miette::{GraphicalReportHandler, GraphicalTheme, Report, ThemeCharacters, ThemeStyles};
+
+    let theme = GraphicalTheme {
+        characters: ThemeCharacters::unicode(),
+        styles: ThemeStyles {
+            title: owo_colors::Style::new().bold(),
+            ..ThemeStyles::none()
+        },
+    };
+    let mut out = String::new();
+    GraphicalReportHandler::new_themed(theme)
+        .render_report(&mut out, Report::msg("hello").as_ref())
+        .unwrap();
+    assert_eq!(out, "  × \u{1b}[1mhello\u{1b}[0m\n",);
+}
+
+#[test]
 fn triple_adjacent_highlight() -> Result<(), MietteError> {
     #[derive(Debug, Diagnostic, Error)]
     #[error("oops!")]
