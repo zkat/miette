@@ -105,6 +105,16 @@ impl Parse for LabelAttr {
     }
 }
 
+/// Check if a type is syntactically `Option<...>`.
+fn is_option_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(segment) = type_path.path.segments.last() {
+            return segment.ident == "Option";
+        }
+    }
+    false
+}
+
 impl Labels {
     pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
         match fields {
@@ -185,13 +195,23 @@ impl Labels {
                 quote! { miette::LabeledSpan::new_with_span }
             };
 
-            Some(quote! {
-                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
-                .map(|#var| #ctor(
-                    #display,
-                    #var.clone(),
-                ))
-            })
+            let label_code = if is_option_type(ty) {
+                quote! {
+                    self.#span.as_ref().map(|#var| #ctor(
+                        #display,
+                        #var.clone(),
+                    ))
+                }
+            } else {
+                quote! {
+                    miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
+                    .map(|#var| #ctor(
+                        #display,
+                        #var.clone(),
+                    ))
+                }
+            };
+            Some(label_code)
         });
         let collections_chain = self.0.iter().filter_map(|label| {
             let Label {
@@ -272,13 +292,23 @@ impl Labels {
                             quote! { miette::LabeledSpan::new_with_span }
                         };
 
-                        Some(quote! {
-                            miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
-                            .map(|#var| #ctor(
-                                #display,
-                                #var.clone(),
-                            ))
-                        })
+                        let variant_label_code = if is_option_type(ty) {
+                            quote! {
+                                #field.as_ref().map(|#var| #ctor(
+                                    #display,
+                                    #var.clone(),
+                                ))
+                            }
+                        } else {
+                            quote! {
+                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
+                                .map(|#var| #ctor(
+                                    #display,
+                                    #var.clone(),
+                                ))
+                            }
+                        };
+                        Some(variant_label_code)
                     });
                     let collections_chain = labels.0.iter().filter_map(|label| {
                         let Label { span, label, ty: _, lbl_ty } = label;
