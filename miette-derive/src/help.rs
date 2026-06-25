@@ -108,7 +108,7 @@ impl Help {
                         Some(quote! {
                             Self::#ident #display_pat => {
                                 use miette::macro_helpers::ToOption;
-                                miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&#help).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + '_> { std::boxed::Box::new(format!("{}", #var)) })
+                                miette::macro_helpers::OptionalWrapper::<#ty>::to_option(&#help).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + '_> { std::boxed::Box::new(format!("{}", #var)) })
                             },
                         })
                     }
@@ -137,7 +137,7 @@ impl Help {
                         #[allow(unused_variables, deprecated)]
                         let Self #display_pat = self;
                         use miette::macro_helpers::ToOption;
-                        miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#member).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + '_> { std::boxed::Box::new(format!("{}", #var)) })
+                        miette::macro_helpers::OptionalWrapper::<#ty>::to_option(&self.#member).as_ref().map(|#var| -> std::boxed::Box<dyn std::fmt::Display + '_> { std::boxed::Box::new(format!("{}", #var)) })
                     }
                 })
             }
