@@ -3,6 +3,7 @@ use quote::quote;
 use syn::spanned::Spanned;
 
 use crate::forward::WhichFn;
+use crate::trait_bounds::TypeParamBoundStore;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     utils::{display_pat_members, gen_all_variants_with},
@@ -11,17 +12,25 @@ use crate::{
 pub struct DiagnosticSource(syn::Member);
 
 impl DiagnosticSource {
-    pub(crate) fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub(crate) fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("diagnostic_source") {
@@ -33,6 +42,12 @@ impl DiagnosticSource {
                             span: field.span(),
                         })
                     };
+
+                    let ty = &field.ty;
+                    bounds_store.add_where_predicate(
+                        syn::parse_quote!(#ty: ::miette::Diagnostic + 'static),
+                    );
+
                     return Ok(Some(DiagnosticSource(diagnostic_source)));
                 }
             }

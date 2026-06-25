@@ -4,14 +4,15 @@ use syn::{
     parenthesized,
     parse::{Parse, ParseStream},
     spanned::Spanned,
-    Token,
+    Lifetime, Token,
 };
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     fmt::{self, Display},
     forward::WhichFn,
-    utils::{display_pat_members, gen_all_variants_with},
+    trait_bounds::TypeParamBoundStore,
+    utils::{display_pat_members, extract_option, gen_all_variants_with},
 };
 
 pub struct Labels(Vec<Label>);
@@ -101,22 +102,31 @@ impl Parse for LabelAttr {
         } else {
             (LabelType::Default, None)
         };
+
         Ok(LabelAttr { label, lbl_ty })
     }
 }
 
 impl Labels {
-    pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         let mut labels = Vec::new();
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
@@ -142,6 +152,36 @@ impl Labels {
                             field.span(),
                             "Cannot have more than one primary label.",
                         ));
+                    }
+
+                    match lbl_ty {
+                        LabelType::Default | LabelType::Primary => {
+                            let option_ty = extract_option(&field.ty).unwrap_or(&field.ty);
+                            bounds_store.extend_where_predicates(syn::parse_quote!{
+                                #option_ty: ::std::borrow::ToOwned,
+                                <#option_ty as ::std::borrow::ToOwned>::Owned: ::std::convert::Into<::miette::SourceSpan>
+                            });
+                        }
+
+                        LabelType::Collection => {
+                            let ty = &field.ty;
+                            let lt: Lifetime = syn::parse_quote!('__miette_internal_lt);
+                            bounds_store.extend_where_predicates(syn::parse_quote!{
+                                for<#lt> &#lt #ty: ::std::iter::IntoIterator,
+                                for<#lt> <&#lt #ty as ::std::iter::IntoIterator>::Item: ::std::ops::Deref,
+                                for<#lt> <
+                                    <&#lt #ty as ::std::iter::IntoIterator>::Item
+                                    as ::std::ops::Deref
+                                >::Target : ::std::borrow::ToOwned,
+                                for<#lt> <
+                                    <
+                                        <&#lt #ty as ::std::iter::IntoIterator>::Item
+                                        as ::std::ops::Deref
+                                    >::Target
+                                    as ::std::borrow::ToOwned
+                                >::Owned: ::std::convert::Into<::miette::SourceSpan>
+                            });
+                        }
                     }
 
                     labels.push(Label {
@@ -187,10 +227,15 @@ impl Labels {
 
             Some(quote! {
                 miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(&self.#span)
-                .map(|#var| #ctor(
-                    #display,
-                    #var.clone(),
-                ))
+                .as_ref()
+                .map(|#var| {
+                    use ::std::borrow::ToOwned;
+
+                    #ctor(
+                        #display,
+                        (*#var).to_owned(),
+                    )
+                })
             })
         });
         let collections_chain = self.0.iter().filter_map(|label| {
@@ -209,12 +254,14 @@ impl Labels {
             } else {
                 quote! { std::option::Option::None }
             };
+
             Some(quote! {
                 .chain({
                     let display = #display;
-                    self.#span.iter().map(move |span| {
+                    ::std::iter::IntoIterator::into_iter(&self.#span).map(move |span| {
                         use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                        use ::std::borrow::ToOwned;
+                        let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.to_owned());
                         if display.is_some() && labeled_span.label().is_none() {
                             labeled_span.set_label(display.clone())
                         }
@@ -226,7 +273,9 @@ impl Labels {
 
         Some(quote! {
             #[allow(unused_variables)]
-            fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>> {
+            fn labels(&self) -> std::option::Option<
+                std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>
+            > {
                 use miette::macro_helpers::ToOption;
                 let Self #display_pat = self;
 
@@ -236,7 +285,10 @@ impl Labels {
                 .into_iter()
                 #(#collections_chain)*;
 
-                std::option::Option::Some(Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
+                std::option::Option::Some(Box::new(
+                    labels_iter
+                        .filter_map(|x| x)
+                ))
             }
         })
     }
@@ -249,7 +301,12 @@ impl Labels {
                 let (display_pat, display_members) = display_pat_members(fields);
                 labels.as_ref().and_then(|labels| {
                     let variant_labels = labels.0.iter().filter_map(|label| {
-                        let Label { span, label, ty, lbl_ty } = label;
+                        let Label {
+                            span,
+                            label,
+                            ty,
+                            lbl_ty,
+                        } = label;
                         if *lbl_ty == LabelType::Collection {
                             return None;
                         }
@@ -274,14 +331,24 @@ impl Labels {
 
                         Some(quote! {
                             miette::macro_helpers::OptionalWrapper::<#ty>::new().to_option(#field)
-                            .map(|#var| #ctor(
-                                #display,
-                                #var.clone(),
-                            ))
+                            .as_ref()
+                            .map(|#var| {
+                                use ::std::borrow::ToOwned;
+
+                                #ctor(
+                                    #display,
+                                    (*#var).to_owned(),
+                                )
+                            })
                         })
                     });
                     let collections_chain = labels.0.iter().filter_map(|label| {
-                        let Label { span, label, ty: _, lbl_ty } = label;
+                        let Label {
+                            span,
+                            label,
+                            ty: _,
+                            lbl_ty,
+                        } = label;
                         if *lbl_ty != LabelType::Collection {
                             return None;
                         }
@@ -300,9 +367,12 @@ impl Labels {
                         Some(quote! {
                             .chain({
                                 let display = #display;
-                                #field.iter().map(move |span| {
+                                ::std::iter::IntoIterator::into_iter(#field).map(move |span| {
                                     use miette::macro_helpers::{ToLabelSpanWrapper,ToLabeledSpan};
-                                    let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(span.clone());
+                                    use ::std::borrow::ToOwned;
+                                    let mut labeled_span = ToLabelSpanWrapper::to_labeled_span(
+                                        span.to_owned()
+                                    );
                                     if display.is_some() && labeled_span.label().is_none() {
                                         labeled_span.set_label(display.clone());
                                     }
@@ -322,7 +392,10 @@ impl Labels {
                                 ]
                                 .into_iter()
                                 #(#collections_chain)*;
-                                std::option::Option::Some(std::boxed::Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
+                                std::option::Option::Some(std::boxed::Box::new(
+                                    labels_iter
+                                        .filter_map(|x| x)
+                                    ))
                             }
                         }),
                     }

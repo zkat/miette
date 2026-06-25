@@ -5,7 +5,8 @@ use syn::spanned::Spanned;
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
     forward::WhichFn,
-    utils::{display_pat_members, gen_all_variants_with},
+    trait_bounds::TypeParamBoundStore,
+    utils::{display_pat_members, extract_option, gen_all_variants_with},
 };
 
 pub struct SourceCode {
@@ -14,32 +15,33 @@ pub struct SourceCode {
 }
 
 impl SourceCode {
-    pub fn from_fields(fields: &syn::Fields) -> syn::Result<Option<Self>> {
+    pub fn from_fields(
+        fields: &syn::Fields,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         match fields {
-            syn::Fields::Named(named) => Self::from_fields_vec(named.named.iter().collect()),
+            syn::Fields::Named(named) => {
+                Self::from_fields_vec(named.named.iter().collect(), bounds_store)
+            }
             syn::Fields::Unnamed(unnamed) => {
-                Self::from_fields_vec(unnamed.unnamed.iter().collect())
+                Self::from_fields_vec(unnamed.unnamed.iter().collect(), bounds_store)
             }
             syn::Fields::Unit => Ok(None),
         }
     }
 
-    fn from_fields_vec(fields: Vec<&syn::Field>) -> syn::Result<Option<Self>> {
+    fn from_fields_vec(
+        fields: Vec<&syn::Field>,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Option<Self>> {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("source_code") {
-                    let is_option = if let syn::Type::Path(syn::TypePath {
-                        path: syn::Path { segments, .. },
-                        ..
-                    }) = &field.ty
-                    {
-                        segments
-                            .last()
-                            .map(|seg| seg.ident == "Option")
-                            .unwrap_or(false)
-                    } else {
-                        false
-                    };
+                    let is_option = extract_option(&field.ty);
+
+                    let code_ty = is_option.unwrap_or(&field.ty);
+                    bounds_store
+                        .add_where_predicate(syn::parse_quote!(#code_ty: ::miette::SourceCode));
 
                     let source_code = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
@@ -51,7 +53,7 @@ impl SourceCode {
                     };
                     return Ok(Some(SourceCode {
                         source_code,
-                        is_option,
+                        is_option: is_option.is_some(),
                     }));
                 }
             }

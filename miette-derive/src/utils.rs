@@ -1,6 +1,6 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::spanned::Spanned;
+use syn::{spanned::Spanned, AngleBracketedGenericArguments, GenericArgument, PathArguments, Type};
 
 use crate::{
     diagnostic::{DiagnosticConcreteArgs, DiagnosticDef},
@@ -103,4 +103,37 @@ impl Display {
         let Display { fmt, args, .. } = display;
         (fmt, args)
     }
+}
+
+/// Tries to extract the type of a (presumed) option type, returning the extracted type if it suceeded.
+pub fn extract_option(r#type: &Type) -> Option<&Type> {
+    let syn::Type::Path(syn::TypePath {
+        path: syn::Path { segments, .. },
+        ..
+    }) = r#type
+    else {
+        return None;
+    };
+
+    let last_segment = segments.last()?;
+
+    if last_segment.ident != "Option" {
+        return None;
+    }
+
+    let PathArguments::AngleBracketed(AngleBracketedGenericArguments { args, .. }) =
+        &last_segment.arguments
+    else {
+        return None;
+    };
+
+    if args.len() != 1 {
+        return None;
+    }
+
+    let Some(GenericArgument::Type(ty)) = args.first() else {
+        return None;
+    };
+
+    Some(ty)
 }

@@ -6,6 +6,8 @@ use syn::{
     spanned::Spanned,
 };
 
+use crate::trait_bounds::TypeParamBoundStore;
+
 pub enum Forward {
     Unnamed(usize),
     Named(syn::Ident),
@@ -70,10 +72,14 @@ impl WhichFn {
                 fn severity(&self) -> std::option::Option<miette::Severity>
             },
             Self::Related => quote! {
-                fn related(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &dyn miette::Diagnostic> + '_>>
+                fn related(&self) -> std::option::Option<
+                    std::boxed::Box<dyn std::iter::Iterator<Item = &dyn miette::Diagnostic> + '_>
+                >
             },
             Self::Labels => quote! {
-                fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>>
+                fn labels(&self) -> std::option::Option<
+                    std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>
+                >
             },
             Self::SourceCode => quote! {
                 fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode>
@@ -90,7 +96,10 @@ impl WhichFn {
 }
 
 impl Forward {
-    pub fn for_transparent_field(fields: &syn::Fields) -> syn::Result<Self> {
+    pub fn for_transparent_field(
+        fields: &syn::Fields,
+        bounds_store: &mut TypeParamBoundStore,
+    ) -> syn::Result<Self> {
         let make_err = || {
             syn::Error::new(
                 fields.span(),
@@ -108,12 +117,22 @@ impl Forward {
                     .ident
                     .clone()
                     .unwrap_or_else(|| format_ident!("unnamed"));
+
+                let ty = &field.ty;
+                bounds_store
+                    .add_where_predicate(syn::parse_quote! {#ty: ::miette::Diagnostic + 'static});
                 Ok(Self::Named(field_name))
             }
             syn::Fields::Unnamed(unnamed) => {
-                if unnamed.unnamed.iter().len() != 1 {
+                let mut iter = unnamed.unnamed.iter();
+                let field = iter.next().ok_or_else(make_err)?;
+                if iter.next().is_some() {
                     return Err(make_err());
                 }
+
+                let ty = &field.ty;
+                bounds_store
+                    .add_where_predicate(syn::parse_quote! {#ty: ::miette::Diagnostic + 'static});
                 Ok(Self::Unnamed(0))
             }
             _ => Err(syn::Error::new(
