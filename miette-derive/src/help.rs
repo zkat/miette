@@ -70,6 +70,23 @@ impl Help {
         for (i, field) in fields.iter().enumerate() {
             for attr in &field.attrs {
                 if attr.path().is_ident("help") {
+                    if let syn::Meta::List(_) = &attr.meta {
+                        let display = attr.parse_args_with(|input: ParseStream| {
+                            let fmt = input.parse()?;
+                            let args = if input.is_empty() {
+                                TokenStream::new()
+                            } else {
+                                fmt::parse_token_expr(input, false)?
+                            };
+                            Ok(Display {
+                                fmt,
+                                args,
+                                has_bonus_display: false,
+                            })
+                        })?;
+                        return Ok(Some(Help::Display(display)));
+                    }
+
                     let help = if let Some(ident) = field.ident.clone() {
                         syn::Member::Named(ident)
                     } else {
@@ -84,6 +101,7 @@ impl Help {
         }
         Ok(None)
     }
+
     pub(crate) fn gen_enum(variants: &[DiagnosticDef]) -> Option<TokenStream> {
         gen_all_variants_with(
             variants,
