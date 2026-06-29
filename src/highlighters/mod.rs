@@ -11,7 +11,12 @@
 //! * `syntect-highlighter` - Enables [`syntect`](https://docs.rs/syntect/latest/syntect/) syntax highlighting support via the [`SyntectHighlighter`]
 //!
 
-use std::{ops::Deref, sync::Arc};
+use core::ops::Deref;
+
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
 
 use crate::SpanContents;
 use owo_colors::Styled;
@@ -78,21 +83,22 @@ impl MietteHighlighter {
 }
 
 impl Default for MietteHighlighter {
-    #[cfg(feature = "syntect-highlighter")]
     fn default() -> Self {
-        use std::io::IsTerminal;
-        match std::env::var("NO_COLOR") {
-            _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
-                //TODO: should use ANSI styling instead of 24-bit truecolor here
-                Self(Arc::new(SyntectHighlighter::default()))
+        #[cfg(feature = "syntect-highlighter")]
+        {
+            use std::io::IsTerminal;
+            match std::env::var("NO_COLOR") {
+                _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
+                    Self(Arc::new(SyntectHighlighter::default()))
+                }
+                Ok(string) if string != "0" => MietteHighlighter::nocolor(),
+                _ => Self(Arc::new(SyntectHighlighter::default())),
             }
-            Ok(string) if string != "0" => MietteHighlighter::nocolor(),
-            _ => Self(Arc::new(SyntectHighlighter::default())),
         }
-    }
-    #[cfg(not(feature = "syntect-highlighter"))]
-    fn default() -> Self {
-        MietteHighlighter::nocolor()
+        #[cfg(not(feature = "syntect-highlighter"))]
+        {
+            MietteHighlighter::nocolor()
+        }
     }
 }
 
@@ -102,8 +108,8 @@ impl<T: Highlighter + Send + Sync + 'static> From<T> for MietteHighlighter {
     }
 }
 
-impl std::fmt::Debug for MietteHighlighter {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for MietteHighlighter {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "MietteHighlighter(...)")
     }
 }

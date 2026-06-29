@@ -4,9 +4,13 @@
     clippy::new_ret_no_self,
     clippy::wrong_self_convention
 )]
+extern crate alloc;
+
+use alloc::boxed::Box;
 use core::fmt::Display;
 
-use std::error::Error as StdError;
+use core::error::Error as StdError;
+#[cfg(feature = "std")]
 use std::sync::OnceLock;
 
 #[allow(unreachable_pub)]
@@ -61,7 +65,15 @@ unsafe impl Send for Report {}
 pub type ErrorHook =
     Box<dyn Fn(&(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> + Sync + Send + 'static>;
 
+#[cfg(feature = "std")]
 static HOOK: OnceLock<ErrorHook> = OnceLock::new();
+
+#[cfg(not(feature = "std"))]
+static HOOK: spin::Once<ErrorHook> = spin::Once::new();
+
+fn default_hook() -> ErrorHook {
+    Box::new(get_default_printer)
+}
 
 /// Error indicating that [`set_hook()`] was unable to install the provided
 /// [`ErrorHook`].
@@ -77,28 +89,51 @@ impl core::fmt::Display for InstallError {
 impl StdError for InstallError {}
 impl Diagnostic for InstallError {}
 
-/**
-Set the error hook.
-*/
+/// Set the error hook.
+#[cfg(feature = "std")]
 pub fn set_hook(hook: ErrorHook) -> Result<(), InstallError> {
     HOOK.set(hook).map_err(|_| InstallError)
 }
 
-#[cfg_attr(track_caller, track_caller)]
-#[cfg_attr(not(track_caller), allow(unused_mut))]
-fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> {
-    let hook = HOOK.get_or_init(|| Box::new(get_default_printer)).as_ref();
+/// Set the error hook.
+#[cfg(not(feature = "std"))]
+pub fn set_hook(hook: ErrorHook) -> Result<(), InstallError> {
+    HOOK.call_once(|| hook);
+    Ok(())
+}
 
-    #[cfg(track_caller)]
-    {
-        let mut handler = hook(error);
-        handler.track_caller(std::panic::Location::caller());
-        handler
-    }
-    #[cfg(not(track_caller))]
-    {
-        hook(error)
-    }
+#[cfg(feature = "std")]
+pub(crate) fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> {
+    let hook = HOOK.get_or_init(default_hook);
+    hook(error)
+}
+
+#[cfg(not(feature = "std"))]
+pub(crate) fn capture_handler(error: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler> {
+    let hook = HOOK.call_once(default_hook);
+    hook(error)
+}
+
+#[track_caller]
+#[cfg(feature = "std")]
+pub(crate) fn capture_handler_with_location(
+    error: &(dyn Diagnostic + 'static),
+) -> Box<dyn ReportHandler> {
+    let hook = HOOK.get_or_init(default_hook);
+    let mut handler = hook(error);
+    handler.track_caller(core::panic::Location::caller());
+    handler
+}
+
+#[track_caller]
+#[cfg(not(feature = "std"))]
+pub(crate) fn capture_handler_with_location(
+    error: &(dyn Diagnostic + 'static),
+) -> Box<dyn ReportHandler> {
+    let hook = HOOK.call_once(default_hook);
+    let mut handler = hook(error);
+    handler.track_caller(core::panic::Location::caller());
+    handler
 }
 
 fn get_default_printer(_err: &(dyn Diagnostic + 'static)) -> Box<dyn ReportHandler + 'static> {
@@ -193,7 +228,7 @@ pub trait ReportHandler: core::any::Any + Send + Sync {
 
     /// Store the location of the caller who constructed this error report
     #[allow(unused_variables)]
-    fn track_caller(&mut self, location: &'static std::panic::Location<'static>) {}
+    fn track_caller(&mut self, location: &'static core::panic::Location<'static>) {}
 }
 
 /// type alias for `Result<T, Report>`
@@ -428,27 +463,27 @@ pub type Result<T, E = Report> = core::result::Result<T, E>;
 ///     ```
 pub trait WrapErr<T, E>: context::private::Sealed {
     /// Wrap the error value with a new adhoc error
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     fn wrap_err<D>(self, msg: D) -> Result<T, Report>
     where
         D: Display + Send + Sync + 'static;
 
     /// Wrap the error value with a new adhoc error that is evaluated lazily
     /// only once an error does occur.
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     fn wrap_err_with<D, F>(self, f: F) -> Result<T, Report>
     where
         D: Display + Send + Sync + 'static,
         F: FnOnce() -> D;
 
     /// Compatibility re-export of `wrap_err()` for interop with `anyhow`
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     fn context<D>(self, msg: D) -> Result<T, Report>
     where
         D: Display + Send + Sync + 'static;
 
     /// Compatibility re-export of `wrap_err_with()` for interop with `anyhow`
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     fn with_context<D, F>(self, f: F) -> Result<T, Report>
     where
         D: Display + Send + Sync + 'static,
@@ -470,7 +505,7 @@ pub mod private {
         pub use super::super::kind::BoxedKind;
     }
 
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub fn new_adhoc<M>(message: M) -> Report
     where

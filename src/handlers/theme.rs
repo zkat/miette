@@ -1,5 +1,7 @@
-use std::io::IsTerminal;
-
+extern crate alloc;
+use alloc::string::String;
+use alloc::vec;
+use alloc::vec::Vec;
 use owo_colors::Style;
 
 /**
@@ -69,12 +71,20 @@ impl GraphicalTheme {
 
 impl Default for GraphicalTheme {
     fn default() -> Self {
-        match std::env::var("NO_COLOR") {
-            _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
-                Self::none()
+        #[cfg(feature = "fancy-no-backtrace")]
+        {
+            use std::io::IsTerminal;
+            match std::env::var("NO_COLOR") {
+                _ if !std::io::stdout().is_terminal() || !std::io::stderr().is_terminal() => {
+                    Self::none()
+                }
+                Ok(string) if string != "0" => Self::unicode_nocolor(),
+                _ => Self::unicode(),
             }
-            Ok(string) if string != "0" => Self::unicode_nocolor(),
-            _ => Self::unicode(),
+        }
+        #[cfg(not(feature = "fancy-no-backtrace"))]
+        {
+            Self::unicode_nocolor()
         }
     }
 }

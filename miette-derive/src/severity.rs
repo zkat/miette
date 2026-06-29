@@ -71,9 +71,7 @@ impl Severity {
                     syn::Fields::Unnamed(_) => quote! { (..) },
                     syn::Fields::Unit => quote! {},
                 };
-                Some(
-                    quote! { Self::#ident #fields => std::option::Option::Some(miette::Severity::#severity), },
-                )
+                Some(quote! { Self::#ident #fields => Option::Some(miette::Severity::#severity), })
             },
         )
     }

@@ -68,6 +68,21 @@ jobs:
       - name: Check wasm target
         run: cargo check --target wasm32-unknown-unknown --features fancy-no-syscall
 
+  no-std:
+    name: Check no-std build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+          targets: wasm32-unknown-unknown
+      - name: Check no-std core build
+        run: cargo check --target wasm32-unknown-unknown --no-default-features
+      - name: Check no-std with fancy-no-syscall
+        run: cargo check --target wasm32-unknown-unknown --no-default-features --features fancy-no-syscall
+
   miri:
     name: Miri
     runs-on: ubuntu-latest
@@ -83,6 +98,20 @@ jobs:
         env:
           MIRIFLAGS: -Zmiri-disable-isolation -Zmiri-strict-provenance
         run: cargo miri test --all --verbose --features fancy
+
+  feature-check:
+    name: Feature combinations check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: stable
+      - name: Install cargo-hack
+        uses: taiki-e/install-action@cargo-hack
+      - name: Check feature powerset
+        run: cargo hack check --feature-powerset --no-dev-deps --skip default
 
   minimal_versions:
     name: Minimal versions check

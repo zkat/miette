@@ -1,3 +1,7 @@
+extern crate alloc;
+use alloc::boxed::Box;
+use alloc::string::String;
+
 use crate::highlighters::Highlighter;
 use crate::highlighters::MietteHighlighter;
 use crate::protocol::Diagnostic;
@@ -8,7 +12,7 @@ use crate::ReportHandler;
 use crate::ThemeCharacters;
 use crate::ThemeStyles;
 use cfg_if::cfg_if;
-use std::fmt;
+use core::fmt;
 
 /// Settings to control the color format used for graphical rendering.
 #[derive(Copy, Clone, Debug, Eq, PartialEq, Default)]
@@ -341,15 +345,26 @@ impl MietteHandlerOpts {
         }
     }
 
+    #[allow(clippy::manual_unwrap_or)]
     pub(crate) fn is_graphical(&self) -> bool {
         if let Some(force_narrated) = self.force_narrated {
             !force_narrated
         } else if let Some(force_graphical) = self.force_graphical {
             force_graphical
-        } else if let Ok(env) = std::env::var("NO_GRAPHICS") {
-            env == "0"
         } else {
-            true
+            #[cfg(feature = "fancy-no-backtrace")]
+            {
+                if let Ok(env) = std::env::var("NO_GRAPHICS") {
+                    env == "0"
+                } else {
+                    true
+                }
+            }
+            #[cfg(not(feature = "fancy-no-backtrace"))]
+            {
+                // fancy-base or fancy-no-syscall without std: default to graphical
+                true
+            }
         }
     }
 
@@ -464,60 +479,63 @@ impl From<HighlighterOption> for MietteHighlighter {
 }
 
 mod syscall {
-    use cfg_if::cfg_if;
-
     #[inline]
     pub(super) fn terminal_width() -> Option<usize> {
-        cfg_if! {
-            if #[cfg(any(feature = "fancy-no-syscall", miri))] {
-                None
-            } else {
-                terminal_size::terminal_size().map(|size| size.0 .0 as usize)
-            }
+        #[cfg(all(feature = "fancy-no-backtrace", not(miri)))]
+        {
+            terminal_size::terminal_size().map(|size| size.0 .0 as usize)
+        }
+        #[cfg(any(not(feature = "fancy-no-backtrace"), miri))]
+        {
+            None
         }
     }
 
     #[inline]
     pub(super) fn supports_hyperlinks() -> bool {
-        cfg_if! {
-            if #[cfg(feature = "fancy-no-syscall")] {
-                false
-            } else {
-                supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
-            }
+        #[cfg(feature = "fancy-no-backtrace")]
+        {
+            supports_hyperlinks::on(supports_hyperlinks::Stream::Stderr)
+        }
+        #[cfg(not(feature = "fancy-no-backtrace"))]
+        {
+            false
         }
     }
 
     #[inline]
     pub(super) fn supports_color() -> bool {
-        cfg_if! {
-            if #[cfg(feature = "fancy-no-syscall")] {
-                false
-            } else {
-                supports_color::on(supports_color::Stream::Stderr).is_some()
-            }
+        #[cfg(feature = "fancy-no-backtrace")]
+        {
+            supports_color::on(supports_color::Stream::Stderr).is_some()
+        }
+        #[cfg(not(feature = "fancy-no-backtrace"))]
+        {
+            false
         }
     }
 
     #[inline]
     pub(super) fn supports_color_has_16m() -> Option<bool> {
-        cfg_if! {
-            if #[cfg(feature = "fancy-no-syscall")] {
-                None
-            } else {
-                supports_color::on(supports_color::Stream::Stderr).map(|color| color.has_16m)
-            }
+        #[cfg(feature = "fancy-no-backtrace")]
+        {
+            supports_color::on(supports_color::Stream::Stderr).map(|color| color.has_16m)
+        }
+        #[cfg(not(feature = "fancy-no-backtrace"))]
+        {
+            None
         }
     }
 
     #[inline]
     pub(super) fn supports_unicode() -> bool {
-        cfg_if! {
-            if #[cfg(feature = "fancy-no-syscall")] {
-                false
-            } else {
-                supports_unicode::on(supports_unicode::Stream::Stderr)
-            }
+        #[cfg(feature = "fancy-no-backtrace")]
+        {
+            supports_unicode::on(supports_unicode::Stream::Stderr)
+        }
+        #[cfg(not(feature = "fancy-no-backtrace"))]
+        {
+            false
         }
     }
 }

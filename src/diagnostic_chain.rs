@@ -18,7 +18,7 @@ impl<'a> DiagnosticChain<'a> {
         }
     }
 
-    pub(crate) fn from_stderror(head: &'a (dyn std::error::Error + 'static)) -> Self {
+    pub(crate) fn from_stderror(head: &'a (dyn crate::StdError + 'static)) -> Self {
         DiagnosticChain {
             state: Some(ErrorKind::StdError(head)),
         }
@@ -59,7 +59,7 @@ impl ExactSizeIterator for DiagnosticChain<'_> {
 #[derive(Clone)]
 pub(crate) enum ErrorKind<'a> {
     Diagnostic(&'a dyn Diagnostic),
-    StdError(&'a (dyn std::error::Error + 'static)),
+    StdError(&'a (dyn crate::StdError + 'static)),
 }
 
 impl<'a> ErrorKind<'a> {
@@ -74,8 +74,8 @@ impl<'a> ErrorKind<'a> {
     }
 }
 
-impl std::fmt::Debug for ErrorKind<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Debug for ErrorKind<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             ErrorKind::Diagnostic(d) => d.fmt(f),
             ErrorKind::StdError(e) => e.fmt(f),
@@ -83,8 +83,8 @@ impl std::fmt::Debug for ErrorKind<'_> {
     }
 }
 
-impl std::fmt::Display for ErrorKind<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for ErrorKind<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         match self {
             ErrorKind::Diagnostic(d) => d.fmt(f),
             ErrorKind::StdError(e) => e.fmt(f),

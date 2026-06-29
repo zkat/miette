@@ -1,6 +1,9 @@
+extern crate alloc;
+
 use core::fmt::{self, Debug, Display};
 
-use std::error::Error as StdError;
+use crate::StdError;
+use alloc::boxed::Box;
 
 use crate::{Diagnostic, LabeledSpan, Report, SourceCode};
 
@@ -107,16 +110,6 @@ impl StdError for BoxedError {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         self.0.source()
     }
-
-    fn description(&self) -> &str {
-        #[allow(deprecated)]
-        self.0.description()
-    }
-
-    fn cause(&self) -> Option<&dyn StdError> {
-        #[allow(deprecated)]
-        self.0.cause()
-    }
 }
 
 pub(crate) struct WithSourceCode<E, C> {
@@ -216,8 +209,16 @@ impl<C> StdError for WithSourceCode<Report, C> {
     }
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "std"))]
 mod tests {
+    extern crate alloc;
+
+    use alloc::boxed::Box;
+    #[cfg(feature = "fancy")]
+    use alloc::format;
+    use alloc::string::{String, ToString};
+    #[cfg(feature = "fancy")]
+    use alloc::{vec, vec::Vec};
     use thiserror::Error;
 
     use crate::{Diagnostic, LabeledSpan, Report, SourceCode, SourceSpan};
@@ -231,7 +232,7 @@ mod tests {
 
     impl Diagnostic for Inner {
         fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
-            Some(Box::new(std::iter::once(LabeledSpan::underline(self.at))))
+            Some(Box::new(core::iter::once(LabeledSpan::underline(self.at))))
         }
 
         fn source_code(&self) -> Option<&dyn SourceCode> {

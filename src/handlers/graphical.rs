@@ -1,4 +1,10 @@
-use std::fmt::{self, Write};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::format;
+use alloc::string::{String, ToString};
+use alloc::vec::Vec;
+use core::fmt::{self, Write};
 
 use owo_colors::{OwoColorize, Style, StyledList};
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
@@ -582,7 +588,7 @@ impl GraphicalReportHandler {
                 // The snippets will overlap, so we create one Big Chunky Boi
                 let left_end = left.offset() + left.len();
                 let right_end = right.offset() + right.len();
-                let new_end = std::cmp::max(left_end, right_end);
+                let new_end = core::cmp::max(left_end, right_end);
 
                 let new_span = LabeledSpan::new(
                     left.label().map(String::from),
@@ -649,7 +655,7 @@ impl GraphicalReportHandler {
                     num_highlights += 1;
                 }
             }
-            max_gutter = std::cmp::max(max_gutter, num_highlights);
+            max_gutter = core::cmp::max(max_gutter, num_highlights);
         }
 
         // Oh and one more thing: We need to figure out how much room our line
@@ -1173,7 +1179,7 @@ impl GraphicalReportHandler {
                     .style(hl.style)
                     .to_string(),
                 );
-                highest = std::cmp::max(highest, end);
+                highest = core::cmp::max(highest, end);
 
                 (hl, vbar_offset)
             })

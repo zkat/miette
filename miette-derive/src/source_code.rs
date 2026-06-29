@@ -74,7 +74,7 @@ impl SourceCode {
 
         Some(quote! {
             #[allow(unused_variables)]
-            fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode> {
+            fn source_code(&self) -> Option<&dyn miette::SourceCode> {
                 let Self #display_pat = self;
                 #ret
             }
@@ -101,7 +101,7 @@ impl SourceCode {
                         }
                     } else {
                         quote! {
-                            std::option::Option::Some(#field)
+                            Option::Some(#field)
                         }
                     };
                     match &fields {

@@ -1,4 +1,7 @@
-use std::fmt;
+extern crate alloc;
+
+use alloc::vec::Vec;
+use core::fmt;
 
 use crate::{protocol::Diagnostic, ReportHandler};
 
@@ -34,25 +37,25 @@ impl DebugReportHandler {
         diagnostic: &dyn Diagnostic,
     ) -> fmt::Result {
         let mut diag = f.debug_struct("Diagnostic");
-        diag.field("message", &format!("{}", diagnostic));
+        diag.field("message", &alloc::format!("{}", diagnostic));
         if let Some(code) = diagnostic.code() {
-            diag.field("code", &code.to_string());
+            diag.field("code", &alloc::format!("{}", code));
         }
         if let Some(severity) = diagnostic.severity() {
-            diag.field("severity", &format!("{:?}", severity));
+            diag.field("severity", &alloc::format!("{:?}", severity));
         }
         if let Some(url) = diagnostic.url() {
-            diag.field("url", &url.to_string());
+            diag.field("url", &alloc::format!("{}", url));
         }
         if let Some(help) = diagnostic.help() {
-            diag.field("help", &help.to_string());
+            diag.field("help", &alloc::format!("{}", help));
         }
         if let Some(labels) = diagnostic.labels() {
             let labels: Vec<_> = labels.collect();
-            diag.field("labels", &format!("{:?}", labels));
+            diag.field("labels", &alloc::format!("{:?}", labels));
         }
         if let Some(cause) = diagnostic.diagnostic_source() {
-            diag.field("caused by", &format!("{:?}", cause));
+            diag.field("caused by", &alloc::format!("{:?}", cause));
         }
         diag.finish()?;
         writeln!(f)?;

@@ -1,6 +1,13 @@
+#![no_std]
 #![deny(missing_docs, missing_debug_implementations, nonstandard_style)]
 #![warn(unreachable_pub, rust_2018_idioms)]
+#![deny(
+    clippy::alloc_instead_of_core,
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc
+)]
 #![allow(unexpected_cfgs)]
+
 //! You run miette? You run her code like the software? Oh. Oh! Error code for
 //! coder! Error code for One Thousand Lines!
 //!
@@ -58,8 +65,8 @@
 //!
 //! ## Features
 //!
-//! - Generic [`Diagnostic`] protocol, compatible (and dependent on)
-//!   [`std::error::Error`].
+//! - Generic [`Diagnostic`] protocol, compatible with `std::error::Error`.
+//!   Works without the standard library: Just turn off the default `std` feature and you can use `miette` in places like embedded systems or web browsers that don't have the full standard library. You still need `alloc` for memory management.
 //! - Unique error codes on every [`Diagnostic`].
 //! - Custom links to get more details on error codes.
 //! - Super handy derive macro for defining diagnostic metadata.
@@ -93,9 +100,23 @@
 //! $ cargo add miette --features fancy
 //! ```
 //!
+//! For computers without the standard library (like microcontrollers or web browsers):
+//!
+//! ```sh
+//! $ cargo add miette --no-default-features --features derive
+//! ```
+//!
+//! Available features you can turn on or off:
+//! - `std` (on by default): Use the standard library
+//! - `derive`: Lets you automatically create error types
+//! - `fancy`: Shows pretty error messages with colors
+//! - `fancy-no-syscall`: Pretty errors without using system calls
+//! - `fancy-no-backtrace`: Pretty errors without showing the call stack
+//!
 //! ## Example
 //!
 //! ```rust
+//! # extern crate alloc;
 //! /*
 //! You can derive a `Diagnostic` from any `std::error::Error` type.
 //!
@@ -193,6 +214,7 @@
 //! the trait directly, just like with `std::error::Error`.
 //!
 //! ```rust
+//! # extern crate alloc;
 //! // lib/error.rs
 //! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
@@ -360,6 +382,7 @@
 //! attribute:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -380,6 +403,7 @@
 //! (very high quality and detailed!) documentation on this diagnostic:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -410,6 +434,7 @@
 //! `derive(Diagnostic)` macro:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
 //!
@@ -448,6 +473,7 @@
 //! enum variants:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -461,6 +487,7 @@
 //! your diagnostic:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -499,6 +526,7 @@
 //! `Diagnostic` type:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -517,6 +545,7 @@
 //! method for that:
 //!
 //! ```rust,no_run
+//! # extern crate alloc;
 //! use miette::{Diagnostic, SourceSpan};
 //! use thiserror::Error;
 //!
@@ -549,6 +578,7 @@
 //! emitted at the same time:
 //!
 //! ```rust,no_run
+//! # extern crate alloc;
 //! use miette::{Diagnostic, Report, SourceSpan};
 //! use thiserror::Error;
 //!
@@ -610,6 +640,7 @@
 //! will likely want to use _both_:
 //!
 //! ```rust
+//! # extern crate alloc;
 //! use miette::Diagnostic;
 //! use thiserror::Error;
 //!
@@ -815,6 +846,19 @@
 //! and some from [`thiserror`](https://github.com/dtolnay/thiserror), also
 //! under the Apache License. Some code is taken from
 //! [`ariadne`](https://github.com/zesterer/ariadne), which is MIT licensed.
+
+#[cfg(feature = "std")]
+extern crate std;
+
+pub use core::error::Error as StdError;
+
+#[doc(hidden)]
+pub mod __alloc {
+    extern crate alloc;
+    pub use alloc::borrow;
+    pub use alloc::boxed::Box;
+}
+
 #[cfg(feature = "derive")]
 pub use miette_derive::*;
 

@@ -1,14 +1,17 @@
-use std::{error::Error, fmt::Display};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core::error::Error;
 
 use crate::{Diagnostic, Report};
 
 /// Convenience [`Diagnostic`] that can be used as an "anonymous" wrapper for
 /// Errors. This is intended to be paired with [`IntoDiagnostic`].
 #[derive(Debug)]
-pub(crate) struct DiagnosticError(pub(crate) Box<dyn std::error::Error + Send + Sync + 'static>);
+pub(crate) struct DiagnosticError(pub(crate) Box<dyn Error + Send + Sync + 'static>);
 
-impl Display for DiagnosticError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl core::fmt::Display for DiagnosticError {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let msg = &self.0;
         write!(f, "{msg}")
     }
@@ -35,10 +38,12 @@ inaccessible. If you have a type implementing [`Diagnostic`] consider simply ret
 pub trait IntoDiagnostic<T, E> {
     /// Converts [`Result`] types that return regular [`std::error::Error`]s
     /// into a [`Result`] that returns a [`Diagnostic`].
+    #[track_caller]
     fn into_diagnostic(self) -> Result<T, Report>;
 }
 
-impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for Result<T, E> {
+impl<T, E: Error + Send + Sync + 'static> IntoDiagnostic<T, E> for Result<T, E> {
+    #[track_caller]
     fn into_diagnostic(self) -> Result<T, Report> {
         self.map_err(|e| DiagnosticError(Box::new(e)).into())
     }
@@ -46,15 +51,21 @@ impl<T, E: std::error::Error + Send + Sync + 'static> IntoDiagnostic<T, E> for R
 
 #[cfg(test)]
 mod tests {
-    use std::io::{self, ErrorKind};
+    extern crate alloc;
 
-    use super::*;
+    use alloc::string::ToString;
 
+    use super::IntoDiagnostic;
+    #[cfg(feature = "std")]
+    use std::io;
+
+    #[cfg(feature = "std")]
     use crate::error::tests::TestError;
 
+    #[cfg(feature = "std")]
     #[test]
     fn diagnostic_error() {
-        let inner_error = io::Error::new(ErrorKind::Other, "halt and catch fire");
+        let inner_error = io::Error::other("halt and catch fire");
         let outer_error: Result<(), _> = Err(TestError(inner_error));
 
         let diagnostic_error = outer_error.into_diagnostic().unwrap_err();

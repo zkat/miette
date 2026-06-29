@@ -3,21 +3,26 @@ This module defines the core of the miette protocol: a series of types and
 traits that you can implement to get access to miette's (and related library's)
 full reporting and such features.
 */
-use std::{
-    fmt::{self, Display},
-    fs,
-    panic::Location,
-};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::string::String;
+use core::fmt::{self, Display};
+use core::ops;
+#[cfg(feature = "std")]
+use core::panic::Location;
+#[cfg(feature = "std")]
+use std::fs;
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
-use crate::{DiagnosticError, MietteError};
+use crate::MietteError;
 
 /// Adds rich metadata to your Error that can be used by
 /// [`Report`](crate::Report) to print really nice and human-friendly error
 /// messages.
-pub trait Diagnostic: std::error::Error {
+pub trait Diagnostic: crate::StdError {
     /// Unique diagnostic code that can be used to look up more information
     /// about this `Diagnostic`. Ideally also globally unique, and documented
     /// in the toplevel crate's documentation for easy searching. Rust path
@@ -72,13 +77,9 @@ pub trait Diagnostic: std::error::Error {
 macro_rules! box_error_impls {
     ($($box_type:ty),*) => {
         $(
-            impl std::error::Error for $box_type {
-                fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+            impl crate::StdError for $box_type {
+                fn source(&self) -> Option<&(dyn crate::StdError + 'static)> {
                     (**self).source()
-                }
-
-                fn cause(&self) -> Option<&dyn std::error::Error> {
-                    self.source()
                 }
             }
         )*
@@ -94,7 +95,7 @@ box_error_impls! {
 macro_rules! box_borrow_impls {
     ($($box_type:ty),*) => {
         $(
-            impl std::borrow::Borrow<dyn Diagnostic> for $box_type {
+            impl core::borrow::Borrow<dyn Diagnostic> for $box_type {
                 fn borrow(&self) -> &(dyn Diagnostic + 'static) {
                     self.as_ref()
                 }
@@ -152,7 +153,7 @@ impl From<String> for Box<dyn Diagnostic + Send + Sync> {
     fn from(s: String) -> Self {
         struct StringError(String);
 
-        impl std::error::Error for StringError {}
+        impl crate::StdError for StringError {}
         impl Diagnostic for StringError {}
 
         impl Display for StringError {
@@ -172,8 +173,12 @@ impl From<String> for Box<dyn Diagnostic + Send + Sync> {
     }
 }
 
-impl From<Box<dyn std::error::Error + Send + Sync>> for Box<dyn Diagnostic + Send + Sync> {
-    fn from(s: Box<dyn std::error::Error + Send + Sync>) -> Self {
+#[cfg(feature = "std")]
+use crate::DiagnosticError;
+
+#[cfg(feature = "std")]
+impl From<Box<dyn core::error::Error + Send + Sync>> for Box<dyn Diagnostic + Send + Sync> {
+    fn from(s: Box<dyn core::error::Error + Send + Sync>) -> Self {
         Box::new(DiagnosticError(s))
     }
 }
@@ -369,6 +374,7 @@ impl LabeledSpan {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serialize_labeled_span() {
+    use alloc::string::ToString;
     use serde_json::json;
 
     assert_eq!(
@@ -392,6 +398,7 @@ fn test_serialize_labeled_span() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_deserialize_labeled_span() {
+    use alloc::string::ToString;
     use serde_json::json;
 
     let span: LabeledSpan = serde_json::from_value(json!({
@@ -594,8 +601,8 @@ impl From<(SourceOffset, usize)> for SourceSpan {
     }
 }
 
-impl From<std::ops::Range<ByteOffset>> for SourceSpan {
-    fn from(range: std::ops::Range<ByteOffset>) -> Self {
+impl From<ops::Range<ByteOffset>> for SourceSpan {
+    fn from(range: ops::Range<ByteOffset>) -> Self {
         Self {
             offset: range.start.into(),
             length: range.len(),
@@ -603,12 +610,12 @@ impl From<std::ops::Range<ByteOffset>> for SourceSpan {
     }
 }
 
-impl From<std::ops::RangeInclusive<ByteOffset>> for SourceSpan {
+impl From<ops::RangeInclusive<ByteOffset>> for SourceSpan {
     /// # Panics
     ///
     /// Panics if the total length of the inclusive range would overflow a
     /// `usize`. This will only occur with the range `0..=usize::MAX`.
-    fn from(range: std::ops::RangeInclusive<ByteOffset>) -> Self {
+    fn from(range: ops::RangeInclusive<ByteOffset>) -> Self {
         let (start, end) = range.clone().into_inner();
         Self {
             offset: start.into(),
@@ -715,6 +722,7 @@ impl SourceOffset {
     /// you're shipping binaries for your application, you'll want to ignore
     /// the Err case or otherwise report it.
     #[track_caller]
+    #[cfg(feature = "std")]
     pub fn from_current_location() -> Result<(String, Self), MietteError> {
         let loc = Location::caller();
         Ok((

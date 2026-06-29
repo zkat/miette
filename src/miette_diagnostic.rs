@@ -1,7 +1,10 @@
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
+use core::error::Error;
+use core::fmt::{Debug, Display};
 
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
@@ -39,7 +42,7 @@ pub struct MietteDiagnostic {
 }
 
 impl Display for MietteDiagnostic {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}", &self.message)
     }
 }
@@ -183,7 +186,7 @@ impl MietteDiagnostic {
     /// assert_eq!(diag.labels, Some(vec![label]));
     /// ```
     pub fn with_label(mut self, label: impl Into<LabeledSpan>) -> Self {
-        self.labels = Some(vec![label.into()]);
+        self.labels = Some(Vec::from([label.into()]));
         self
     }
 
@@ -261,6 +264,7 @@ impl MietteDiagnostic {
 #[cfg(feature = "serde")]
 #[test]
 fn test_serialize_miette_diagnostic() {
+    use alloc::format;
     use serde_json::json;
 
     use crate::diagnostic;
@@ -311,6 +315,7 @@ fn test_serialize_miette_diagnostic() {
 #[cfg(feature = "serde")]
 #[test]
 fn test_deserialize_miette_diagnostic() {
+    use alloc::format;
     use serde_json::json;
 
     use crate::diagnostic;

@@ -58,34 +58,34 @@ impl WhichFn {
     pub fn signature(&self) -> TokenStream {
         match self {
             Self::Code => quote! {
-                fn code(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
+                fn code(& self) -> Option<miette::__alloc::Box<dyn core::fmt::Display + '_>>
             },
             Self::Help => quote! {
-                fn help(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
+                fn help(& self) -> Option<miette::__alloc::Box<dyn core::fmt::Display + '_>>
             },
             Self::Url => quote! {
-                fn url(& self) -> std::option::Option<std::boxed::Box<dyn std::fmt::Display + '_>>
+                fn url(& self) -> Option<miette::__alloc::Box<dyn core::fmt::Display + '_>>
             },
             Self::Severity => quote! {
-                fn severity(&self) -> std::option::Option<miette::Severity>
+                fn severity(&self) -> Option<miette::Severity>
             },
             Self::Related => quote! {
-                fn related(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &dyn miette::Diagnostic> + '_>>
+                fn related(&self) -> Option<miette::__alloc::Box<dyn Iterator<Item = &dyn miette::Diagnostic> + '_>>
             },
             Self::Labels => quote! {
-                fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>>
+                fn labels(&self) -> Option<miette::__alloc::Box<dyn Iterator<Item = miette::LabeledSpan> + '_>>
             },
             Self::SourceCode => quote! {
-                fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode>
+                fn source_code(&self) -> Option<&dyn miette::SourceCode>
             },
             Self::DiagnosticSource => quote! {
-                fn diagnostic_source(&self) -> std::option::Option<&dyn miette::Diagnostic>
+                fn diagnostic_source(&self) -> Option<&dyn miette::Diagnostic>
             },
         }
     }
 
     pub fn catchall_arm(&self) -> TokenStream {
-        quote! { _ => std::option::Option::None }
+        quote! { _ => Option::None }
     }
 }
 

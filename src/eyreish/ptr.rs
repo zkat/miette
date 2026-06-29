@@ -1,4 +1,8 @@
-use std::{marker::PhantomData, ptr::NonNull};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core::marker::PhantomData;
+use core::ptr::NonNull;
 
 #[repr(transparent)]
 /// A raw pointer that owns its pointee

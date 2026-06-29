@@ -10,8 +10,14 @@ pub struct NamedSource<S: SourceCode + 'static> {
     language: Option<String>,
 }
 
-impl<S: SourceCode> std::fmt::Debug for NamedSource<S> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::string::ToString;
+
+impl<S: SourceCode> core::fmt::Debug for NamedSource<S> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("NamedSource")
             .field("name", &self.name)
             .field("source", &"<redacted>")

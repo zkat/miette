@@ -58,8 +58,8 @@ diagnostic error code: ruget::api::bad_json
 
 ### Features
 
-- Generic [`Diagnostic`] protocol, compatible (and dependent on)
-  [`std::error::Error`].
+- Generic [`Diagnostic`] protocol, compatible with `std::error::Error`.
+  Works without the standard library: Just turn off the default `std` feature and you can use `miette` in places like embedded systems or web browsers that don't have the full standard library. You still need `alloc` for memory management.
 - Unique error codes on every [`Diagnostic`].
 - Custom links to get more details on error codes.
 - Super handy derive macro for defining diagnostic metadata.
@@ -92,6 +92,19 @@ If you want to use the fancy printer in all these screenshots:
 ```sh
 $ cargo add miette --features fancy
 ```
+
+For computers without the standard library (like microcontrollers or web browsers):
+
+```sh
+$ cargo add miette --no-default-features --features derive
+```
+
+Available features you can turn on or off:
+- `std` (on by default): Use the standard library
+- `derive`: Lets you automatically create error types
+- `fancy`: Shows pretty error messages with colors
+- `fancy-no-syscall`: Pretty errors without using system calls
+- `fancy-no-backtrace`: Pretty errors without showing the call stack
 
 ### Example
 

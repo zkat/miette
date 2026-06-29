@@ -1,8 +1,10 @@
-use std::{
-    error::Error,
-    fmt::{self, Display},
-    io,
-};
+extern crate alloc;
+
+use alloc::boxed::Box;
+use core::error::Error;
+use core::fmt::{self, Display};
+#[cfg(feature = "std")]
+use std::io;
 
 use crate::Diagnostic;
 
@@ -11,8 +13,9 @@ Error enum for miette. Used by certain operations in the protocol.
 */
 #[derive(Debug)]
 pub enum MietteError {
-    /// Wrapper around [`std::io::Error`]. This is returned when something went
+    /// Wrapper around [`io::Error`]. This is returned when something went
     /// wrong while reading a [`SourceCode`](crate::SourceCode).
+    #[cfg(feature = "std")]
     IoError(io::Error),
 
     /// Returned when a [`SourceSpan`](crate::SourceSpan) extends beyond the
@@ -23,6 +26,7 @@ pub enum MietteError {
 impl Display for MietteError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            #[cfg(feature = "std")]
             MietteError::IoError(error) => write!(f, "{error}"),
             MietteError::OutOfBounds => {
                 write!(f, "The given offset is outside the bounds of its Source")
@@ -34,12 +38,14 @@ impl Display for MietteError {
 impl Error for MietteError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
+            #[cfg(feature = "std")]
             MietteError::IoError(error) => error.source(),
             MietteError::OutOfBounds => None,
         }
     }
 }
 
+#[cfg(feature = "std")]
 impl From<io::Error> for MietteError {
     fn from(value: io::Error) -> Self {
         Self::IoError(value)
@@ -49,6 +55,7 @@ impl From<io::Error> for MietteError {
 impl Diagnostic for MietteError {
     fn code<'a>(&'a self) -> Option<Box<dyn fmt::Display + 'a>> {
         match self {
+            #[cfg(feature = "std")]
             MietteError::IoError(_) => Some(Box::new("miette::io_error")),
             MietteError::OutOfBounds => Some(Box::new("miette::span_out_of_bounds")),
         }
@@ -56,6 +63,7 @@ impl Diagnostic for MietteError {
 
     fn help<'a>(&'a self) -> Option<Box<dyn fmt::Display + 'a>> {
         match self {
+            #[cfg(feature = "std")]
             MietteError::IoError(_) => None,
             MietteError::OutOfBounds => Some(Box::new(
                 "Double-check your spans. Do you have an off-by-one error?",
@@ -66,24 +74,32 @@ impl Diagnostic for MietteError {
     fn url<'a>(&'a self) -> Option<Box<dyn fmt::Display + 'a>> {
         let crate_version = env!("CARGO_PKG_VERSION");
         let variant = match self {
+            #[cfg(feature = "std")]
             MietteError::IoError(_) => "#variant.IoError",
             MietteError::OutOfBounds => "#variant.OutOfBounds",
         };
-        Some(Box::new(format!(
+        Some(Box::new(alloc::format!(
             "https://docs.rs/miette/{}/miette/enum.MietteError.html{}",
-            crate_version, variant,
+            crate_version,
+            variant,
         )))
     }
 }
 
 #[cfg(test)]
 pub(crate) mod tests {
-    use std::{error::Error, io::ErrorKind};
+    #[cfg(not(feature = "std"))]
+    use crate::StdError as Error;
+    use alloc::string::ToString;
 
     use super::*;
 
     #[derive(Debug)]
+    #[cfg(feature = "std")]
     pub(crate) struct TestError(pub(crate) io::Error);
+    #[cfg(not(feature = "std"))]
+    #[derive(Debug)]
+    pub(crate) struct TestError(pub(crate) &'static str);
 
     impl Display for TestError {
         fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -91,17 +107,26 @@ pub(crate) mod tests {
         }
     }
 
+    #[cfg(feature = "std")]
     impl Error for TestError {
         fn source(&self) -> Option<&(dyn Error + 'static)> {
             Some(&self.0)
         }
     }
 
+    #[cfg(not(feature = "std"))]
+    impl Error for TestError {
+        fn source(&self) -> Option<&(dyn Error + 'static)> {
+            None
+        }
+    }
+
+    #[cfg(feature = "std")]
     #[test]
     fn io_error() {
-        let inner_error = io::Error::new(ErrorKind::Other, "halt and catch fire");
+        let inner_error = io::Error::other("halt and catch fire");
         let outer_error = TestError(inner_error);
-        let io_error = io::Error::new(ErrorKind::Other, outer_error);
+        let io_error = io::Error::other(outer_error);
 
         let miette_error = MietteError::from(io_error);
 

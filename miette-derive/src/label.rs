@@ -175,9 +175,9 @@ impl Labels {
             let var = quote! { __miette_internal_var };
             let display = if let Some(display) = label {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
-                quote! { std::option::Option::Some(format!(#fmt #args)) }
+                quote! { Option::Some(format!(#fmt #args)) }
             } else {
-                quote! { std::option::Option::None }
+                quote! { Option::None }
             };
             let ctor = if *lbl_ty == LabelType::Primary {
                 quote! { miette::LabeledSpan::new_primary_with_span }
@@ -205,9 +205,9 @@ impl Labels {
             }
             let display = if let Some(display) = label {
                 let (fmt, args) = display.expand_shorthand_cloned(&display_members);
-                quote! { std::option::Option::Some(format!(#fmt #args)) }
+                quote! { Option::Some(format!(#fmt #args)) }
             } else {
-                quote! { std::option::Option::None }
+                quote! { Option::None }
             };
             Some(quote! {
                 .chain({
@@ -226,7 +226,7 @@ impl Labels {
 
         Some(quote! {
             #[allow(unused_variables)]
-            fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>> {
+            fn labels(&self) -> Option<miette::__alloc::Box<dyn Iterator<Item = miette::LabeledSpan> + '_>> {
                 use miette::macro_helpers::ToOption;
                 let Self #display_pat = self;
 
@@ -236,7 +236,7 @@ impl Labels {
                 .into_iter()
                 #(#collections_chain)*;
 
-                std::option::Option::Some(Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
+                Option::Some(miette::__alloc::Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
             }
         })
     }
@@ -322,7 +322,7 @@ impl Labels {
                                 ]
                                 .into_iter()
                                 #(#collections_chain)*;
-                                std::option::Option::Some(std::boxed::Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
+                                Option::Some(miette::__alloc::Box::new(labels_iter.filter(Option::is_some).map(Option::unwrap)))
                             }
                         }),
                     }

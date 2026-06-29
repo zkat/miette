@@ -1,7 +1,16 @@
 /*!
 Default trait implementations for [`SourceCode`].
 */
-use std::{borrow::Cow, collections::VecDeque, fmt::Debug, sync::Arc};
+extern crate alloc;
+
+use alloc::borrow::Cow;
+use alloc::borrow::ToOwned;
+use alloc::boxed::Box;
+use alloc::collections::VecDeque;
+use alloc::string::String;
+use alloc::sync::Arc;
+use alloc::vec::Vec;
+use core::fmt::Debug;
 
 use crate::{MietteError, MietteSpanContents, SourceCode, SourceSpan, SpanContents};
 
@@ -205,7 +214,7 @@ mod tests {
     fn basic() -> Result<(), MietteError> {
         let src = String::from("foo\n");
         let contents = src.read_span(&(0, 4).into(), 0, 0)?;
-        assert_eq!("foo\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!("foo\n", core::str::from_utf8(contents.data()).unwrap());
         assert_eq!(0, contents.line());
         assert_eq!(0, contents.column());
         Ok(())
@@ -215,7 +224,7 @@ mod tests {
     fn shifted() -> Result<(), MietteError> {
         let src = String::from("foobar");
         let contents = src.read_span(&(3, 3).into(), 1, 1)?;
-        assert_eq!("foobar", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!("foobar", core::str::from_utf8(contents.data()).unwrap());
         assert_eq!(0, contents.line());
         assert_eq!(0, contents.column());
         Ok(())
@@ -225,7 +234,7 @@ mod tests {
     fn middle() -> Result<(), MietteError> {
         let src = String::from("foo\nbar\nbaz\n");
         let contents = src.read_span(&(4, 4).into(), 0, 0)?;
-        assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!("bar\n", core::str::from_utf8(contents.data()).unwrap());
         assert_eq!(1, contents.line());
         assert_eq!(0, contents.column());
         Ok(())
@@ -235,7 +244,7 @@ mod tests {
     fn middle_of_line() -> Result<(), MietteError> {
         let src = String::from("foo\nbarbar\nbaz\n");
         let contents = src.read_span(&(7, 4).into(), 0, 0)?;
-        assert_eq!("bar\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!("bar\n", core::str::from_utf8(contents.data()).unwrap());
         assert_eq!(1, contents.line());
         assert_eq!(3, contents.column());
         Ok(())
@@ -245,7 +254,7 @@ mod tests {
     fn with_crlf() -> Result<(), MietteError> {
         let src = String::from("foo\r\nbar\r\nbaz\r\n");
         let contents = src.read_span(&(5, 5).into(), 0, 0)?;
-        assert_eq!("bar\r\n", std::str::from_utf8(contents.data()).unwrap());
+        assert_eq!("bar\r\n", core::str::from_utf8(contents.data()).unwrap());
         assert_eq!(1, contents.line());
         assert_eq!(0, contents.column());
         Ok(())
@@ -257,7 +266,7 @@ mod tests {
         let contents = src.read_span(&(8, 3).into(), 1, 1)?;
         assert_eq!(
             "foo\nbar\nbaz\n",
-            std::str::from_utf8(contents.data()).unwrap()
+            core::str::from_utf8(contents.data()).unwrap()
         );
         assert_eq!(1, contents.line());
         assert_eq!(0, contents.column());
@@ -270,7 +279,7 @@ mod tests {
         let contents = src.read_span(&(9, 11).into(), 1, 1)?;
         assert_eq!(
             "\nfoo\nbar\nbaz\n\n",
-            std::str::from_utf8(contents.data()).unwrap()
+            core::str::from_utf8(contents.data()).unwrap()
         );
         assert_eq!(2, contents.line());
         assert_eq!(0, contents.column());
@@ -285,7 +294,7 @@ mod tests {
         let contents = src.read_span(&(2, 0).into(), 2, 2)?;
         assert_eq!(
             "one\ntwo\n\n",
-            std::str::from_utf8(contents.data()).unwrap()
+            core::str::from_utf8(contents.data()).unwrap()
         );
         assert_eq!(0, contents.line());
         assert_eq!(0, contents.column());

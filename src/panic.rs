@@ -1,10 +1,24 @@
-use std::{error::Error, fmt::Display};
+// `fancy` feature requires std, so std imports are fine here.
+#![allow(
+    clippy::std_instead_of_core,
+    clippy::std_instead_of_alloc,
+    clippy::alloc_instead_of_core
+)]
+
+use std::boxed::Box;
+use std::{
+    eprintln,
+    error::Error,
+    fmt::Display,
+    format,
+    string::{String, ToString},
+};
 
 use backtrace::Backtrace;
 
 use crate::{Context, Diagnostic, Result};
 
-/// Tells miette to render panics using its rendering engine.
+/// Makes miette show pretty error messages when your program crashes.
 pub fn set_panic_hook() {
     std::panic::set_hook(Box::new(move |info| {
         let mut message = "Something went wrong".to_string();
@@ -104,7 +118,7 @@ impl Panic {
 
 #[cfg(test)]
 mod tests {
-    use std::error::Error;
+    use std::{borrow::ToOwned, error::Error};
 
     use super::*;
 

@@ -1,8 +1,11 @@
+extern crate alloc;
+
+use crate::StdError;
+use alloc::boxed::Box;
 use core::any::TypeId;
 use core::fmt::{self, Debug, Display};
 use core::mem::ManuallyDrop;
 use core::ptr::{self, NonNull};
-use std::error::Error as StdError;
 
 use super::ptr::{Mut, Own, Ref};
 use super::Report;
@@ -20,7 +23,7 @@ impl Report {
     ///
     /// If the error type does not provide a backtrace, a backtrace will be
     /// created here to ensure that a backtrace exists.
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub fn new<E>(error: E) -> Self
     where
@@ -66,7 +69,7 @@ impl Report {
     ///         .await
     /// }
     /// ```
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub fn msg<M>(message: M) -> Self
     where
@@ -82,12 +85,11 @@ impl Report {
     ///
     /// Boxed `Diagnostic`s don't implement `Diagnostic` themselves due to trait coherence issues.
     /// This method allows you to create a `Report` from a boxed `Diagnostic`.
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     pub fn new_boxed(error: Box<dyn Diagnostic + Send + Sync + 'static>) -> Self {
         Report::from_boxed(error)
     }
 
-    #[cfg_attr(track_caller, track_caller)]
     #[cold]
     pub(crate) fn from_std<E>(error: E) -> Self
     where
@@ -109,7 +111,7 @@ impl Report {
         unsafe { Report::construct(error, vtable, handler) }
     }
 
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub(crate) fn from_adhoc<M>(message: M) -> Self
     where
@@ -134,7 +136,7 @@ impl Report {
         unsafe { Report::construct(error, vtable, handler) }
     }
 
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub(crate) fn from_msg<D, E>(msg: D, error: E) -> Self
     where
@@ -154,12 +156,12 @@ impl Report {
         };
 
         // Safety: passing vtable that operates on the right type.
-        let handler = Some(super::capture_handler(&error));
+        let handler = Some(super::capture_handler_with_location(&error));
 
         unsafe { Report::construct(error, vtable, handler) }
     }
 
-    #[cfg_attr(track_caller, track_caller)]
+    #[track_caller]
     #[cold]
     pub(crate) fn from_boxed(error: Box<dyn Diagnostic + Send + Sync>) -> Self {
         use super::wrapper::BoxedError;
@@ -429,7 +431,7 @@ impl Report {
     /// Construct a [`Report`] directly from an error-like type
     pub fn from_err<E>(err: E) -> Self
     where
-        E: std::error::Error + Send + Sync + 'static,
+        E: StdError + Send + Sync + 'static,
     {
         super::DiagnosticError(Box::new(err)).into()
     }
@@ -439,7 +441,6 @@ impl<E> From<E> for Report
 where
     E: Diagnostic + Send + Sync + 'static,
 {
-    #[cfg_attr(track_caller, track_caller)]
     #[cold]
     fn from(error: E) -> Self {
         Report::from_std(error)
@@ -816,7 +817,7 @@ impl AsRef<dyn StdError> for Report {
     }
 }
 
-impl std::borrow::Borrow<dyn Diagnostic> for Report {
+impl core::borrow::Borrow<dyn Diagnostic> for Report {
     fn borrow(&self) -> &(dyn Diagnostic + 'static) {
         self.as_ref()
     }

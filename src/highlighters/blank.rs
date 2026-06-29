@@ -1,3 +1,8 @@
+extern crate alloc;
+
+use alloc::boxed::Box;
+use alloc::vec;
+use alloc::vec::Vec;
 use owo_colors::Style;
 
 use crate::SpanContents;

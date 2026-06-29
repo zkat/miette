@@ -1,10 +1,15 @@
-use std::fmt;
+extern crate alloc;
+
+use core::fmt;
 
 use unicode_width::{UnicodeWidthChar, UnicodeWidthStr};
 
 use crate::diagnostic_chain::DiagnosticChain;
 use crate::protocol::{Diagnostic, Severity};
 use crate::{LabeledSpan, MietteError, ReportHandler, SourceCode, SourceSpan, SpanContents};
+use alloc::boxed::Box;
+use alloc::string::String;
+use alloc::vec::Vec;
 
 /**
 [`ReportHandler`] that renders plain text and avoids extraneous graphics.
@@ -290,7 +295,7 @@ impl NarratableReportHandler {
         let context_data = source
             .read_span(context_span, self.context_lines, self.context_lines)
             .map_err(|_| fmt::Error)?;
-        let context = std::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
+        let context = core::str::from_utf8(context_data.data()).expect("Bad utf8 detected");
         let mut line = context_data.line();
         let mut column = context_data.column();
         let mut offset = context_data.span().offset();

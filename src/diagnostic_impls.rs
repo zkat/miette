@@ -1,10 +1,15 @@
 /*!
 Default trait implementations for [`Diagnostic`].
 */
+extern crate alloc;
 
-use std::{convert::Infallible, fmt::Display};
+use alloc::boxed::Box;
+use core::{convert::Infallible, fmt::Display};
 
 use crate::{Diagnostic, LabeledSpan, Severity, SourceCode};
+
+// Note: Infallible implements core::error::Error since Rust 1.81,
+// so we don't need to provide our own StdError impl.
 
 impl Diagnostic for Infallible {
     fn code<'a>(&'a self) -> Option<Box<dyn Display + 'a>> {

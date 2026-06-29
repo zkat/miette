@@ -55,7 +55,7 @@ impl Related {
                     };
                     quote! {
                         Self::#ident #display_pat => {
-                            std::option::Option::Some(std::boxed::Box::new(
+                            Option::Some(miette::__alloc::Box::new(
                                 #rel.iter().map(|x| -> &(dyn miette::Diagnostic) { &*x })
                             ))
                         }
@@ -68,9 +68,9 @@ impl Related {
     pub(crate) fn gen_struct(&self) -> Option<TokenStream> {
         let rel = &self.0;
         Some(quote! {
-            fn related<'a>(&'a self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
-                use ::core::borrow::Borrow;
-                std::option::Option::Some(std::boxed::Box::new(
+            fn related<'a>(&'a self) -> Option<miette::__alloc::Box<dyn Iterator<Item = &'a dyn miette::Diagnostic> + 'a>> {
+                use miette::__alloc::borrow::Borrow;
+                Option::Some(miette::__alloc::Box::new(
                         self.#rel.iter().map(|x| -> &(dyn miette::Diagnostic) { &*x.borrow() })
                 ))
             }

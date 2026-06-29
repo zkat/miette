@@ -1,3 +1,5 @@
+#![allow(unused_assignments)] // some fields unused when feature="fancy"
+
 use miette::{Diagnostic, Report, Severity, SourceSpan};
 use thiserror::Error;
 
@@ -244,6 +246,7 @@ fn help_field() {
     #[diagnostic()]
     struct Foo<'a> {
         #[help]
+        #[allow(unused_assignments)]
         do_this: Option<&'a str>,
     }
 
@@ -293,6 +296,7 @@ fn test_snippet_named_struct() {
     #[error("welp")]
     #[diagnostic(code(foo::bar::baz))]
     #[allow(dead_code)]
+    #[allow(unused_assignments)]
     struct Foo<'a> {
         #[source_code]
         src: &'a str,
@@ -401,6 +405,7 @@ const SNIPPET_TEXT: &str = "hello from miette";
     help("help"),
     severity(Warning)
 )]
+#[allow(unused_assignments)]
 struct ForwardsTo {
     #[source_code]
     src: String,
@@ -501,6 +506,7 @@ fn test_forward_struct_named() {
         help("{help}"),
         forward(span)
     )]
+    #[allow(unused_assignments)]
     struct Struct<'a> {
         span: ForwardsTo,
         help: &'a str,
@@ -534,6 +540,7 @@ fn test_forward_enum_named() {
     enum Enum<'a> {
         #[error("help: {help_text}")]
         #[diagnostic(code(foo::bar::overridden), help("{help_text}"), forward(span))]
+        #[allow(unused_assignments)]
         Variant {
             span: ForwardsTo,
             help_text: &'a str,
@@ -595,6 +602,7 @@ fn test_unit_enum_display() {
 fn test_optional_source_code() {
     #[derive(Debug, Diagnostic, Error)]
     #[error("struct with optional source")]
+    #[allow(unused_assignments)]
     struct Struct {
         #[source_code]
         src: Option<String>,
@@ -607,6 +615,7 @@ fn test_optional_source_code() {
     .is_some());
 
     #[derive(Debug, Diagnostic, Error)]
+    #[allow(unused_assignments)]
     enum Enum {
         #[error("variant1 with optional source")]
         Variant1 {

@@ -2,6 +2,8 @@
 //! so the decoding source will be annotated with the decoding error,
 //! providing contextual information about the error.
 
+extern crate alloc;
+
 use miette::{IntoDiagnostic, SourceOffset};
 use serde_json::{self, json};
 
