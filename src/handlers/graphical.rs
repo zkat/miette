@@ -740,7 +740,7 @@ impl GraphicalReportHandler {
                     max_gutter,
                     line,
                     &labels,
-                    LabelRenderMode::SingleLine,
+                    LabelRenderMode::MultiLineEndPending,
                 )?;
                 self.render_single_line_highlights(
                     f,
@@ -930,32 +930,41 @@ impl GraphicalReportHandler {
         let applicable = highlights.iter().filter(|hl| line.span_applies_gutter(hl));
         for (i, hl) in applicable.enumerate() {
             if !line.span_line_only(hl) && line.span_ends(hl) {
-                if render_mode == LabelRenderMode::MultiLineRest {
-                    // this is to make multiline labels work. We want to make the right amount
-                    // of horizontal space for them, but not actually draw the lines
-                    let horizontal_space = max_gutter.saturating_sub(i) + 2;
-                    for _ in 0..horizontal_space {
-                        gutter.push(' ');
+                match render_mode {
+                    LabelRenderMode::MultiLineRest => {
+                        // this is to make multiline labels work. We want to make the right amount
+                        // of horizontal space for them, but not actually draw the lines
+                        let horizontal_space = max_gutter.saturating_sub(i) + 2;
+                        for _ in 0..horizontal_space {
+                            gutter.push(' ');
+                        }
+                        // account for one more horizontal space, since in multiline mode
+                        // we also add in the vertical line before the label like this:
+                        // 2 │ ╭─▶   text
+                        // 3 │ ├─▶     here
+                        //   · ╰──┤ these two lines
+                        //   ·    │ are the problem
+                        //        ^this
+                        gutter_cols += horizontal_space + 1;
                     }
-                    // account for one more horizontal space, since in multiline mode
-                    // we also add in the vertical line before the label like this:
-                    // 2 │ ╭─▶   text
-                    // 3 │ ├─▶     here
-                    //   · ╰──┤ these two lines
-                    //   ·    │ are the problem
-                    //        ^this
-                    gutter_cols += horizontal_space + 1;
-                } else {
-                    let num_repeat = max_gutter.saturating_sub(i) + 2;
+                    LabelRenderMode::MultiLineEndPending => {
+                        // we're rendering continuation lines for single-line highlights on a line
+                        // where a multiline span ends
+                        // render │ to show the span is still visually "open" until we render its own label with ╰──
+                        gutter.push_str(&chars.vbar.style(hl.style).to_string());
+                        gutter_cols += 1;
+                    }
+                    LabelRenderMode::SingleLine | LabelRenderMode::MultiLineFirst => {
+                        let num_repeat = max_gutter.saturating_sub(i) + 2;
 
-                    gutter.push_str(&chars.lbot.style(hl.style).to_string());
+                        gutter.push_str(&chars.lbot.style(hl.style).to_string());
 
-                    gutter.push_str(
-                        &chars
-                            .hbar
-                            .to_string()
-                            .repeat(
-                                num_repeat
+                        gutter.push_str(
+                            &chars
+                                .hbar
+                                .to_string()
+                                .repeat(
+                                    num_repeat
                                     // if we are rendering a multiline label, then leave a bit of space for the
                                     // rcross character
                                     - if render_mode == LabelRenderMode::MultiLineFirst {
@@ -963,16 +972,17 @@ impl GraphicalReportHandler {
                                     } else {
                                         0
                                     },
-                            )
-                            .style(hl.style)
-                            .to_string(),
-                    );
+                                )
+                                .style(hl.style)
+                                .to_string(),
+                        );
 
-                    // we count 1 for the lbot char, and then a few more, the same number
-                    // as we just repeated for. For each repeat we only add 1, even though
-                    // due to ansi escape codes the number of bytes in the string could grow
-                    // a lot each time.
-                    gutter_cols += num_repeat + 1;
+                        // we count 1 for the lbot char, and then a few more, the same number
+                        // as we just repeated for. For each repeat we only add 1, even though
+                        // due to ansi escape codes the number of bytes in the string could grow
+                        // a lot each time.
+                        gutter_cols += num_repeat + 1;
+                    }
                 }
                 break;
             } else {
@@ -1244,7 +1254,7 @@ impl GraphicalReportHandler {
             max_gutter,
             line,
             all_highlights,
-            LabelRenderMode::SingleLine,
+            LabelRenderMode::MultiLineEndPending,
         )?;
         let mut curr_offset = 1usize;
         for (offset_hl, vbar_offset) in vbar_offsets {
@@ -1257,7 +1267,7 @@ impl GraphicalReportHandler {
                 curr_offset += 1;
             } else {
                 let lines = match render_mode {
-                    LabelRenderMode::SingleLine => format!(
+                    LabelRenderMode::SingleLine | LabelRenderMode::MultiLineEndPending => format!(
                         "{}{} {}",
                         chars.lbot,
                         chars.hbar.to_string().repeat(2),
@@ -1285,7 +1295,7 @@ impl GraphicalReportHandler {
         render_mode: LabelRenderMode,
     ) -> fmt::Result {
         match render_mode {
-            LabelRenderMode::SingleLine => {
+            LabelRenderMode::SingleLine | LabelRenderMode::MultiLineEndPending => {
                 writeln!(f, "{} {}", self.theme.characters.hbar.style(style), label)?;
             }
             LabelRenderMode::MultiLineFirst => {
@@ -1382,6 +1392,9 @@ enum LabelRenderMode {
     MultiLineFirst,
     /// we're rendering the rest of a multiline label
     MultiLineRest,
+    /// we're rendering continuation lines for single-line highlights on a line where
+    /// a multi-line span ends - render │ instead of ╰── for ending spans
+    MultiLineEndPending,
 }
 
 #[derive(Debug)]
