@@ -262,17 +262,7 @@ impl GraphicalReportHandler {
         if let Some(footer) = &self.footer {
             writeln!(f)?;
             let width = self.termwidth.saturating_sub(2);
-            let mut opts = textwrap::Options::new(width)
-                .initial_indent("  ")
-                .subsequent_indent("  ")
-                .break_words(self.break_words);
-            if let Some(word_separator) = self.word_separator {
-                opts = opts.word_separator(word_separator);
-            }
-            if let Some(word_splitter) = self.word_splitter.clone() {
-                opts = opts.word_splitter(word_splitter);
-            }
-
+            let opts = self.textwrap_options(width);
             writeln!(f, "{}", self.wrap(footer, opts))?;
         }
         Ok(())
@@ -340,16 +330,10 @@ impl GraphicalReportHandler {
         let initial_indent = format!("  {} ", severity_icon.style(severity_style));
         let rest_indent = format!("  {} ", self.theme.characters.vbar.style(severity_style));
         let width = self.termwidth.saturating_sub(2);
-        let mut opts = textwrap::Options::new(width)
+        let opts = self
+            .textwrap_options(width)
             .initial_indent(&initial_indent)
-            .subsequent_indent(&rest_indent)
-            .break_words(self.break_words);
-        if let Some(word_separator) = self.word_separator {
-            opts = opts.word_separator(word_separator);
-        }
-        if let Some(word_splitter) = self.word_splitter.clone() {
-            opts = opts.word_splitter(word_splitter);
-        }
+            .subsequent_indent(&rest_indent);
 
         writeln!(f, "{}", self.wrap(&diagnostic.to_string(), opts))?;
 
@@ -386,16 +370,10 @@ impl GraphicalReportHandler {
                 )
                 .style(severity_style)
                 .to_string();
-                let mut opts = textwrap::Options::new(width)
+                let opts = self
+                    .textwrap_options(width)
                     .initial_indent(&initial_indent)
-                    .subsequent_indent(&rest_indent)
-                    .break_words(self.break_words);
-                if let Some(word_separator) = self.word_separator {
-                    opts = opts.word_separator(word_separator);
-                }
-                if let Some(word_splitter) = self.word_splitter.clone() {
-                    opts = opts.word_splitter(word_splitter);
-                }
+                    .subsequent_indent(&rest_indent);
 
                 match error {
                     ErrorKind::Diagnostic(diag) => {
@@ -428,16 +406,10 @@ impl GraphicalReportHandler {
         if let Some(help) = diagnostic.help() {
             let width = self.termwidth.saturating_sub(2);
             let initial_indent = "  help: ".style(self.theme.styles.help).to_string();
-            let mut opts = textwrap::Options::new(width)
+            let opts = self
+                .textwrap_options(width)
                 .initial_indent(&initial_indent)
-                .subsequent_indent("        ")
-                .break_words(self.break_words);
-            if let Some(word_separator) = self.word_separator {
-                opts = opts.word_separator(word_separator);
-            }
-            if let Some(word_splitter) = self.word_splitter.clone() {
-                opts = opts.word_splitter(word_splitter);
-            }
+                .subsequent_indent("        ");
 
             writeln!(f, "{}", self.wrap(&help.to_string(), opts))?;
         }
@@ -489,16 +461,10 @@ impl GraphicalReportHandler {
                     .style(severity_style)
                     .to_string();
 
-                    let mut opts = textwrap::Options::new(width)
+                    let opts = self
+                        .textwrap_options(width)
                         .initial_indent(&initial_indent)
-                        .subsequent_indent(&rest_indent)
-                        .break_words(self.break_words);
-                    if let Some(word_separator) = self.word_separator {
-                        opts = opts.word_separator(word_separator);
-                    }
-                    if let Some(word_splitter) = self.word_splitter.clone() {
-                        opts = opts.word_splitter(word_splitter);
-                    }
+                        .subsequent_indent(&rest_indent);
 
                     let mut inner = String::new();
 
@@ -1357,6 +1323,23 @@ impl GraphicalReportHandler {
             }
         }
         Ok((context_data, lines))
+    }
+
+    fn textwrap_options(&self, width: usize) -> textwrap::Options<'static> {
+        textwrap::Options::new(width)
+            .initial_indent("  ")
+            .subsequent_indent("  ")
+            .word_separator(
+                self.word_separator
+                    .clone()
+                    .unwrap_or(textwrap::WordSeparator::AsciiSpace),
+            )
+            .word_splitter(
+                self.word_splitter
+                    .clone()
+                    .unwrap_or(textwrap::WordSplitter::NoHyphenation),
+            )
+            .break_words(self.break_words)
     }
 }
 
