@@ -50,7 +50,7 @@ fn test_fmt_source() {
 #[test]
 #[ignore = "Again with the io::Error source issue?"]
 fn test_io_source() {
-    let io = io::Error::new(io::ErrorKind::Other, "oh no!");
+    let io = io::Error::other("oh no!");
     let error: Report = miette!(TestError::Io(io));
     assert_eq!("oh no!", error.source().unwrap().to_string());
 }
