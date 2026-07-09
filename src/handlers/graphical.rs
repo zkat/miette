@@ -504,7 +504,10 @@ impl GraphicalReportHandler {
 
                     let mut inner_renderer = self.clone();
                     inner_renderer.footer = None;
-                    inner_renderer.with_cause_chain = false;
+                    // Each related error is an independent diagnostic whose cause
+                    // chain has not been flattened, so keep printing it to avoid
+                    // dropping the source chain and its details.
+                    inner_renderer.with_cause_chain = true;
                     inner_renderer.termwidth -= rest_indent.width();
                     inner_renderer.render_report_inner(&mut inner, rel, src)?;
 

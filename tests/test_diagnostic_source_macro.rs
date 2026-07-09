@@ -345,6 +345,16 @@ fn test_display_related_errors_as_nested() {
   × A multi-error happened
   ├─▶   × A multi-error happened
   │     ├─▶   × A nested error happened
+  │     │     ├─▶   × TestError
+  │     │     │
+  │     │     ╰─▶   × A complex error happened
+  │     │            ╭────
+  │     │          1 │ This is another error
+  │     │            ·    ──┬─
+  │     │            ·      ╰── here
+  │     │            ╰────
+  │     │           help: You should fix this
+  │     │
   │     │      ╭────
   │     │    1 │ right here
   │     │      ·       ──┬─
