@@ -73,7 +73,7 @@ impl SourceCode {
         };
 
         Some(quote! {
-            #[allow(unused_variables)]
+            #[allow(unused_variables, unused_assignments)]
             fn source_code(&self) -> std::option::Option<&dyn miette::SourceCode> {
                 let Self #display_pat = self;
                 #ret

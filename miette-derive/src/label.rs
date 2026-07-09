@@ -225,7 +225,7 @@ impl Labels {
         });
 
         Some(quote! {
-            #[allow(unused_variables)]
+            #[allow(unused_variables, unused_assignments)]
             fn labels(&self) -> std::option::Option<std::boxed::Box<dyn std::iter::Iterator<Item = miette::LabeledSpan> + '_>> {
                 use miette::macro_helpers::ToOption;
                 let Self #display_pat = self;
