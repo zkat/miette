@@ -632,3 +632,39 @@ fn test_optional_source_code() {
     .source_code()
     .is_some());
 }
+
+#[test]
+fn test_label_option_non_copy() {
+    #[derive(Debug)]
+    struct NonCopySpan(SourceSpan);
+
+    impl From<NonCopySpan> for SourceSpan {
+        fn from(v: NonCopySpan) -> Self {
+            v.0
+        }
+    }
+    impl From<&NonCopySpan> for SourceSpan {
+        fn from(v: &NonCopySpan) -> Self {
+            v.0
+        }
+    }
+
+    #[derive(Debug, Error, Diagnostic)]
+    #[error("test error")]
+    struct E {
+        #[source_code]
+        src: String,
+        #[label("here")]
+        span: Option<NonCopySpan>,
+    }
+
+    let e = E {
+        src: "hello there".into(),
+        span: Some(NonCopySpan((0..5).into())),
+    };
+    let labels: Vec<_> = e.labels().unwrap().collect();
+    assert_eq!(labels.len(), 1);
+    assert_eq!(labels[0].offset(), 0);
+    assert_eq!(labels[0].len(), 5);
+    assert_eq!(labels[0].label(), Some("here"));
+}
