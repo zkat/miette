@@ -315,7 +315,7 @@ impl GraphicalReportHandler {
                 write!(header, " ({})", url.style(self.theme.styles.link))?;
             }
             writeln!(f, "{}", header)?;
-            need_newline = true;
+            need_newline = !is_nested;
         }
         if need_newline {
             writeln!(f)?;
