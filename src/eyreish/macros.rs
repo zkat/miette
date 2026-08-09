@@ -81,10 +81,10 @@ macro_rules! bail {
     ($($key:ident = $value:expr,)* $fmt:literal $($arg:tt)*) => {
         return $crate::private::Err(
             $crate::miette!($($key = $value,)* $fmt $($arg)*)
-        );
+        )
     };
     ($err:expr $(,)?) => {
-        return $crate::private::Err($crate::miette!($err));
+        return $crate::private::Err($crate::miette!($err))
     };
 }
 
