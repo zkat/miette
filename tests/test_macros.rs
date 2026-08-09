@@ -2,7 +2,7 @@
 mod common;
 
 use self::common::*;
-use miette::{ensure, Result};
+use miette::{bail, ensure, Result};
 
 #[test]
 fn test_messages() {
@@ -31,4 +31,12 @@ fn test_ensure() {
         Ok(())
     };
     assert!(f().is_err());
+}
+
+#[test]
+#[deny(semicolon_in_expressions_from_non_local_macros)]
+fn test_bail_in_expression_position() {
+    let f = || bail!("oh no!");
+    let v: Result<(), _> = f();
+    assert!(v.is_err());
 }
