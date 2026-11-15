@@ -85,7 +85,7 @@ fn context_info<'a>(
             } else {
                 0
             },
-            line_count,
+            line_count - start_line,
         ))
     } else {
         Err(MietteError::OutOfBounds)
